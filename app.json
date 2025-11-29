@@ -1,25 +1,30 @@
 {
   "expo": {
-    "name": "apaz",
+    "name": "Apna Ghar Apni Zameen",
     "slug": "apaz",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/logo_agaz.jpg",
     "scheme": "apaz",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "Apna.Ghar.Apni.Zameen",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "foregroundImage": "./assets/images/logo_agaz.jpg",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.agaz.apaz"
     },
     "web": {
       "output": "static",
@@ -43,6 +48,19 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "e871bd0b-bc88-4eeb-bc30-1e24aa621ad4"
+      }
+    },
+    "owner": "agaz",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/e871bd0b-bc88-4eeb-bc30-1e24aa621ad4"
     }
   }
 }
