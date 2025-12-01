@@ -1,3 +1,4 @@
+import ErrorBoundary from '@/components/base/ErrorBoundary';
 import { Ionicons } from '@expo/vector-icons';
 import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
@@ -76,6 +77,7 @@ const SearchScreen: React.FC = () => {
   ];
 
   return (
+    <ErrorBoundary>
     <Box flex={1} bg="white" safeArea>
       {/* Search Header */}
       <Box px={4} py={3} bg="white" shadow={1} borderBottomWidth={1} borderBottomColor="gray.200">
@@ -193,7 +195,10 @@ const SearchScreen: React.FC = () => {
               <IconButton
                 icon={<Ionicons name="filter" size={24} color={Colors.primary[500]} />}
                 onPress={() => setShowFilters(true)}
-                variant="outline"
+                variant="ghost"
+                borderWidth={1}
+                borderColor={Colors.primary[500]}
+                backgroundColor="transparent"
                 style={{ marginTop: 16 }}
               >
                 <AppText variant="body" color="primary">
@@ -310,6 +315,7 @@ const SearchScreen: React.FC = () => {
         currentFilters={modalFilters}
       />
     </Box>
+    </ErrorBoundary>
   );
 };
 
