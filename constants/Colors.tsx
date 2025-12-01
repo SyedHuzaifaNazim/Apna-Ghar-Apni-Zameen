@@ -1,37 +1,36 @@
-// Color palette for Apna Ghar Apni Zameen
+// Real Estate Color Palette (Green + White Theme)
 export const Colors = {
-  // Primary Colors
+  // Primary Colors (Brand Green)
   primary: {
-    50: '#e3f2fd',
-    100: '#bbdefb',
-    200: '#90caf9',
-    300: '#64b5f6',
-    400: '#42a5f5',
-    // 500: '#2196f3', // Main brand color
-    500: '#4caf50',
-    600: '#1e88e5',
-    700: '#1976d2',
-    800: '#1565c0',
-    900: '#0d47a1',
+    50:  '#e8f5e9',
+    100: '#c8e6c9',
+    200: '#a5d6a7',
+    300: '#81c784',
+    400: '#66bb6a',
+    500: '#43a047', // Main Brand Green (real estate tone)
+    600: '#388e3c',
+    700: '#2e7d32',
+    800: '#1b5e20',
+    900: '#0d3d14',
   },
 
-  // Secondary Colors
+  // Secondary Colors (Soft Natural Real Estate Accents)
   secondary: {
-    50: '#fff3e0',
-    100: '#ffe0b2',
-    200: '#ffcc80',
-    300: '#ffb74d',
-    400: '#ffa726',
-    500: '#ff9800', // Accent color
-    600: '#fb8c00',
-    700: '#f57c00',
-    800: '#ef6c00',
-    900: '#e65100',
+    50:  '#f1f8e9',
+    100: '#dcedc8',
+    200: '#c5e1a5',
+    300: '#aed581',
+    400: '#9ccc65',
+    500: '#8bc34a',
+    600: '#7cb342',
+    700: '#689f38',
+    800: '#558b2f',
+    900: '#33691e',
   },
 
-  // Success Colors
+  // Success
   success: {
-    50: '#e8f5e8',
+    50: '#e8f5e9',
     100: '#c8e6c9',
     200: '#a5d6a7',
     300: '#81c784',
@@ -43,21 +42,21 @@ export const Colors = {
     900: '#1b5e20',
   },
 
-  // Warning Colors
+  // Warning (Real estate yellow tones)
   warning: {
-    50: '#fff8e1',
-    100: '#ffecb3',
-    200: '#ffe082',
-    300: '#ffd54f',
-    400: '#ffca28',
-    500: '#ffc107',
-    600: '#ffb300',
-    700: '#ffa000',
-    800: '#ff8f00',
-    900: '#ff6f00',
+    50: '#fffde7',
+    100: '#fff9c4',
+    200: '#fff59d',
+    300: '#fff176',
+    400: '#ffee58',
+    500: '#fdd835',
+    600: '#fbc02d',
+    700: '#f9a825',
+    800: '#f57f17',
+    900: '#f57f17',
   },
 
-  // Error Colors
+  // Error (Soft red)
   error: {
     50: '#ffebee',
     100: '#ffcdd2',
@@ -73,7 +72,7 @@ export const Colors = {
 
   // Neutral Colors
   gray: {
-    50: '#fafafa',
+    50:  '#fafafa',
     100: '#f5f5f5',
     200: '#eeeeee',
     300: '#e0e0e0',
@@ -85,21 +84,21 @@ export const Colors = {
     900: '#212121',
   },
 
-  // Background Colors
+  // Backgrounds for real estate UI
   background: {
-    primary: '#4caf50',
-    secondary: '#4caf50',
-    tertiary: '#e9ecef',
+    primary: '#ffffff',   // white
+    secondary: '#f8faf8', // very light green tint
+    tertiary: '#eef3ee',  // soft neutral
     inverse: '#1a1a1a',
   },
 
   // Text Colors
   text: {
-    primary: '#000000',
-    secondary: '#4caf50',
+    primary: '#222222',
+    secondary: '#388e3c',
     disabled: '#9e9e9e',
     inverse: '#ffffff',
-    link: '#2196f3',
+    link: '#2e7d32',
   },
 
   // Border Colors
@@ -107,28 +106,28 @@ export const Colors = {
     light: '#e0e0e0',
     medium: '#bdbdbd',
     dark: '#757575',
-    focus: '#2196f3',
+    focus: '#43a047',
   },
 
   // Shadow Colors
   shadow: {
-    light: 'rgba(0, 0, 0, 0.1)',
-    medium: 'rgba(0, 0, 0, 0.15)',
+    light: 'rgba(0, 0, 0, 0.05)',
+    medium: 'rgba(0, 0, 0, 0.1)',
     dark: 'rgba(0, 0, 0, 0.2)',
-    accent: 'rgba(33, 150, 243, 0.2)',
+    accent: 'rgba(76, 175, 80, 0.2)',
   },
 
-  // Status Colors
+  // Statuses used in real estate apps
   status: {
-    forSale: '#4caf50',    // Green
-    forRent: '#ff9800',    // Orange
-    featured: '#e91e63',   // Pink
-    sold: '#f44336',       // Red
-    reserved: '#ffc107',   // Yellow
-    available: '#4caf50',  // Green
+    forSale: '#43a047',      // green
+    forRent: '#8bc34a',      // lighter green
+    featured: '#689f38',     // premium green
+    sold: '#f44336',         // red
+    reserved: '#fdd835',     // gold
+    available: '#4caf50',
   },
 
-  // Social Media Colors
+  // Social Colors
   social: {
     facebook: '#1877f2',
     google: '#db4437',
@@ -140,14 +139,15 @@ export const Colors = {
 
   // Property Type Colors
   propertyType: {
-    residential: '#2196f3',
-    commercial: '#ff9800',
-    industrial: '#4caf50',
-    plot: '#9c27b0',
-    villa: '#e91e63',
-    apartment: '#00bcd4',
+    residential: '#4caf50',
+    commercial: '#689f38',
+    industrial: '#2e7d32',
+    plot: '#8bc34a',
+    villa: '#43a047',
+    apartment: '#66bb6a',
   },
 } as const;
+
 
 // Type exports
 export type ColorPalette = typeof Colors;

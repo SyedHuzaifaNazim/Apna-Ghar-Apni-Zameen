@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Box, Button, HStack, VStack } from 'native-base';
 import React from 'react';
-import { Colors } from '../../theme/colors';
+import { Colors } from '../../constants/Colors';
 
 import AppText from '../../components/base/AppText';
 import { useAuth } from '../../hooks/useAuth';

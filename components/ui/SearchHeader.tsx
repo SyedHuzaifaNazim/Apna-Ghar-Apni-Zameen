@@ -1,13 +1,29 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Box, HStack, IconButton, Input, Text } from 'native-base';
+import { Box, HStack, IconButton, Input } from 'native-base';
 import React from 'react';
+import { Image, StyleSheet } from 'react-native';
 import { Colors } from '../../constants/Colors';
+
+
 
 interface SearchHeaderProps {
   onFilterPress: () => void;
   onSearchChange: (text: string) => void;
   searchQuery: string;
 }
+
+const styles = StyleSheet.create({
+  headerContainer: {
+    padding: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logoImage: {
+    width: 40,
+    height: 40,
+    resizeMode: 'contain', // Scales the image down to fit within the view
+  },
+});
 
 const SearchHeader: React.FC<SearchHeaderProps> = ({ 
   onFilterPress, 
@@ -19,12 +35,11 @@ const SearchHeader: React.FC<SearchHeaderProps> = ({
       <HStack space={3} alignItems="center">
         {/* Logo */}
         <Box>
-          <Text fontSize="xl" fontWeight="bold" color="primary.500">
-            AG AZ
-          </Text>
-          <Text fontSize="xs" color="text.secondary" mt={-1}>
-            Apna Ghar
-          </Text>
+          <Image
+            source={require('../../assets/images/logo_agaz.png')}
+            alt="Apna Ghar Logo"
+            style={styles.logoImage}
+          />
         </Box>
         
         {/* Search Input */}
@@ -55,7 +70,7 @@ const SearchHeader: React.FC<SearchHeaderProps> = ({
             <Ionicons name="options-outline" size={20} color="white" />
           }
           onPress={onFilterPress}
-          _pressed={{ backgroundColor: "primary.600" }}
+          _pressed={{ backgroundColor: Colors.primary[600] }}
         />
       </HStack>
     </Box>
