@@ -304,16 +304,17 @@ const SearchScreen: React.FC = () => {
         </ScrollView>
       )}
 
-      {/* Filter Modal */}
-      <FilterModal
-        isVisible={showFilters}
-        onClose={() => setShowFilters(false)}
-        onApplyFilters={nextFilters => {
-          updateFilters(nextFilters);
-          setShowFilters(false);
-        }}
-        currentFilters={modalFilters}
-      />
+      {showFilters && (
+        <FilterModal
+          isVisible={showFilters}
+          onClose={() => setShowFilters(false)}
+          onApplyFilters={nextFilters => {
+            updateFilters(nextFilters);
+            setShowFilters(false);
+          }}
+          currentFilters={modalFilters}
+        />
+      )}
     </Box>
     </ErrorBoundary>
   );

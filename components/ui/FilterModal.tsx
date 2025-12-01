@@ -138,12 +138,15 @@ const FilterModal: React.FC<FilterModalProps> = ({
                   {listingTypes.map(type => (
                     <Button
                       key={type}
-                      variant={filters.listingType === type ? "solid" : "outline"}
+                      variant={filters.listingType === type ? "solid" : "ghost"}
                       colorScheme="primary"
                       size="sm"
                       onPress={() => setFilters({...filters, listingType: type})}
                       borderRadius={9999}
                       px={4}
+                      borderWidth={filters.listingType === type ? 0 : 1}
+                      borderColor={filters.listingType === type ? undefined : "primary.500"}
+                      backgroundColor={filters.listingType === type ? undefined : "transparent"}
                     >
                       {type}
                     </Button>
@@ -238,11 +241,14 @@ const FilterModal: React.FC<FilterModalProps> = ({
                   {[0, 1, 2, 3, 4, 5].map(beds => (
                     <Button
                       key={beds}
-                      variant={filters.bedrooms === beds ? "solid" : "outline"}
+                      variant={filters.bedrooms === beds ? "solid" : "ghost"}
                       colorScheme="primary"
                       size="sm"
                       onPress={() => setFilters({...filters, bedrooms: beds})}
                       borderRadius={9999}
+                      borderWidth={filters.bedrooms === beds ? 0 : 1}
+                      borderColor={filters.bedrooms === beds ? undefined : "primary.500"}
+                      backgroundColor={filters.bedrooms === beds ? undefined : "transparent"}
                     >
                       {beds === 0 ? 'Any' : `${beds}+`}
                     </Button>
