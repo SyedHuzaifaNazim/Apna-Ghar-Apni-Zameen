@@ -42,7 +42,7 @@ const SettingsScreen: React.FC = () => {
     toast.show({
       title: "Setting updated",
       description: `${key} ${!settings[key] ? 'enabled' : 'disabled'}`,
-      status: "success",
+      variant: "solid",
       duration: 2000,
     });
   };
@@ -51,7 +51,7 @@ const SettingsScreen: React.FC = () => {
     toast.show({
       title: "Cache cleared",
       description: "App cache has been cleared successfully",
-      status: "success",
+      variant: "solid",
     });
   };
 
@@ -59,7 +59,7 @@ const SettingsScreen: React.FC = () => {
     toast.show({
       title: "Data exported",
       description: "Your data has been exported successfully",
-      status: "success",
+      variant: "solid",
     });
   };
 
@@ -68,7 +68,7 @@ const SettingsScreen: React.FC = () => {
     toast.show({
       title: "Copied",
       description: "App information copied to clipboard",
-      status: "success",
+      variant: "solid",
     });
   };
 
@@ -80,7 +80,7 @@ const SettingsScreen: React.FC = () => {
     toast.show({
       title: "Logged out",
       description: "You have been logged out successfully",
-      status: "success",
+      variant: "solid",
     });
     onClose();
   };
@@ -192,7 +192,7 @@ const SettingsScreen: React.FC = () => {
         <HStack alignItems="center" space={4}>
           {router.canGoBack() && (
             <IconButton
-              icon={<Ionicons name="arrow-back" size={24} color={Colors.primary} />}
+              icon={<Ionicons name="arrow-back" size={24} color={Colors.primary[500]} />}
               onPress={() => router.back()}
               variant="ghost"
             />
@@ -207,7 +207,7 @@ const SettingsScreen: React.FC = () => {
           {settingSections.map(section => (
             <VStack key={section.title} space={4} bg="gray.50" p={4} borderRadius="xl">
               <HStack space={3} alignItems="center">
-                <Ionicons name={section.icon as any} size={20} color={Colors.primary} />
+                <Ionicons name={section.icon as any} size={20} color={Colors.primary[500]} />
                 <AppText variant="h3" weight="bold">{section.title}</AppText>
               </HStack>
               
@@ -241,7 +241,7 @@ const SettingsScreen: React.FC = () => {
                     _pressed={{ backgroundColor: 'gray.100' }}
                   >
                     <HStack space={3} alignItems="center" py={3}>
-                      <Ionicons name={item.icon as any} size={20} color={item.color} />
+                      <Ionicons name={item.icon as any} size={20} color={typeof item.color === 'string' ? item.color : item.color[500]} />
                       <VStack flex={1} space={1}>
                         <AppText variant="body" weight="medium">{item.title}</AppText>
                         <AppText variant="small" color="secondary">{item.description}</AppText>
@@ -279,17 +279,17 @@ const SettingsScreen: React.FC = () => {
             <HStack space={2} mt={2}>
               <AppButton 
                 variant="outline" 
-                flex={1}
+                style={{ flex: 1 }}
                 onPress={handleCopyAppInfo}
-                leftIcon={<Ionicons name="copy" size={16} color={Colors.primary} />}
+                leftIcon={<Ionicons name="copy" size={16} color={Colors.primary[500]} />}
               >
                 Copy Info
               </AppButton>
               <AppButton 
                 variant="outline" 
-                flex={1}
+                style={{ flex: 1 }}
                 onPress={() => toast.show({ title: "Rate", description: "Opening app store" })}
-                leftIcon={<Ionicons name="star" size={16} color={Colors.primary} />}
+                leftIcon={<Ionicons name="star" size={16} color={Colors.primary[500]} />}
               >
                 Rate App
               </AppButton>
@@ -301,16 +301,16 @@ const SettingsScreen: React.FC = () => {
             <AppButton 
               variant="outline" 
               onPress={() => toast.show({ title: "Delete", description: "Account deletion process" })}
-              leftIcon={<Ionicons name="trash" size={16} color={Colors.error} />}
+              leftIcon={<Ionicons name="trash" size={16} color={Colors.error[500]} />}
             >
               Delete Account
             </AppButton>
             
             <AppButton 
-              variant="solid" 
-              backgroundColor="error.500"
+              variant="outline" 
+              style={{ flex: 1 }}
               onPress={handleLogout}
-              leftIcon={<Ionicons name="log-out" size={16} color="white" />}
+              leftIcon={<Ionicons name="log-out" size={16} color={Colors.error[500]} />}
             >
               Log Out
             </AppButton>
@@ -323,7 +323,7 @@ const SettingsScreen: React.FC = () => {
         <Actionsheet.Content>
           <Box w="100%" p={4}>
             <VStack space={4} alignItems="center">
-              <Ionicons name="log-out" size={48} color={Colors.error} />
+              <Ionicons name="log-out" size={48} color={Colors.error[500]} />
               
               <VStack space={2} alignItems="center">
                 <AppText variant="h3" weight="bold">Log Out?</AppText>
@@ -335,15 +335,15 @@ const SettingsScreen: React.FC = () => {
               <HStack space={3} width="100%">
                 <AppButton 
                   variant="outline" 
-                  flex={1}
+                  style={{ flex: 1 }}
                   onPress={onClose}
                 >
                   Cancel
                 </AppButton>
                 <AppButton 
-                  variant="solid" 
-                  flex={1}
-                  backgroundColor="error.500"
+                  variant="outline" 
+                  style={{ flex: 1 }}
+                  color={Colors.error[500]}
                   onPress={confirmLogout}
                 >
                   Log Out

@@ -22,7 +22,7 @@ const RecentSearches: React.FC<RecentSearchesProps> = ({
     return (
       <Box py={6} alignItems="center">
         <Ionicons name="time-outline" size={32} color="#9e9e9e" />
-        <AppText variant="body" color="secondary" align="center" mt={2}>
+        <AppText variant="body" color="secondary" align="center" style={{ marginTop: 12 }}>
           Start searching to build your history
         </AppText>
       </Box>

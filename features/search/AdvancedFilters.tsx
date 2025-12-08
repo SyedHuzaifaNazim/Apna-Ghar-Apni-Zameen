@@ -29,7 +29,15 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
     <FilterModal
       isVisible={isOpen}
       currentFilters={filters}
-      onApplyFilters={onApply}
+      onApplyFilters={(formFilters) => onApply({
+        listingType: formFilters.listingType ?? '',
+        propertyCategory: formFilters.propertyCategory ?? '',
+        city: formFilters.city ?? '',
+        minPrice: formFilters.minPrice ?? 0,
+        maxPrice: formFilters.maxPrice ?? 0,
+        bedrooms: formFilters.bedrooms ?? 0,
+        amenities: formFilters.amenities ?? [],
+      })}
       onClose={onClose}
     />
   );

@@ -1,21 +1,17 @@
-// @ts-nocheck
 import { Ionicons } from '@expo/vector-icons';
-import {
-    Box,
-    Center,
-    FlatList,
-    HStack,
-    IconButton,
-    Image,
-    Modal,
-    Pressable,
-    VStack
-} from 'native-base';
 import React, { useRef, useState } from 'react';
-import { Dimensions } from 'react-native';
-
-import AppText from '../../../components/base/AppText';
-import LoadingSpinner from '../../../components/base/LoadingSpinner';
+import {
+  ActivityIndicator,
+  Dimensions,
+  FlatList,
+  Image,
+  Modal,
+  Pressable,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { Colors } from '../../../constants/Colors';
 import { BorderRadius } from '../../../constants/Layout';
 
@@ -80,93 +76,67 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
 
   if (!images || images.length === 0) {
     return (
-      <Box 
-        width="100%" 
-        height={height} 
-        bg={Colors.gray[100]}
-        justifyContent="center"
-        alignItems="center"
-        borderRadius={BorderRadius.lg}
-      >
+      <View style={[styles.noImagesContainer, { height }]}>
         <Ionicons name="image-outline" size={48} color={Colors.gray[400]} />
-        <AppText variant="body" color="secondary" mt={2}>
-          No images available
-        </AppText>
-      </Box>
+        <Text style={styles.noImagesText}>No images available</Text>
+      </View>
     );
   }
 
   return (
     <>
       {/* Main Image Gallery */}
-      <VStack space={4}>
+      <View style={styles.container}>
         {/* Main Image */}
-        <Box position="relative" height={height} borderRadius={BorderRadius.lg} overflow="hidden">
-          <Pressable onPress={() => handleImagePress(currentIndex)} flex={1}>
+        <View style={[styles.mainImageContainer, { height }]}>
+          <Pressable 
+            style={styles.imagePressable}
+            onPress={() => handleImagePress(currentIndex)}
+          >
             <Image
               source={{ uri: images[currentIndex] }}
-              alt={`Property image ${currentIndex + 1}`}
-              width="100%"
-              height="100%"
+              style={styles.mainImage}
               resizeMode="cover"
               onLoadStart={onImageLoadStart}
               onLoad={onImageLoad}
             />
             
             {imageLoading && (
-              <Center position="absolute" top={0} left={0} right={0} bottom={0}>
-                <LoadingSpinner size="small" />
-              </Center>
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="small" color={Colors.primary[500]} />
+              </View>
             )}
 
             {/* Image Counter */}
-            <Box
-              position="absolute"
-              top={4}
-              right={4}
-              bg="rgba(0,0,0,0.7)"
-              px={3}
-              py={1}
-              borderRadius={BorderRadius.full}
-            >
-              <AppText variant="small" color="inverse">
+            <View style={styles.imageCounter}>
+              <Text style={styles.imageCounterText}>
                 {currentIndex + 1} / {images.length}
-              </AppText>
-            </Box>
+              </Text>
+            </View>
 
             {/* Navigation Arrows */}
             {images.length > 1 && (
               <>
                 {currentIndex > 0 && (
-                  <IconButton
-                    position="absolute"
-                    left={2}
-                    top="50%"
-                    transform={[{ translateY: -20 }]}
-                    icon={<Ionicons name="chevron-back" size={24} color="white" />}
+                  <TouchableOpacity
+                    style={[styles.navButton, styles.prevButton]}
                     onPress={() => setCurrentIndex(currentIndex - 1)}
-                    bg="rgba(0,0,0,0.5)"
-                    borderRadius="full"
-                    _pressed={{ bg: 'rgba(0,0,0,0.7)' }}
-                  />
+                  >
+                    <Ionicons name="chevron-back" size={24} color="white" />
+                  </TouchableOpacity>
                 )}
                 {currentIndex < images.length - 1 && (
-                  <IconButton
-                    position="absolute"
-                    right={2}
-                    top="50%"
-                    transform={[{ translateY: -20 }]}
-                    icon={<Ionicons name="chevron-forward" size={24} color="white" />}
+                  <TouchableOpacity
+                    style={[styles.navButton, styles.nextButton]}
                     onPress={() => setCurrentIndex(currentIndex + 1)}
-                    bg="rgba(0,0,0,0.5)"
-                    borderRadius="full"
-                    _pressed={{ bg: 'rgba(0,0,0,0.7)' }}
-                  />
+                  >
+                    <Ionicons name="chevron-forward" size={24} color="white" />
+                  </TouchableOpacity>
                 )}
               </>
             )}
           </Pressable>
-        </Box>
+        </View>
 
         {/* Thumbnails */}
         {showThumbnails && images.length > 1 && (
@@ -175,153 +145,292 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
             horizontal
             showsHorizontalScrollIndicator={false}
             keyExtractor={(item, index) => index.toString()}
-            contentContainerStyle={{ paddingHorizontal: 4 }}
+            contentContainerStyle={styles.thumbnailsContainer}
             renderItem={({ item, index }) => (
               <Pressable
+                style={[
+                  styles.thumbnailContainer,
+                  {
+                    opacity: currentIndex === index ? 1 : 0.6,
+                    borderWidth: currentIndex === index ? 2 : 0,
+                    borderColor: currentIndex === index ? Colors.primary[500] : 'transparent',
+                  }
+                ]}
                 onPress={() => handleThumbnailPress(index)}
-                mr={2}
-                opacity={currentIndex === index ? 1 : 0.6}
-                borderWidth={2}
-                borderColor={currentIndex === index ? Colors.primary[500] : 'transparent'}
-                borderRadius={BorderRadius.md}
-                overflow="hidden"
               >
                 <Image
                   source={{ uri: item }}
-                  alt={`Thumbnail ${index + 1}`}
-                  width={60}
-                  height={60}
+                  style={styles.thumbnail}
                   resizeMode="cover"
                 />
               </Pressable>
             )}
           />
         )}
-      </VStack>
+      </View>
 
       {/* Full Screen Modal */}
-      <Modal isOpen={isModalOpen} onClose={handleModalClose} size="full">
-        <Modal.Content backgroundColor="black" margin={0} maxWidth="100%">
-          <VStack flex={1} justifyContent="center">
-            {/* Header */}
-            <HStack 
-              position="absolute" 
-              top={0} 
-              left={0} 
-              right={0} 
-              justifyContent="space-between" 
-              alignItems="center"
-              p={4}
-              zIndex={10}
+      <Modal
+        visible={isModalOpen}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={handleModalClose}
+      >
+        <View style={styles.modalContainer}>
+          {/* Header */}
+          <View style={styles.modalHeader}>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={handleModalClose}
             >
-              <IconButton
-                icon={<Ionicons name="close" size={24} color="white" />}
-                onPress={handleModalClose}
-                bg="rgba(0,0,0,0.5)"
-                borderRadius="full"
-                _pressed={{ bg: 'rgba(0,0,0,0.7)' }}
-              />
-              
-              <Box bg="rgba(0,0,0,0.7)" px={3} py={1} borderRadius={BorderRadius.full}>
-                <AppText variant="body" color="inverse">
-                  {modalIndex + 1} / {images.length}
-                </AppText>
-              </Box>
-              
-              <Box width={10} /> {/* Spacer for balance */}
-            </HStack>
+              <Ionicons name="close" size={24} color="white" />
+            </TouchableOpacity>
+            
+            <View style={styles.modalImageCounter}>
+              <Text style={styles.modalImageCounterText}>
+                {modalIndex + 1} / {images.length}
+              </Text>
+            </View>
+            
+            <View style={styles.headerSpacer} />
+          </View>
 
-            {/* Image Carousel */}
-            <Box flex={1} justifyContent="center">
-              <FlatList
-                ref={flatListRef}
-                data={images}
-                horizontal
-                pagingEnabled
-                showsHorizontalScrollIndicator={false}
-                keyExtractor={(item, index) => index.toString()}
-                initialScrollIndex={modalIndex}
-                getItemLayout={(data, index) => ({
-                  length: screenWidth,
-                  offset: screenWidth * index,
-                  index,
-                })}
-                onMomentumScrollEnd={(event) => {
-                  const newIndex = Math.round(event.nativeEvent.contentOffset.x / screenWidth);
-                  setModalIndex(newIndex);
-                }}
-                renderItem={({ item }) => (
-                  <Box width={screenWidth} height={screenWidth} justifyContent="center">
-                    <Image
-                      source={{ uri: item }}
-                      alt="Property image"
-                      width={screenWidth}
-                      height={screenWidth}
-                      resizeMode="contain"
-                    />
-                  </Box>
-                )}
-              />
-            </Box>
+          {/* Image Carousel */}
+          <View style={styles.carouselContainer}>
+            <FlatList
+              ref={flatListRef}
+              data={images}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              keyExtractor={(item, index) => index.toString()}
+              initialScrollIndex={modalIndex}
+              getItemLayout={(data, index) => ({
+                length: screenWidth,
+                offset: screenWidth * index,
+                index,
+              })}
+              onMomentumScrollEnd={(event) => {
+                const newIndex = Math.round(event.nativeEvent.contentOffset.x / screenWidth);
+                setModalIndex(newIndex);
+              }}
+              renderItem={({ item }) => (
+                <View style={styles.modalImageContainer}>
+                  <Image
+                    source={{ uri: item }}
+                    style={styles.modalImage}
+                    resizeMode="contain"
+                  />
+                </View>
+              )}
+            />
+          </View>
 
-            {/* Navigation Arrows */}
-            {images.length > 1 && (
-              <>
-                {modalIndex > 0 && (
-                  <IconButton
-                    position="absolute"
-                    left={4}
-                    top="50%"
-                    transform={[{ translateY: -20 }]}
-                    icon={<Ionicons name="chevron-back" size={32} color="white" />}
-                    onPress={goToPrev}
-                    bg="rgba(0,0,0,0.5)"
-                    borderRadius="full"
-                    _pressed={{ bg: 'rgba(0,0,0,0.7)' }}
-                  />
-                )}
-                {modalIndex < images.length - 1 && (
-                  <IconButton
-                    position="absolute"
-                    right={4}
-                    top="50%"
-                    transform={[{ translateY: -20 }]}
-                    icon={<Ionicons name="chevron-forward" size={32} color="white" />}
-                    onPress={goToNext}
-                    bg="rgba(0,0,0,0.5)"
-                    borderRadius="full"
-                    _pressed={{ bg: 'rgba(0,0,0,0.7)' }}
-                  />
-                )}
-              </>
-            )}
+          {/* Navigation Arrows */}
+          {images.length > 1 && (
+            <>
+              {modalIndex > 0 && (
+                <TouchableOpacity
+                  style={[styles.modalNavButton, styles.modalPrevButton]}
+                  onPress={goToPrev}
+                >
+                  <Ionicons name="chevron-back" size={32} color="white" />
+                </TouchableOpacity>
+              )}
+              {modalIndex < images.length - 1 && (
+                <TouchableOpacity
+                  style={[styles.modalNavButton, styles.modalNextButton]}
+                  onPress={goToNext}
+                >
+                  <Ionicons name="chevron-forward" size={32} color="white" />
+                </TouchableOpacity>
+              )}
+            </>
+          )}
 
-            {/* Thumbnails at bottom */}
-            {images.length > 1 && (
-              <HStack 
-                position="absolute" 
-                bottom={4} 
-                left={0} 
-                right={0} 
-                justifyContent="center"
-                space={2}
-              >
-                {images.map((_, index) => (
-                  <Box
-                    key={index}
-                    width={2}
-                    height={2}
-                    borderRadius="full"
-                    bg={index === modalIndex ? 'white' : 'rgba(255,255,255,0.5)'}
-                  />
-                ))}
-              </HStack>
-            )}
-          </VStack>
-        </Modal.Content>
+          {/* Thumbnails at bottom */}
+          {images.length > 1 && (
+            <View style={styles.modalDotsContainer}>
+              {images.map((_, index) => (
+                <View
+                  key={index}
+                  style={[
+                    styles.modalDot,
+                    {
+                      backgroundColor: index === modalIndex ? 'white' : 'rgba(255,255,255,0.5)',
+                    }
+                  ]}
+                />
+              ))}
+            </View>
+          )}
+        </View>
       </Modal>
     </>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    width: '100%',
+  },
+  mainImageContainer: {
+    width: '100%',
+    borderRadius: BorderRadius.lg,
+    overflow: 'hidden',
+    marginBottom: 16,
+  },
+  imagePressable: {
+    flex: 1,
+  },
+  mainImage: {
+    width: '100%',
+    height: '100%',
+  },
+  loadingContainer: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.7)',
+  },
+  imageCounter: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: BorderRadius.full,
+  },
+  imageCounterText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  navButton: {
+    position: 'absolute',
+    top: '50%',
+    marginTop: -20,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  prevButton: {
+    left: 8,
+  },
+  nextButton: {
+    right: 8,
+  },
+  thumbnailsContainer: {
+    paddingHorizontal: 4,
+  },
+  thumbnailContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: BorderRadius.md,
+    overflow: 'hidden',
+    marginRight: 8,
+  },
+  thumbnail: {
+    width: '100%',
+    height: '100%',
+  },
+  noImagesContainer: {
+    width: '100%',
+    backgroundColor: Colors.gray[100],
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: BorderRadius.lg,
+  },
+  noImagesText: {
+    color: Colors.text.secondary,
+    marginTop: 8,
+    fontSize: 14,
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: 'black',
+  },
+  modalHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    zIndex: 10,
+  },
+  closeButton: {
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalImageCounter: {
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: BorderRadius.full,
+  },
+  modalImageCounterText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  headerSpacer: {
+    width: 40,
+  },
+  carouselContainer: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  modalImageContainer: {
+    width: screenWidth,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalImage: {
+    width: screenWidth,
+    height: screenWidth,
+  },
+  modalNavButton: {
+    position: 'absolute',
+    top: '50%',
+    marginTop: -25,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalPrevButton: {
+    left: 16,
+  },
+  modalNextButton: {
+    right: 16,
+  },
+  modalDotsContainer: {
+    position: 'absolute',
+    bottom: 16,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  modalDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginHorizontal: 4,
+  },
+});
 
 export default ImageGallery;

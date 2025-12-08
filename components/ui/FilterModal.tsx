@@ -183,13 +183,27 @@ const FilterModal: React.FC<FilterModalProps> = ({
   };
 
   return (
-    <Modal isOpen={isVisible} onClose={onClose} size="full" animationPreset="slide">
-      <Modal.Content maxH="96%" marginBottom={0} marginTop="auto" borderTopRadius="3xl">
+    <Modal 
+      isOpen={isVisible} 
+      onClose={onClose} 
+      size="full" 
+      animationPreset="slide"
+    >
+      <Modal.Content 
+        maxHeight="96%" 
+        marginBottom={0} 
+        marginTop="auto" 
+        borderTopRadius={32} // Changed from "3xl" to number
+      >
         <Modal.Header borderBottomWidth={0} pb={2}>
           <HStack justifyContent="space-between" alignItems="center">
-            <AppText variant="h2" weight="bold">Filters</AppText>
+            <AppText variant="h2" fontWeight="bold">Filters</AppText>
             <HStack space={2}>
-              <Button variant="ghost" onPress={handleReset} _text={{ color: 'primary.500' }}>
+              <Button 
+                variant="ghost" 
+                onPress={handleReset} 
+                _text={{ color: Colors.primary[500] }}
+              >
                 Reset
               </Button>
               <IconButton
@@ -206,20 +220,18 @@ const FilterModal: React.FC<FilterModalProps> = ({
             <VStack space={6} px={4}>
               {/* Listing Type */}
               <VStack space={3}>
-                <AppText variant="h3" weight="semibold">Listing Type</AppText>
+                <AppText variant="h3" fontWeight="semibold">Listing Type</AppText>
                 <HStack space={2} flexWrap="wrap">
                   {listingTypes.map(type => (
                     <Button
                       key={type}
-                      variant={filters.listingType === type ? "solid" : "ghost"}
-                      colorScheme="primary"
+                      variant={filters.listingType === type ? "solid" : "outline"}
+                      colorScheme={filters.listingType === type ? "primary" : undefined}
                       size="sm"
                       onPress={() => setFilters({...filters, listingType: type})}
                       borderRadius={9999}
                       px={4}
-                      borderWidth={filters.listingType === type ? 0 : 1}
-                      borderColor={filters.listingType === type ? undefined : "primary.500"}
-                      backgroundColor={filters.listingType === type ? undefined : "transparent"}
+                      borderWidth={1}
                     >
                       {type}
                     </Button>
@@ -231,7 +243,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
 
               {/* Property Category */}
               <VStack space={3}>
-                <AppText variant="h3" weight="semibold">Property Type</AppText>
+                <AppText variant="h3" fontWeight="semibold">Property Type</AppText>
                 <Select
                   selectedValue={filters.propertyCategory}
                   minWidth="100%"
@@ -239,7 +251,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
                   placeholder="All Property Types"
                   _selectedItem={{
                     bg: "primary.100",
-                    endIcon: <CheckIcon size="5" />
+                    endIcon: <CheckIcon size={5} />
                   }}
                   onValueChange={value => setFilters({...filters, propertyCategory: value})}
                 >
@@ -253,7 +265,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
 
               {/* City */}
               <VStack space={3}>
-                <AppText variant="h3" weight="semibold">City</AppText>
+                <AppText variant="h3" fontWeight="semibold">City</AppText>
                 <Select
                   selectedValue={filters.city}
                   minWidth="100%"
@@ -261,7 +273,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
                   placeholder="All Cities"
                   _selectedItem={{
                     bg: "primary.100",
-                    endIcon: <CheckIcon size="5" />
+                    endIcon: <CheckIcon size={5} />
                   }}
                   onValueChange={value => setFilters({...filters, city: value})}
                 >
@@ -275,13 +287,13 @@ const FilterModal: React.FC<FilterModalProps> = ({
 
               {/* Price Range */}
               <VStack space={4}>
-                <AppText variant="h3" weight="semibold">Price Range</AppText>
+                <AppText variant="h3" fontWeight="semibold">Price Range</AppText>
                 <VStack space={3}>
                   <HStack justifyContent="space-between">
-                    <AppText variant="body" color="secondary">
+                    <AppText variant="body" color={Colors.text.primary}>
                       {formatPrice(filters.minPrice || 0)}
                     </AppText>
-                    <AppText variant="body" color="secondary">
+                    <AppText variant="body" color={Colors.text.primary}>
                       {formatPrice(filters.maxPrice || 0)}
                     </AppText>
                   </HStack>
@@ -289,18 +301,19 @@ const FilterModal: React.FC<FilterModalProps> = ({
                     minValue={0}
                     maxValue={100000000}
                     step={100000}
-                    value={filters.minPrice || 0}
-                    onChange={(value: number) => setFilters({
+                    value={[filters.minPrice || 0, filters.maxPrice || 100000000]}
+                    onChange={(value: number[]) => setFilters({
                       ...filters,
-                      minPrice: value
+                      minPrice: value[0],
+                      maxPrice: value[1]
                     })}
                     colorScheme="primary"
                   >
                     <Slider.Track>
                       <Slider.FilledTrack />
                     </Slider.Track>
-                    <Slider.Thumb zIndex={0} />
-                    <Slider.Thumb zIndex={1} />
+                    <Slider.Thumb index={0} />
+                    <Slider.Thumb index={1} />
                   </Slider>
                 </VStack>
               </VStack>
@@ -309,19 +322,17 @@ const FilterModal: React.FC<FilterModalProps> = ({
 
               {/* Bedrooms */}
               <VStack space={3}>
-                <AppText variant="h3" weight="semibold">Bedrooms</AppText>
+                <AppText variant="h3" fontWeight="semibold">Bedrooms</AppText>
                 <HStack space={2} flexWrap="wrap">
                   {[0, 1, 2, 3, 4, 5].map(beds => (
                     <Button
                       key={beds}
-                      variant={filters.bedrooms === beds ? "solid" : "ghost"}
-                      colorScheme="primary"
+                      variant={filters.bedrooms === beds ? "solid" : "outline"}
+                      colorScheme={filters.bedrooms === beds ? "primary" : undefined}
                       size="sm"
                       onPress={() => setFilters({...filters, bedrooms: beds})}
                       borderRadius={9999}
-                      borderWidth={filters.bedrooms === beds ? 0 : 1}
-                      borderColor={filters.bedrooms === beds ? undefined : "primary.500"}
-                      backgroundColor={filters.bedrooms === beds ? undefined : "transparent"}
+                      borderWidth={1}
                     >
                       {beds === 0 ? 'Any' : `${beds}+`}
                     </Button>
@@ -333,7 +344,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
 
               {/* Amenities */}
               <VStack space={3}>
-                <AppText variant="h3" weight="semibold">Amenities</AppText>
+                <AppText variant="h3" fontWeight="semibold">Amenities</AppText>
                 <VStack space={2}>
                   {amenities.slice(0, 4).map(amenity => (
                     <Checkbox
@@ -363,38 +374,59 @@ const FilterModal: React.FC<FilterModalProps> = ({
           </ScrollView>
         </Modal.Body>
         
-        <Modal.Footer borderTopWidth={0} pt={4}>
-          <AppButton 
-            onPress={handleApply}
-            variant="primary"
-            size="lg"
-            style={{ flex: 1 }}
-          >
-            Apply Filters
-          </AppButton>
+        <Modal.Footer borderTopWidth={0} pt={4} px={4} pb={6}>
+          <HStack space={3} width="100%" flexDirection="row">
+            <AppButton 
+              onPress={handleApply}
+              variant="solid"
+              colorScheme="primary"
+              size="lg"
+              style={{ flex: 1 }}
+              leftIcon={<Ionicons name="filter" size={20} color="white" />}
+              borderRadius={12}
+              _text={{ fontWeight: 'semibold' }}
+            >
+              Apply Filters
+            </AppButton>
+            <AppButton 
+              onPress={onClose}
+              variant="outline"
+              colorScheme="primary"
+              size="lg"
+              leftIcon={<Ionicons name="close" size={20} color={Colors.primary[500]} />}
+              borderRadius={8}
+              _text={{ color: Colors.primary[500], fontWeight: 'semibold' }}
+              borderColor={Colors.primary[200]}
+            >
+              Cancel
+            </AppButton>
+          </HStack>
         </Modal.Footer>
       </Modal.Content>
 
       {/* Amenities Action Sheet */}
       <Actionsheet isOpen={isOpen} onClose={onSheetClose}>
         <Actionsheet.Content>
-          <Box w="100%" p={4}>
-            <AppText variant="h3" weight="semibold">
+          <Box width="100%" p={4}>
+            <AppText variant="h3" fontWeight="semibold">
               Select Amenities
             </AppText>
-            <VStack space={3}>
-              {amenities.map(amenity => (
-                <Checkbox
-                  key={amenity}
-                  value={amenity}
-                  isChecked={filters.amenities?.includes(amenity)}
-                  onChange={() => handleAmenityToggle(amenity)}
-                  colorScheme="primary"
-                >
-                  <AppText variant="body">{amenity}</AppText>
-                </Checkbox>
-              ))}
-            </VStack>
+            <ScrollView maxHeight={400}>
+              <VStack space={3} mt={2}>
+                {amenities.map(amenity => (
+                  <Checkbox
+                    key={amenity}
+                    value={amenity}
+                    isChecked={filters.amenities?.includes(amenity)}
+                    onChange={() => handleAmenityToggle(amenity)}
+                    colorScheme="primary"
+                    my={1}
+                  >
+                    <AppText variant="body">{amenity}</AppText>
+                  </Checkbox>
+                ))}
+              </VStack>
+            </ScrollView>
           </Box>
         </Actionsheet.Content>
       </Actionsheet>

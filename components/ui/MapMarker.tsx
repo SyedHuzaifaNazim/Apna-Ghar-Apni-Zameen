@@ -48,7 +48,7 @@ const MapMarker: React.FC<MapMarkerProps> = ({
           p={3} 
           shadow={4} 
           minWidth={200}
-          borderColor={getMarkerColor()}
+          borderColor={getMarkerColor().toString()}
           borderWidth={2}
         >
           <VStack space={1}>
@@ -87,7 +87,7 @@ const MapMarker: React.FC<MapMarkerProps> = ({
         width={40}
         height={40}
         borderRadius="full"
-        backgroundColor={getMarkerColor()}
+        backgroundColor={getMarkerColor().toString()}
         justifyContent="center"
         alignItems="center"
         shadow={3}
@@ -104,7 +104,7 @@ const MapMarker: React.FC<MapMarkerProps> = ({
             width={4}
             height={4}
             borderRadius="full"
-            backgroundColor={Colors.secondary}
+            backgroundColor={Colors.secondary[500]}
             justifyContent="center"
             alignItems="center"
           >

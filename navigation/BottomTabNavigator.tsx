@@ -37,9 +37,6 @@ const BottomTabNavigator = () => (
           case 'Profile':
             iconName = focused ? 'person' : 'person-outline';
             break;
-          case 'Favorites':
-            iconName = focused ? 'heart' : 'heart-outline';
-            break;
           default:
             break;
         }
@@ -51,7 +48,6 @@ const BottomTabNavigator = () => (
     <Tab.Screen name="Home" component={HomeStackNavigator} options={{ title: 'Browse' }} />
     <Tab.Screen name="Map" component={MapStackNavigator} options={{ title: 'Map' }} />
     <Tab.Screen name="Profile" component={ProfileStackNavigator} options={{ title: 'Profile' }} />
-    <Tab.Screen name="Favorites" component={FavoritesStackNavigator} options={{ title: 'Favorites' }} />
   </Tab.Navigator>
 );
 

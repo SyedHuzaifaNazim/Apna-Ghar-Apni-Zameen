@@ -1,9 +1,10 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons'; // ADD THIS IMPORT
 import { useFocusEffect } from '@react-navigation/native';
 import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
+import { debounce } from 'lodash'; // Install with: npm install lodash
 import { Box, Center, Fab, HStack, IconButton, ScrollView, useToast, VStack } from 'native-base';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 
 import { Property } from '@/api/apiMock';
 import AppText from '@/components/base/AppText';
@@ -11,6 +12,7 @@ import LoadingSpinner from '@/components/base/LoadingSpinner';
 import OfflineBanner from '@/components/base/OfflineBanner';
 import FilterModal from '@/components/ui/FilterModal';
 import PropertyCard from '@/components/ui/PropertyCard';
+import QuickFilterBar from '@/components/ui/QuickFilterBar';
 import SearchHeader from '@/components/ui/SearchHeader';
 import { Colors } from '@/constants/Colors';
 import { useFavorites } from '@/context/FavoritesContext';
@@ -32,15 +34,38 @@ const HomeScreen: React.FC = () => {
   const {
     filteredProperties,
     activeFilters,
+    filterCount,
     updateFilters,
   } = useFilterProperties(properties);
 
+  // Create a debounced search function for better performance
+  const debouncedSearchRef = useRef(
+    debounce((query: string) => {
+      updateFilters({ keywords: query });
+    }, 300) // 300ms delay
+  ).current;
+
+  // Clean up debounce on unmount
   useFocusEffect(
     useCallback(() => {
       refetch();
-    }, [refetch])
+      
+      return () => {
+        debouncedSearchRef.cancel();
+      };
+    }, [refetch, debouncedSearchRef])
   );
-
+// Type '{ filters: { listingType: string; propertyCategory: string; city: string; minPrice: number; maxPrice: number; bedrooms: number; amenities: string[]; }; onApply: (filters: Partial<FilterOptions>) => void; onReset: () => void; }' is not assignable to type 'IntrinsicAttributes & QuickFilterBarProps'.
+//   Property 'filters' does not exist on type 'IntrinsicAttributes & QuickFilterBarProps'.ts(2322)
+// (property) filters: {
+//     listingType: string;
+//     propertyCategory: string;
+//     city: string;
+//     minPrice: number;
+//     maxPrice: number;
+//     bedrooms: number;
+//     amenities: string[];
+// }
   const modalFilters = useMemo(
     () => ({
       listingType: activeFilters.listingType || '',
@@ -54,42 +79,64 @@ const HomeScreen: React.FC = () => {
     [activeFilters]
   );
 
+  // Memoize featured properties
   const featuredProperties = useMemo(() => {
-    return filteredProperties.filter(property => property.isFeatured).slice(0, 5);
+    return filteredProperties
+      .filter(property => property.isFeatured)
+      .slice(0, 5);
   }, [filteredProperties]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await refetch();
-    setRefreshing(false);
-
-    toast.show({
-      title: 'Refreshed',
-      description: 'Property listings updated',
-      duration: 2000,
-    });
+    try {
+      await refetch();
+      toast.show({
+        title: 'Refreshed',
+        description: 'Property listings updated',
+        duration: 2000,
+      });
+    } catch (err) {
+      console.error('Refresh error:', err);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
-  const handleSearchChange = (query: string) => {
+  const handleSearchChange = useCallback((query: string) => {
     setSearchQuery(query);
-    updateFilters({ keywords: query });
-  };
+    
+    // Use debounced search for better performance
+    if (query.trim().length >= 2 || query.length === 0) {
+      debouncedSearchRef(query);
+    }
+  }, [debouncedSearchRef]);
 
-  const handlePropertyPress = (propertyId: number) => {
+  const handlePropertyPress = useCallback((propertyId: number) => {
     router.push(`/listing/${propertyId}`);
-  };
+  }, [router]);
 
-  const handleMapPress = () => {
+  const handleMapPress = useCallback(() => {
     router.push('/map');
-  };
+  }, [router]);
+
+  const handleFilterPress = useCallback(() => {
+    setShowFilters(true);
+  }, []);
+
+  // Calculate active filter count excluding search
+  const activeFilterCount = useMemo(() => {
+    const hasSearch = activeFilters.keywords && activeFilters.keywords.trim().length > 0;
+    return Math.max(filterCount - (hasSearch ? 1 : 0), 0);
+  }, [filterCount, activeFilters.keywords]);
 
   if (error) {
     return (
       <Box flex={1} bg={Colors.background.primary} safeArea>
         <SearchHeader
-          onFilterPress={() => setShowFilters(true)}
+          onFilterPress={handleFilterPress}
           onSearchChange={handleSearchChange}
           searchQuery={searchQuery}
+          filterCount={activeFilterCount}
         />
         <Center flex={1} px={4}>
           <Ionicons name="warning-outline" size={64} color={Colors.error[500]} />
@@ -115,9 +162,10 @@ const HomeScreen: React.FC = () => {
       <OfflineBanner />
 
       <SearchHeader
-        onFilterPress={() => setShowFilters(true)}
+        onFilterPress={handleFilterPress}
         onSearchChange={handleSearchChange}
         searchQuery={searchQuery}
+        filterCount={activeFilterCount}
       />
 
       {loading && !refreshing ? (
@@ -126,23 +174,36 @@ const HomeScreen: React.FC = () => {
         <FlashList<Property>
           data={filteredProperties}
           renderItem={({ item }) => (
-            <PropertyCard property={item} onPress={p => handlePropertyPress(p.id)} />
+            <PropertyCard 
+              property={item} 
+              onPress={p => handlePropertyPress(p.id)} 
+            />
           )}
-          keyExtractor={item => item.id.toString()}
+          keyExtractor={item => `property-${item.id}`}
+          estimatedItemSize={280}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
             <VStack space={6} py={4} bg="gray.50">
+              {/* Header Content */}
+              {/* Quick Filter Bar */}
+              
               <VStack space={2} px={4}>
                 <AppText variant="h1" weight="bold">
                   Find Your Dream Home
                 </AppText>
+                <QuickFilterBar
+  activeFilters={activeFilters}
+  filterCount={activeFilterCount}
+  updateFilters={updateFilters} // Make sure this is not undefined
+/>
                 <AppText variant="body" color="secondary">
                   Discover the perfect property from our curated collection
                 </AppText>
               </VStack>
 
+              {/* Stats Row */}
               <HStack space={3} px={4}>
-                <Box flex={1} bg="white" p={4} borderRadius="xl" shadow={1}>
+                <Box flex={1} bg="white" p={4} borderRadius={12} shadow={1}>
                   <AppText variant="h2" weight="bold" color="primary" align="center">
                     {properties.length}
                   </AppText>
@@ -150,7 +211,7 @@ const HomeScreen: React.FC = () => {
                     Properties
                   </AppText>
                 </Box>
-                <Box flex={1} bg="white" p={4} borderRadius="xl" shadow={1}>
+                <Box flex={1} bg="white" p={4} borderRadius={12} shadow={1}>
                   <AppText variant="h2" weight="bold" color="primary" align="center">
                     {favorites.length}
                   </AppText>
@@ -158,7 +219,7 @@ const HomeScreen: React.FC = () => {
                     Favorites
                   </AppText>
                 </Box>
-                <Box flex={1} bg="white" p={4} borderRadius="xl" shadow={1}>
+                <Box flex={1} bg="white" p={4} borderRadius={12} shadow={1}>
                   <AppText variant="h2" weight="bold" color="primary" align="center">
                     {featuredProperties.length}
                   </AppText>
@@ -168,6 +229,7 @@ const HomeScreen: React.FC = () => {
                 </Box>
               </HStack>
 
+              {/* Featured Properties Section */}
               {featuredProperties.length > 0 && (
                 <VStack space={3}>
                   <HStack justifyContent="space-between" alignItems="center" px={4}>
@@ -186,7 +248,7 @@ const HomeScreen: React.FC = () => {
                   >
                     <HStack space={3}>
                       {featuredProperties.map(property => (
-                        <Box key={property.id} width={300}>
+                        <Box key={`featured-${property.id}`} width={300}>
                           <PropertyCard
                             property={property}
                             variant="featured"
@@ -199,6 +261,7 @@ const HomeScreen: React.FC = () => {
                 </VStack>
               )}
 
+              {/* Recent Listings Header */}
               <VStack space={2} px={4}>
                 <HStack justifyContent="space-between" alignItems="center">
                   <AppText variant="h2" weight="bold">
@@ -234,7 +297,10 @@ const HomeScreen: React.FC = () => {
                 No properties found
               </AppText>
               <AppText variant="body" color="secondary" style={{ marginTop: 8 }} align="center">
-                Try adjusting your search criteria or filters
+                {searchQuery ? 
+                  `No results for "${searchQuery}"` : 
+                  'Try adjusting your search criteria or filters'
+                }
               </AppText>
             </Center>
           }

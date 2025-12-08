@@ -89,7 +89,7 @@ const ProfileScreen = () => {
                   variant="solid" 
                   backgroundColor={Colors.primary[500]}
                   flex={1}
-                  onPress={() => router.push('/auth/login')}
+                  onPress={() => router.push('/(auth)/login')}
                 >
                   Sign In
                 </Button>
@@ -97,7 +97,7 @@ const ProfileScreen = () => {
                   variant="outline" 
                   flex={1}
                   borderColor={Colors.primary[500]}
-                  onPress={() => router.push('/auth/register')}
+                  onPress={() => router.push('/(auth)/register')}
                 >
                   Sign Up
                 </Button>

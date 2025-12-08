@@ -11,9 +11,9 @@ const UserProfile: React.FC = () => {
 
   if (!user) {
     return (
-      <Box p={6} bg={Colors.surface} borderRadius="2xl" shadow={1} alignItems="center">
-        <Ionicons name="person-circle-outline" size={64} color={Colors.icon.secondary} />
-        <AppText variant="body" color={Colors.text.secondary} textAlign="center" marginTop={4}>
+      <Box p={6} bg={Colors.background.primary} borderRadius="2xl" shadow={1} alignItems="center">
+        <Ionicons name="person-circle-outline" size={64} color={Colors.text.secondary} />
+        <AppText variant="body" color={Colors.text.secondary} style={{ textAlign: 'center', marginTop: 16 }}>
           Sign in to manage your profile and preferences.
         </AppText>
       </Box>
@@ -21,9 +21,9 @@ const UserProfile: React.FC = () => {
   }
 
   return (
-    <VStack space={4} bg={Colors.surface} p={6} borderRadius="2xl" shadow={1}>
+    <VStack space={4} bg={Colors.background.primary} p={6} borderRadius="2xl" shadow={1}>
       <HStack space={4} alignItems="center">
-        <Ionicons name="person-circle-outline" size={64} color={Colors.icon.primary} />
+        <Ionicons name="person-circle-outline" size={64} color={Colors.text.secondary} />
         <VStack flex={1}>
           <AppText variant="h2" weight="bold" color={Colors.text.primary}>
             {user.name}
@@ -42,7 +42,7 @@ const UserProfile: React.FC = () => {
       <Button
         variant="outline"
         colorScheme="primary"
-        leftIcon={<Ionicons name="log-out-outline" size={18} color={Colors.icon.primary} />}
+        leftIcon={<Ionicons name="log-out-outline" size={18} color={Colors.text.primary} />}
         onPress={logout}
       >
         Sign out

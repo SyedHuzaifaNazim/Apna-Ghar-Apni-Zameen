@@ -1,8 +1,8 @@
 import { useToast } from 'native-base';
 import { useCallback, useState } from 'react';
 
-import { storageService } from '../services/storageService';
 import { analyticsService } from '../services/analyticsService';
+import { storageService } from '../services/storageService';
 
 export interface AuthUser {
   id: string;
@@ -43,16 +43,16 @@ export const useAuth = (): UseAuthReturn => {
       await new Promise(resolve => setTimeout(resolve, 1000));
       const mockUser: AuthUser = {
         id: 'auth-user-1',
-        email,
+        email: email,
         name: 'Demo User',
         token: 'mock-token',
       };
       await persistUser(mockUser);
       await analyticsService.track('user_login', { method: 'email', user_id: mockUser.id });
-      toast.show({ title: 'Welcome back!', description: 'Signed in successfully', status: 'success' });
+      toast.show({ title: 'Welcome back!', description: 'Signed in successfully', variant: 'solid', bg: 'green.500' });
     } catch (error) {
       await analyticsService.trackError(error as Error, { context: 'auth_login', email });
-      toast.show({ title: 'Login failed', description: 'Please try again', status: 'error' });
+      toast.show({ title: 'Login failed', description: 'Please try again', variant: 'solid', bg: 'red.500' });
       throw error;
     } finally {
       setLoading(false);
@@ -72,10 +72,10 @@ export const useAuth = (): UseAuthReturn => {
       };
       await persistUser(mockUser);
       await analyticsService.track('user_register', { method: 'email', user_id: mockUser.id });
-      toast.show({ title: 'Account created', description: 'You are now signed in', status: 'success' });
+      toast.show({ title: 'Account created', description: 'You are now signed in', variant: 'solid', bg: 'green.500' });
     } catch (error) {
       await analyticsService.trackError(error as Error, { context: 'auth_register', email });
-      toast.show({ title: 'Registration failed', description: 'Please try again', status: 'error' });
+      toast.show({ title: 'Registration failed', description: 'Please try again', variant: 'solid', bg: 'red.500' });
       throw error;
     } finally {
       setLoading(false);

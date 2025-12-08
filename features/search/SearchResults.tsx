@@ -21,7 +21,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
     return (
       <Center py={8}>
         <Spinner color="primary.500" size="lg" />
-        <AppText variant="body" color="secondary" mt={3}>
+        <AppText variant="body" color="secondary" style={{ marginTop: 12 }}>
           Searching properties…
         </AppText>
       </Center>
@@ -41,7 +41,8 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   return (
     <FlashList
       data={properties}
-      estimatedItemSize={280}
+      // estimatedItemSize={280}
+      keyExtractor={(item, index) => `${index}-${item.id}`}
       renderItem={({ item }) => (
         <Box mb={4}>
           <PropertyCard property={item} />

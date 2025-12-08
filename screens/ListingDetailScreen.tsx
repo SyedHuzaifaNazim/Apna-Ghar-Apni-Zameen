@@ -48,7 +48,7 @@ const ListingDetailScreen = () => {
     if (price >= 10000000) {
       return `${(price / 1000000).toFixed(1)} Million`;
     } else if (price >= 100000) {
-      return `${(price / 100000).toFixed(1)} Lakh`;
+      return `${(price / 100000).toFixed(1)} Lac`;
     }
     return price.toLocaleString();
   };

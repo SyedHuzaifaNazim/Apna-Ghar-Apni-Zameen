@@ -1,0 +1,110 @@
+package com.facebook.react.fabric.mounting;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.UiThread;
+import com.facebook.react.bridge.ReactSoftExceptionLogger;
+import com.facebook.react.bridge.UiThreadUtil;
+import com.facebook.react.common.mapbuffer.ReadableMapBuffer;
+import com.facebook.react.fabric.FabricUIManager;
+import com.facebook.react.fabric.events.EventEmitterWrapper;
+import com.facebook.react.fabric.mounting.mountitems.MountItem;
+import com.facebook.react.uimanager.ThemedReactContext;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+/**
+ * MountItemDispatcher is responsible for dispatching MountItem commands to the UI thread.
+ * It batches MountItems and flushes them on the UI thread to ensure thread safety and performance.
+ */
+public class MountItemDispatcher {
+
+  private static final String TAG = "MountItemDispatcher";
+
+  private final FabricUIManager mUIManager;
+  private final ConcurrentLinkedQueue<MountItem> mMountItems = new ConcurrentLinkedQueue<>();
+  private final AtomicBoolean mIsDispatching = new AtomicBoolean(false);
+  private final AtomicBoolean mShouldScheduleFlush = new AtomicBoolean(false);
+
+  public MountItemDispatcher(FabricUIManager uiManager) {
+    mUIManager = uiManager;
+  }
+
+  /**
+   * Enqueues a MountItem to be dispatched on the UI thread.
+   *
+   * @param mountItem The MountItem to enqueue.
+   */
+  public void enqueueMountItem(MountItem mountItem) {
+    if (mountItem == null) {
+      ReactSoftExceptionLogger.logSoftException(
+          TAG, new IllegalArgumentException("Cannot enqueue null MountItem"));
+      return;
+    }
+
+    mMountItems.offer(mountItem);
+    scheduleFlush();
+  }
+
+  /**
+   * Schedules a flush of the MountItems on the UI thread if not already scheduled.
+   */
+  private void scheduleFlush() {
+    if (mShouldScheduleFlush.compareAndSet(false, true)) {
+      UiThreadUtil.runOnUiThread(
+          new Runnable() {
+            @Override
+            public void run() {
+              flush();
+            }
+          });
+    }
+  }
+
+  /**
+   * Flushes all enqueued MountItems on the UI thread.
+   */
+  @UiThread
+  public void flush() {
+    if (!UiThreadUtil.isOnUiThread()) {
+      ReactSoftExceptionLogger.logSoftException(
+          TAG, new IllegalStateException("flush() must be called on the UI thread"));
+      return;
+    }
+
+    if (mIsDispatching.compareAndSet(false, true)) {
+      mShouldScheduleFlush.set(false);
+
+      List<MountItem> itemsToDispatch = new ArrayList<>();
+      MountItem item;
+      while ((item = mMountItems.poll()) != null) {
+        itemsToDispatch.add(item);
+      }
+
+      for (MountItem mountItem : itemsToDispatch) {
+        try {
+          mountItem.execute(mUIManager);
+        } catch (Exception e) {
+          ReactSoftExceptionLogger.logSoftException(
+              TAG, new RuntimeException("Failed to execute MountItem", e));
+        }
+      }
+
+      mIsDispatching.set(false);
+
+      // If new items were enqueued during dispatch, schedule another flush
+      if (!mMountItems.isEmpty()) {
+        scheduleFlush();
+      }
+    }
+  }
+
+  /**
+   * Clears all pending MountItems.
+   */
+  public void clear() {
+    mMountItems.clear();
+    mShouldScheduleFlush.set(false);
+  }
+}

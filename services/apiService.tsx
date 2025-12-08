@@ -31,7 +31,7 @@ export interface ApiError {
 
 // Configuration
 const API_CONFIG = {
-  BASE_URL: process.env.EXPO_PUBLIC_API_URL || 'https://api.apnagharapnizameen.com/v1',
+  BASE_URL: process.env.EXPO_PUBLIC_API_URL || 'https://api.apnagharapnizameen.com/wp-json/wp/v2/posts?per_page=10',
   TIMEOUT: 30000,
   RETRY_ATTEMPTS: 3,
   RETRY_DELAY: 1000,

@@ -1,25 +1,22 @@
-import ErrorBoundary from '@/components/base/ErrorBoundary';
-import { Ionicons } from '@expo/vector-icons';
-import { FlashList } from '@shopify/flash-list';
-import { useRouter } from 'expo-router';
-import {
-  Box,
-  Center,
-  HStack,
-  IconButton,
-  Input,
-  Pressable,
-  ScrollView,
-  VStack,
-} from 'native-base';
-import React, { useMemo, useState } from 'react';
-
 import AppText from '@/components/base/AppText';
+import ErrorBoundary from '@/components/base/ErrorBoundary';
 import FilterModal from '@/components/ui/FilterModal';
 import PropertyCard from '@/components/ui/PropertyCard';
 import { Colors } from '@/constants/Colors';
+import SearchSuggestions from '@/features/search/SearchSuggestions';
 import { useFetchProperties } from '@/hooks/useFetchProperties';
 import { useFilterProperties } from '@/hooks/useFilterProperties';
+import { Ionicons } from '@expo/vector-icons';
+import { FlashList } from '@shopify/flash-list';
+import { useRouter } from 'expo-router';
+import React, { useMemo, useState } from 'react';
+import {
+  SafeAreaView,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View
+} from 'react-native';
 
 const SearchScreen: React.FC = () => {
   const router = useRouter();
@@ -27,6 +24,7 @@ const SearchScreen: React.FC = () => {
   
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+  
   const {
     filteredProperties,
     activeFilters,
@@ -78,246 +76,262 @@ const SearchScreen: React.FC = () => {
 
   return (
     <ErrorBoundary>
-    <Box flex={1} bg="white" safeArea>
-      {/* Search Header */}
-      <Box px={4} py={3} bg="white" shadow={1} borderBottomWidth={1} borderBottomColor="gray.200">
-        <HStack space={3} alignItems="center">
-          <IconButton
-            icon={<Ionicons name="arrow-back" size={24} color={Colors.primary[500]} />}
+      <SafeAreaView style={styles.container}>
+        {/* Search Header */}
+        <View style={styles.header}>
+          <TouchableOpacity 
+            style={styles.backButton}
             onPress={() => router.back()}
-            variant="ghost"
-          />
+          >
+            <Ionicons name="arrow-back" size={24} color={Colors.primary[500]} />
+          </TouchableOpacity>
           
-          <Input
-            placeholder="Search properties, locations, keywords..."
-            value={searchQuery}
-            onChangeText={query => {
-              setSearchQuery(query);
-              updateFilters({ keywords: query });
-            }}
-            flex={1}
-            backgroundColor="gray.50"
-            borderRadius="lg"
-            fontSize="md"
-            height={10}
-            autoFocus={true}
-            InputLeftElement={
+          <View style={styles.searchContainer}>
+            <View style={styles.searchInputWrapper}>
               <Ionicons 
                 name="search" 
                 size={18} 
-                color={Colors.text.secondary} 
-                style={{ marginLeft: 12 }}
+                color={Colors.text.secondary}
+                style={styles.searchIcon}
               />
-            }
-            InputRightElement={
-              searchQuery.trim() ? (
-                <IconButton
-                  icon={<Ionicons name="close" size={18} color={Colors.text.secondary} />}
+              <TextInput
+                placeholder="Search properties, locations, keywords..."
+                placeholderTextColor="#666"
+                value={searchQuery}
+                onChangeText={query => {
+                  setSearchQuery(query);
+                  updateFilters({ keywords: query });
+                }}
+                style={styles.searchInput}
+                autoFocus={true}
+              />
+              {searchQuery.trim() ? (
+                <TouchableOpacity 
+                  style={styles.clearButton}
                   onPress={handleClearSearch}
-                  variant="ghost"
-                />
-              ) : undefined
-            }
-            variant="unstyled"
-            _focus={{
-              backgroundColor: 'white',
-              borderColor: Colors.primary[500],
-              borderWidth: 1,
-            }}
-          />
+                >
+                  <Ionicons name="close" size={18} color={Colors.text.secondary} />
+                </TouchableOpacity>
+              ) : null}
+            </View>
+          </View>
           
-          <IconButton
-            backgroundColor={activeFilterCount > 0 ? "primary.500" : "gray.200"}
-            borderRadius="lg"
-            icon={
+          <View style={styles.filterButtonContainer}>
+            <TouchableOpacity 
+              style={[
+                styles.filterButton,
+                { backgroundColor: activeFilterCount > 0 ? Colors.primary[500] : '#e5e7eb' }
+              ]}
+              onPress={() => setShowFilters(true)}
+            >
               <Ionicons 
                 name="options-outline" 
                 size={18} 
                 color={activeFilterCount > 0 ? "white" : Colors.text.secondary} 
               />
-            }
-            onPress={() => setShowFilters(true)}
-          >
-            {activeFilterCount > 0 && (
-              <Box
-                position="absolute"
-                top={-2}
-                right={-2}
-                bg="red.500"
-                width={4}
-                height={4}
-                borderRadius="full"
-                justifyContent="center"
-                alignItems="center"
-              >
-                <AppText variant="small" color="inverse">
-                  {activeFilterCount}
-                </AppText>
-              </Box>
-            )}
-          </IconButton>
-        </HStack>
-      </Box>
-
-      {searchQuery || activeFilterCount > 0 ? (
-        // Search Results
-        <FlashList
-          data={filteredProperties}
-          renderItem={({ item }) => (
-            <PropertyCard 
-              property={item} 
-              onPress={() => handlePropertyPress(item.id)}
-            />
-          )}
-          keyExtractor={item => item.id.toString()}
-          showsVerticalScrollIndicator={false}
-          ListHeaderComponent={
-            <VStack space={3} py={4} px={4}>
-              <AppText variant="h3" weight="bold">
-                Search Results ({filteredProperties.length})
-              </AppText>
-              {searchQuery && (
-                <AppText variant="body" color="secondary">
-                  Results for "{searchQuery}"
-                </AppText>
+              {activeFilterCount > 0 && (
+                <View style={styles.filterBadge}>
+                  <AppText variant="small" style={styles.filterBadgeText}>
+                    {activeFilterCount}
+                  </AppText>
+                </View>
               )}
-            </VStack>
-          }
-          ListEmptyComponent={
-            <Center py={8}>
-              <Ionicons name="search-outline" size={64} color={Colors.text.disabled} />
-              <AppText variant="h3" weight="semibold" style={{ marginTop: 16 }}>
-                No properties found
-              </AppText>
-              <AppText variant="body" color="secondary" style={{ marginTop: 8 }} align="center">
-                Try adjusting your search criteria or filters
-              </AppText>
-              <IconButton
-                icon={<Ionicons name="filter" size={24} color={Colors.primary[500]} />}
-                onPress={() => setShowFilters(true)}
-                variant="ghost"
-                borderWidth={1}
-                borderColor={Colors.primary[500]}
-                backgroundColor="transparent"
-                style={{ marginTop: 16 }}
-              >
-                <AppText variant="body" color="primary">
-                  Adjust Filters
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {searchQuery || activeFilterCount > 0 ? (
+          // Search Results
+          <FlashList
+            data={filteredProperties}
+            renderItem={({ item }) => (
+              <View style={styles.propertyCardWrapper}>
+                <PropertyCard 
+                  property={item} 
+                  onPress={() => handlePropertyPress(item.id)}
+                />
+              </View>
+            )}
+            keyExtractor={item => item.id.toString()}
+            showsVerticalScrollIndicator={false}
+            ListHeaderComponent={
+              <View style={styles.resultsHeader}>
+                <AppText variant="h3" fontWeight="bold">
+                  Search Results ({filteredProperties.length})
                 </AppText>
-              </IconButton>
-            </Center>
-          }
-          contentContainerStyle={{ 
-            paddingBottom: 20,
-            backgroundColor: 'gray.50'
-          }}
-        />
-      ) : (
-        // Search Suggestions
-        <ScrollView showsVerticalScrollIndicator={false}>
-          <VStack space={6} p={4}>
-            {/* Recent Searches */}
-            <VStack space={3}>
-              <AppText variant="h3" weight="bold">Recent Searches</AppText>
-              <VStack space={2}>
-                {recentSearches.map((search, index) => (
-                  <Pressable
-                    key={index}
-                    onPress={() => {
-                      setSearchQuery(search);
-                      updateFilters({ keywords: search });
-                    }}
-                    _pressed={{ backgroundColor: 'gray.50' }}
-                  >
-                    <HStack space={3} alignItems="center" py={3}>
-                      <Ionicons name="time-outline" size={20} color={Colors.text.secondary} />
-                      <Box flex={1}>
-                        <AppText variant="body">{search}</AppText>
-                      </Box>
-                      <Ionicons name="arrow-up" size={16} color={Colors.text.disabled} />
-                    </HStack>
-                  </Pressable>
-                ))}
-              </VStack>
-            </VStack>
+                {searchQuery && (
+                  <AppText variant="body" color="secondary" style={styles.resultsQuery}>
+                    Results for "{searchQuery}"
+                  </AppText>
+                )}
+              </View>
+            }
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <Ionicons name="search-outline" size={64} color={Colors.text.disabled} />
+                <AppText variant="h3" fontWeight="semibold" style={styles.emptyTitle}>
+                  No properties found
+                </AppText>
+                <AppText variant="body" color="secondary" style={styles.emptyText}>
+                  Try adjusting your search criteria or filters
+                </AppText>
+                <TouchableOpacity
+                  style={styles.emptyFilterButton}
+                  onPress={() => setShowFilters(true)}
+                >
+                  <Ionicons name="filter" size={20} color={Colors.primary[500]} />
+                  <AppText variant="body" color="primary" style={styles.emptyFilterButtonText}>
+                    Adjust Filters
+                  </AppText>
+                </TouchableOpacity>
+              </View>
+            }
+            contentContainerStyle={styles.listContent}
+            estimatedItemSize={200}
+          />
+        ) : (
+          // Search Suggestions
+          <SearchSuggestions
+            onSelectSuggestion={(suggestion: string) => {
+              setSearchQuery(suggestion);
+              updateFilters({ keywords: suggestion });
+            }}
+            onClearRecentSearches={() => {}}
+            recentSearches={recentSearches}
+            popularSearches={popularSearches}
+          />
+        )}
 
-            {/* Popular Searches */}
-            <VStack space={3}>
-              <AppText variant="h3" weight="bold">Popular Searches</AppText>
-              <HStack flexWrap="wrap" space={2}>
-                {popularSearches.map((search, index) => (
-                  <Pressable
-                    key={index}
-                    onPress={() => {
-                      setSearchQuery(search);
-                      updateFilters({ keywords: search });
-                    }}
-                  >
-                    {({ isPressed }) => (
-                      <Box 
-                        bg={isPressed ? "gray.200" : "gray.100"}
-                        px={3} 
-                        py={2} 
-                        borderRadius="lg"
-                      >
-                        <AppText variant="body">{search}</AppText>
-                      </Box>
-                    )}
-                  </Pressable>
-                ))}
-              </HStack>
-            </VStack>
-
-            {/* Search Tips */}
-            <VStack space={3} bg="primary.50" p={4} borderRadius="xl">
-              <AppText variant="h3" weight="bold" color="primary">
-                Search Tips
-              </AppText>
-              <VStack space={2}>
-                <HStack space={2} alignItems="flex-start">
-                  <Ionicons name="search" size={16} color={Colors.primary[500]} style={{ marginTop: 2 }} />
-                  <Box flex={1}>
-                    <AppText variant="body" color="secondary">
-                      Use specific Karachi and Lahore neighborhoods such as "Clifton" or "Gulberg"
-                    </AppText>
-                  </Box>
-                </HStack>
-                <HStack space={2} alignItems="flex-start">
-                  <Ionicons name="business" size={16} color={Colors.primary[500]} style={{ marginTop: 2 }} />
-                  <Box flex={1}>
-                    <AppText variant="body" color="secondary">
-                      Include property type like "3 bed", "Villa", or "Commercial"
-                    </AppText>
-                  </Box>
-                </HStack>
-                <HStack space={2} alignItems="flex-start">
-                  <Ionicons name="options" size={16} color={Colors.primary[500]} style={{ marginTop: 2 }} />
-                  <Box flex={1}>
-                    <AppText variant="body" color="secondary">
-                      Use filters for PKR price range, bedrooms, and amenities
-                    </AppText>
-                  </Box>
-                </HStack>
-              </VStack>
-            </VStack>
-          </VStack>
-        </ScrollView>
-      )}
-
-      {showFilters && (
-        <FilterModal
-          isVisible={showFilters}
-          onClose={() => setShowFilters(false)}
-          onApplyFilters={nextFilters => {
-            updateFilters(nextFilters);
-            setShowFilters(false);
-          }}
-          currentFilters={modalFilters}
-        />
-      )}
-    </Box>
+        {showFilters && (
+          <FilterModal
+            isVisible={showFilters}
+            onClose={() => setShowFilters(false)}
+            onApplyFilters={nextFilters => {
+              updateFilters(nextFilters);
+              setShowFilters(false);
+            }}
+            currentFilters={modalFilters}
+          />
+        )}
+      </SafeAreaView>
     </ErrorBoundary>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: 'white',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  backButton: {
+    padding: 4,
+    marginRight: 12,
+  },
+  searchContainer: {
+    flex: 1,
+    marginRight: 12,
+  },
+  searchInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f9fafb',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    height: 40,
+  },
+  searchIcon: {
+    marginLeft: 12,
+  },
+  searchInput: {
+    flex: 1,
+    height: 40,
+    fontSize: 16,
+    paddingHorizontal: 8,
+    color: '#333',
+  },
+  clearButton: {
+    padding: 8,
+    marginRight: 8,
+  },
+  filterButtonContainer: {
+    position: 'relative',
+  },
+  filterButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  filterBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: '#ef4444',
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  filterBadgeText: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  resultsHeader: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 8,
+  },
+  resultsQuery: {
+    marginTop: 4,
+  },
+  propertyCardWrapper: {
+    paddingHorizontal: 16,
+    marginBottom: 16,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 64,
+  },
+  emptyTitle: {
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  emptyText: {
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  emptyFilterButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.primary[500],
+    backgroundColor: 'transparent',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginTop: 16,
+  },
+  emptyFilterButtonText: {
+    marginLeft: 8,
+  },
+  listContent: {
+    paddingBottom: 20,
+  },
+});
 
 export default SearchScreen;

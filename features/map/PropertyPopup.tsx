@@ -1,6 +1,7 @@
 import { Box, Button, HStack, VStack } from 'native-base';
 import React from 'react';
 
+import Colors from '@/constants/Colors';
 import { Property } from '../../api/apiMock';
 import AppText from '../../components/base/AppText';
 
@@ -17,10 +18,10 @@ const PropertyPopup: React.FC<PropertyPopupProps> = ({ property, onClose, onNavi
         <AppText variant="h4" weight="bold" numberOfLines={1}>
           {property.title}
         </AppText>
-        <AppText variant="body" color="secondary" numberOfLines={2}>
+        <AppText variant="body" color={Colors.secondary[500]} numberOfLines={2}>
           {property.address.line1}, {property.address.city}
         </AppText>
-        <AppText variant="h3" color="primary" weight="bold">
+        <AppText variant="h3" color={Colors.primary[500]} weight="bold">
           Rs {property.price.toLocaleString()}
         </AppText>
         <HStack space={3}>
@@ -30,7 +31,7 @@ const PropertyPopup: React.FC<PropertyPopupProps> = ({ property, onClose, onNavi
           <Button
             flex={1}
             onPress={() => onNavigate?.(property)}
-            colorScheme="primary"
+            colorScheme={Colors.primary[500]}
           >
             View Details
           </Button>

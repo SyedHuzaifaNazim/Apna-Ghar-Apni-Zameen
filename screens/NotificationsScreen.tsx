@@ -110,11 +110,11 @@ const NotificationsScreen: React.FC = () => {
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'alert':
-        return <Ionicons name="alert-circle" size={20} color={Colors.error} />;
+        return <Ionicons name="alert-circle" size={20} color={Colors.error[500]} />;
       case 'update':
-        return <Ionicons name="information-circle" size={20} color={Colors.primary} />;
+        return <Ionicons name="information-circle" size={20} color={Colors.primary[500]} />;
       case 'promotional':
-        return <Ionicons name="megaphone" size={20} color={Colors.secondary} />;
+        return <Ionicons name="megaphone" size={20} color={Colors.secondary[500]} />;
       default:
         return <Ionicons name="notifications" size={20} color={Colors.text.secondary} />;
     }
@@ -129,7 +129,7 @@ const NotificationsScreen: React.FC = () => {
         <HStack alignItems="center" space={4}>
           {router.canGoBack() && (
             <IconButton
-              icon={<Ionicons name="arrow-back" size={24} color={Colors.primary} />}
+              icon={<Ionicons name="arrow-back" size={24} color={Colors.primary[500]} />}
               onPress={() => router.back()}
               variant="ghost"
             />
@@ -144,12 +144,12 @@ const NotificationsScreen: React.FC = () => {
 
           <HStack space={1}>
             <IconButton
-              icon={<Ionicons name="checkmark-done" size={20} color={Colors.primary} />}
+              icon={<Ionicons name="checkmark-done" size={20} color={Colors.primary[500]} />}
               onPress={handleMarkAllAsRead}
               variant="ghost"
             />
             <IconButton
-              icon={<Ionicons name="trash-outline" size={20} color={Colors.error} />}
+              icon={<Ionicons name="trash-outline" size={20} color={Colors.error[500]} />}
               onPress={handleClearAll}
               variant="ghost"
             />

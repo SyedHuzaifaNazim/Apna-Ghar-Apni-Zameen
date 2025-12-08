@@ -135,7 +135,7 @@ export const useFetchProperties = (options: FetchPropertiesOptions = {}): UseFet
       setLoading(false);
       setIsRefreshing(false);
     }
-  }, [enabled, page, pageSize, cacheTimeout, toast, buildCacheKey, fetchFreshData, isOnline]);
+  }, [enabled, page, pageSize, cacheTimeout, toast, buildCacheKey, isOnline]);
 
   const fetchFreshData = useCallback(async () => {
     try {

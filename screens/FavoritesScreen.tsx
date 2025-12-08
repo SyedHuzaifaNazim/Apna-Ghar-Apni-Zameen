@@ -29,7 +29,7 @@ const FavoritesScreen: React.FC = () => {
     toast.show({
       title: "Removed from favorites",
       description: `${propertyTitle} has been removed from your favorites`,
-      status: "info",
+      variant: "subtle",
       duration: 2000,
     });
   };
@@ -39,7 +39,7 @@ const FavoritesScreen: React.FC = () => {
     toast.show({
       title: "Clear All",
       description: "This would clear all your favorites",
-      status: "info",
+      variant: "subtle",
     });
   };
 
@@ -105,7 +105,7 @@ const FavoritesScreen: React.FC = () => {
           </VStack>
 
           <IconButton
-            icon={<Ionicons name="trash-outline" size={20} color={Colors.error} />}
+            icon={<Ionicons name="trash-outline" size={20} color={Colors.error[500]} />}
             onPress={handleClearAll}
             variant="ghost"
           />
@@ -161,20 +161,20 @@ const FavoritesScreen: React.FC = () => {
           <HStack space={3}>
             <AppButton 
               variant="outline" 
-              flex={1}
+              style={{ flex: 1 }}
               onPress={() => router.push('/')}
             >
               Browse More
             </AppButton>
             <AppButton 
               variant="primary" 
-              flex={1}
+              style={{ flex: 1 }}
               onPress={() => {
                 // This would share the favorites list
                 toast.show({
                   title: "Share Favorites",
                   description: "Share your favorite properties with others",
-                  status: "info",
+                  variant: "subtle",
                 });
               }}
               leftIcon={<Ionicons name="share-outline" size={16} color="white" />}

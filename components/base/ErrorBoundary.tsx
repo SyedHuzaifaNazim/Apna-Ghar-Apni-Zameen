@@ -44,7 +44,7 @@ class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <View style={styles.container}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 16 }}>
           <Box flex={1} justifyContent="center" alignItems="center" p={6}>
             <VStack space={4} alignItems="center">
               <AppText variant="h1" color="error" align="center">
@@ -83,7 +83,7 @@ class ErrorBoundary extends Component<Props, State> {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
+    backgroundColor: Colors.background.primary,
   },
 });
 

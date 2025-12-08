@@ -90,6 +90,7 @@ export const Colors = {
     secondary: '#f8faf8', // very light green tint
     tertiary: '#eef3ee',  // soft neutral
     inverse: '#1a1a1a',
+    card: '#ffffff',
   },
 
   // Text Colors
@@ -126,7 +127,18 @@ export const Colors = {
     reserved: '#fdd835',     // gold
     available: '#4caf50',
   },
-
+info: {
+  50: '#e8f5e9',
+  100: '#c8e6c9',
+  200: '#a5d6a7',
+  300: '#81c784',
+  400: '#66bb6a',
+  500: '#4caf50',
+  600: '#43a047',
+  700: '#388e3c',
+  800: '#2e7d32',
+  900: '#1b5e20',
+},
   // Social Colors
   social: {
     facebook: '#1877f2',
@@ -136,6 +148,42 @@ export const Colors = {
     twitter: '#1da1f2',
     linkedin: '#0a66c2',
   },
+rose: {
+  50: '#fff3f4',
+  100: '#ffebee',
+  200: '#ffcdd2',
+  300: '#ef9a9a',
+  400: '#e57373',
+  500: '#ef5350',
+  600: '#e53935',
+  700: '#d32f2f',
+  800: '#c62828',
+  900: '#b71c1c',
+},
+violet: {
+  50: '#f3e5f5',
+  100: '#e1bee7',
+  200: '#ce93d8',
+  300: '#ba68c8',
+  400: '#ab47bc',
+  500: '#9c27b0',
+  600: '#8e24aa',
+  700: '#7b1fa2',
+  800: '#6a1b9a',
+  900: '#4a148c',
+},
+amber: {
+  50: '#fff8e1',
+  100: '#fff5d6',
+  200: '#fff2bd',
+  300: '#ffef99',
+  400: '#ffe975',
+  500: '#ffe550',
+  600: '#ffd12d',
+  700: '#ffbd25',
+  800: '#ff9f17',
+  900: '#ff9f17',
+},
 
   // Property Type Colors
   propertyType: {

@@ -158,7 +158,7 @@ const MapScreen = () => {
             </HStack>
             
             <HStack justifyContent="space-between" alignItems="center">
-              <Text fontSize="xl" fontWeight="bold" color="primary.500">
+              <Text fontSize="xl" fontWeight="bold" color={Colors.primary[500]}>
                 {selectedProperty.price.toLocaleString()} {selectedProperty.currency}
               </Text>
               <Text fontSize="sm" color="text.secondary">

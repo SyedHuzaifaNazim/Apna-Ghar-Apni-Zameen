@@ -9,8 +9,6 @@ import { FavoritesProvider } from '@/context/FavoritesContext';
 import { NetworkProvider } from '@/context/NetworkContext';
 
 // Polyfill for NativeBase compatibility with React Native 0.81+
-// BackHandler.removeEventListener was removed, replaced with subscription-based API
-// This creates a compatibility layer for NativeBase v3.4.28
 if (BackHandler && typeof (BackHandler as any).removeEventListener === 'undefined') {
   const subscriptions = new Map<() => boolean, { remove: () => void }>();
   
@@ -25,7 +23,6 @@ if (BackHandler && typeof (BackHandler as any).removeEventListener === 'undefine
     }
   };
   
-  // Override addEventListener to track subscriptions
   const originalAddEventListener = BackHandler.addEventListener.bind(BackHandler);
   BackHandler.addEventListener = function(
     eventType: 'hardwareBackPress',
@@ -50,17 +47,55 @@ export default function RootLayout() {
         <FavoritesProvider>
           <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
             <Stack screenOptions={{ headerShown: false }}>
+              {/* Auth Screens - No tabs, full screens */}
+              <Stack.Screen 
+                name="login" 
+                options={{ 
+                  animation: 'fade',
+                  presentation: 'modal'
+                }} 
+              />
+              <Stack.Screen 
+                name="register" 
+                options={{ 
+                  animation: 'slide_from_right'
+                }} 
+              />
+              <Stack.Screen 
+                name="forgot-password" 
+                options={{ 
+                  animation: 'slide_from_right'
+                }} 
+              />
+              
+              {/* Main App with Tabs */}
               <Stack.Screen name="(tabs)" />
+              
+              {/* Modal Screens */}
               <Stack.Screen
                 name="modal"
-                options={{ presentation: 'modal', headerShown: true, title: 'Modal' }}
+                options={{ 
+                  presentation: 'modal', 
+                  headerShown: true, 
+                  title: 'Modal' 
+                }}
               />
+              
+              {/* Other Screens */}
               <Stack.Screen name="favorites" />
               <Stack.Screen name="search" />
               <Stack.Screen name="map" />
               <Stack.Screen name="profile" />
               <Stack.Screen name="notifications" />
               <Stack.Screen name="settings" />
+              
+              {/* Dynamic Listing Screen */}
+              <Stack.Screen 
+                name="listing/[id]" 
+                options={{ 
+                  animation: 'slide_from_right'
+                }} 
+              />
             </Stack>
             <StatusBar style="auto" />
           </ThemeProvider>
