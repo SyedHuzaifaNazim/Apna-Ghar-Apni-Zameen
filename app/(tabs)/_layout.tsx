@@ -1,30 +1,37 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Tabs } from 'expo-router';
-import React, { useRef } from 'react';
-import { Animated, StyleSheet, TouchableOpacity, View } from 'react-native';
+import React from 'react'; // Removed unused Animated and useRef imports
+import { StyleSheet, View } from 'react-native'; // Removed unused Animated and TouchableOpacity imports
 
 import { Colors } from '@/constants/Colors';
 
 export default function TabLayout() {
-  const scaleAnim = useRef(new Animated.Value(1)).current;
+  // Removed unused scaleAnim
 
   return (
     <Tabs
       screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: Colors.background.card,
-        tabBarInactiveTintColor: 'rgba(255, 255, 255, 0.7)',
+        headerShown: false, // Tabs content manages its own header
+        tabBarActiveTintColor: Colors.primary[500], // Use brand green for active state
+        tabBarInactiveTintColor: Colors.gray[600], // Use dark gray for inactive state (visible on white background)
         tabBarShowLabel: false,
         tabBarStyle: {
-          backgroundColor: Colors.background.card,
+          backgroundColor: Colors.background.primary, // White background for the bar
           borderTopWidth: 0,
-          height: 65,
+          height: 70, // Slightly taller for modern look
           paddingBottom: 0,
           paddingTop: 0,
           position: 'absolute',
-          elevation: 0,
-          shadowColor: 'transparent',
+          // Subtle shadow for a clean, floating effect (Modern Android/iOS style)
+          elevation: 5,
+          shadowColor: Colors.shadow.medium,
+          shadowOffset: {
+            width: 0,
+            height: -3,
+          },
+          shadowOpacity: 0.15,
+          shadowRadius: 5,
         },
         tabBarBackground: () => null,
       }}>
@@ -32,12 +39,14 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
+          title: 'Home',
           tabBarIcon: ({ focused }) => (
             <View style={styles.tabItem}>
               <Ionicons 
                 name={focused ? "home" : "home-outline"} 
                 size={26} 
-                color={focused ? Colors.primary[500] : Colors.text.secondary} 
+                // Focused icon uses Primary Green, Inactive uses dark gray
+                color={focused ? Colors.primary[500] : Colors.gray[600]} 
               />
               {focused && <View style={styles.activeDot} />}
             </View>
@@ -48,12 +57,13 @@ export default function TabLayout() {
       <Tabs.Screen
         name="explore"
         options={{
+          title: 'Explore',
           tabBarIcon: ({ focused }) => (
             <View style={styles.tabItem}>
               <Ionicons 
-                name={focused ? "compass" : "compass-outline"} 
+                name={focused ? "map" : "map-outline"} // Changed compass to map, which is more relevant for real estate exploration
                 size={26} 
-                color={focused ? Colors.primary[500] : Colors.text.secondary} 
+                color={focused ? Colors.primary[500] : Colors.gray[600]} 
               />
               {focused && <View style={styles.activeDot} />}
             </View>
@@ -64,43 +74,43 @@ export default function TabLayout() {
       <Tabs.Screen
         name="search"
         options={{
+          title: 'Search', // Still call it Search, but make it prominent
           tabBarIcon: ({ focused }) => (
-            <TouchableOpacity 
+            // The prominent, floating Search Button (Zameen style focus)
+            <View 
               style={[
-                styles.centerTab,
-                focused && styles.centerTabActive
+                styles.centerTabWrapper,
               ]}
-              activeOpacity={0.9}
             >
               <LinearGradient
-                colors={focused 
-                  ? [Colors.primary[500], Colors.primary[600]] 
-                  : [Colors.primary[400], Colors.primary[500]]
-                }
+                colors={[Colors.primary[500], Colors.primary[600]]} // Bold Green gradient
                 style={styles.centerTabGradient}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
               >
                 <Ionicons 
                   name="search" 
-                  size={24} 
-                  color={Colors.background.card} 
+                  size={26} 
+                  color={Colors.background.card} // White icon
                 />
               </LinearGradient>
-            </TouchableOpacity>
+            </View>
           ),
+          // Set to unmount on blur so it resets when the user navigates away
+          unmountOnBlur: true,
         }}
       />
       
       <Tabs.Screen
         name="favorites"
         options={{
+          title: 'Favorites',
           tabBarIcon: ({ focused }) => (
             <View style={styles.tabItem}>
               <Ionicons 
                 name={focused ? "heart" : "heart-outline"} 
                 size={26} 
-                color={focused ? Colors.primary[500] : Colors.text.secondary} 
+                color={focused ? Colors.primary[500] : Colors.gray[600]} 
               />
               {focused && <View style={styles.activeDot} />}
             </View>
@@ -111,12 +121,13 @@ export default function TabLayout() {
       <Tabs.Screen
         name="profile"
         options={{
+          title: 'Profile',
           tabBarIcon: ({ focused }) => (
             <View style={styles.tabItem}>
               <Ionicons 
                 name={focused ? "person" : "person-outline"} 
                 size={26} 
-                color={focused ? Colors.primary[500] : Colors.text.secondary} 
+                color={focused ? Colors.primary[500] : Colors.gray[600]} 
               />
               {focused && <View style={styles.activeDot} />}
             </View>
@@ -137,39 +148,41 @@ const styles = StyleSheet.create({
   activeDot: {
     position: 'absolute',
     bottom: 8,
-    width: 4,
-    height: 4,
-    borderRadius: 2,
+    width: 6, // Slightly larger dot for visibility
+    height: 6,
+    borderRadius: 3,
     backgroundColor: Colors.primary[500],
   },
-  centerTab: {
-    marginTop: -30,
+  centerTabWrapper: {
+    // Positioning the button to float above the tab bar
+    marginTop: -25, // Move button up by reducing negative margin
+    // Shadow for elevation
     shadowColor: Colors.primary[500],
     shadowOffset: {
       width: 0,
-      height: 8,
-    },
-    shadowOpacity: 0.4,
-    shadowRadius: 16,
-    elevation: 16,
-  },
-  centerTabActive: {
-    transform: [{ scale: 1.1 }],
-  },
-  centerTabGradient: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: Colors.primary[500],
-    shadowOffset: {
-      width: 0,
-      height: 4,
+      height: 6, // Higher shadow for a floating look
     },
     shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowRadius: 10,
+    elevation: 10,
+    backgroundColor: 'transparent', // Crucial for shadow effect
+  },
+  // Removed centerTabActive
+  centerTabGradient: {
+    width: 55, // Slightly smaller button
+    height: 55,
+    borderRadius: 27.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    // Inner shadow for gradient button polish
+    shadowColor: Colors.shadow.dark,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
   },
 });
 

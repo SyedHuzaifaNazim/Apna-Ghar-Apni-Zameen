@@ -1,8 +1,8 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Box, ScrollView, VStack } from 'native-base';
 import React, { useMemo } from 'react';
+import { ScrollView, StyleSheet, View } from 'react-native';
 
-import { MOCK_PROPERTIES } from '@/api/apiMock';
+import { MOCK_PROPERTIES, Property } from '@/api/apiMock';
 import AppText from '@/components/base/AppText';
 import { Colors } from '@/constants/Colors';
 import ContactAgent from '@/features/listings/ListingDetail/ContactAgent';
@@ -16,30 +16,30 @@ export default function ListingDetailScreen() {
 
   const property = useMemo(() => {
     const propertyId = parseInt(id || '0', 10);
-    return MOCK_PROPERTIES.find(p => p.id === propertyId);
+    return MOCK_PROPERTIES.find((p: Property) => p.id === propertyId);
   }, [id]);
 
   if (!property) {
     return (
-      <Box flex={1} bg="white" safeArea justifyContent="center" alignItems="center">
-        <AppText variant="h3" weight="semibold" color="error">
+      <View style={[styles.flex1, styles.centerView, { backgroundColor: 'white' }]}>
+        <AppText variant="h3" weight="semibold" style={{ color: Colors.error[500] }}>
           Property not found
         </AppText>
-        <AppText variant="body" color="secondary" mt={2}>
+        <AppText variant="body" color="secondary" style={{ marginTop: 8 }}>
           The property you're looking for doesn't exist.
         </AppText>
-      </Box>
+      </View>
     );
   }
 
   return (
-    <Box flex={1} bg={Colors.background.secondary} safeArea>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <VStack space={0}>
+    <View style={styles.flex1}>
+      <ScrollView showsVerticalScrollIndicator={false} style={{ backgroundColor: Colors.background.secondary }}>
+        <View>
           {/* Image Gallery */}
           <ImageGallery 
             images={property.images} 
-            height={300}
+            height={350}
             showThumbnails={true}
           />
 
@@ -51,9 +51,19 @@ export default function ListingDetailScreen() {
 
           {/* Similar Listings */}
           <SimilarListings currentProperty={property} count={4} />
-        </VStack>
+        </View>
       </ScrollView>
-    </Box>
+    </View>
   );
 }
 
+const styles = StyleSheet.create({
+  flex1: {
+    flex: 1,
+  },
+  centerView: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+});

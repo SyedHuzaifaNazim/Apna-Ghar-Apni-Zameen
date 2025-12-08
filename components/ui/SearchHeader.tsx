@@ -1,13 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { memo, useCallback } from 'react';
 import {
-  Image,
   Platform,
   SafeAreaView,
   StyleSheet,
-  Text // ADD THIS IMPORT
-  ,
-
+  Text,
   TextInput,
   TouchableOpacity,
   View
@@ -28,7 +25,6 @@ const SearchHeader: React.FC<SearchHeaderProps> = ({
   filterCount = 0 
 }) => {
   
-  // Optimize search handler
   const handleSearchChange = useCallback((text: string) => {
     onSearchChange(text);
   }, [onSearchChange]);
@@ -40,22 +36,13 @@ const SearchHeader: React.FC<SearchHeaderProps> = ({
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        {/* Logo */}
-        <View style={styles.logoContainer}>
-          <Image
-            source={require('../../assets/images/logo_agaz.png')}
-            style={styles.logo}
-            resizeMode="contain"
-            accessibilityLabel="Apna Ghar Logo"
-          />
-        </View>
         
-        {/* Search Input */}
+        {/* Search Input - Taking full width */}
         <View style={styles.searchContainer}>
           <Ionicons 
             name="search" 
             size={18} 
-            color={Colors.text.secondary}
+            color={Colors.gray[500]} // Neutral gray for professional look
             style={styles.searchIcon}
           />
           <TextInput
@@ -67,7 +54,6 @@ const SearchHeader: React.FC<SearchHeaderProps> = ({
             autoCapitalize="none"
             autoCorrect={false}
             returnKeyType="search"
-            clearButtonMode="while-editing"
             enablesReturnKeyAutomatically
           />
           
@@ -77,7 +63,7 @@ const SearchHeader: React.FC<SearchHeaderProps> = ({
               style={styles.clearButton}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <Ionicons name="close-circle" size={18} color={Colors.text.secondary} />
+              <Ionicons name="close-circle" size={18} color={Colors.gray[500]} />
             </TouchableOpacity>
           )}
         </View>
@@ -90,11 +76,11 @@ const SearchHeader: React.FC<SearchHeaderProps> = ({
               filterCount > 0 && styles.filterButtonActive
             ]}
             onPress={onFilterPress}
-            activeOpacity={0.7}
+            activeOpacity={0.8}
           >
             <Ionicons 
               name="options-outline" 
-              size={20} 
+              size={24} // Slightly larger icon
               color={filterCount > 0 ? "white" : Colors.primary[500]} 
             />
             
@@ -125,44 +111,37 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.border.medium,
+    borderBottomColor: Colors.border.light,
     ...Platform.select({
       ios: {
-        shadowColor: '#000',
+        shadowColor: Colors.shadow.dark,
         shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 2,
+        shadowOpacity: 0.08,
+        shadowRadius: 1,
       },
       android: {
-        elevation: 2,
+        elevation: 1,
       },
     }),
-  },
-  logoContainer: {
-    marginRight: 12,
-  },
-  logo: {
-    width: 40,
-    height: 40,
   },
   searchContainer: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.background.secondary,
-    borderRadius: 10,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: Colors.border.medium,
-    height: 42,
-    marginRight: 12,
+    borderColor: Colors.border.light,
+    height: 48,
+    marginRight: 16,
   },
   searchIcon: {
     marginLeft: 12,
   },
   input: {
     flex: 1,
-    height: 40,
-    fontSize: 15,
+    height: '100%',
+    fontSize: 16,
     fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
     paddingHorizontal: 8,
     color: Colors.text.primary,
@@ -175,20 +154,20 @@ const styles = StyleSheet.create({
   },
   filterContainer: {
     position: 'relative',
+    width: 48,
+    height: 48,
   },
   filterButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 10,
-    backgroundColor: Colors.background.secondary,
+    width: '100%',
+    height: '100%',
+    borderRadius: 8,
+    backgroundColor: Colors.primary[50],
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: Colors.primary[200],
+    borderWidth: 0,
   },
   filterButtonActive: {
     backgroundColor: Colors.primary[500],
-    borderColor: Colors.primary[500],
   },
   filterBadge: {
     position: 'absolute',
@@ -219,5 +198,4 @@ const styles = StyleSheet.create({
   },
 });
 
-// Optimize with memo to prevent unnecessary re-renders
 export default memo(SearchHeader);

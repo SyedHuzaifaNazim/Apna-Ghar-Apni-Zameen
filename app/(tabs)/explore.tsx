@@ -6,6 +6,7 @@ import { Linking, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-n
 import AppButton from '@/components/base/AppButton';
 import AppText from '@/components/base/AppText';
 import ErrorBoundary from '@/components/base/ErrorBoundary';
+import { Colors } from '@/constants/Colors';
 
 interface CollapsibleSectionProps {
   title: string;
@@ -20,15 +21,15 @@ function CollapsibleSection({ title, children }: CollapsibleSectionProps) {
       <TouchableOpacity
         style={styles.collapsibleHeader}
         onPress={() => setIsExpanded(!isExpanded)}
-        activeOpacity={0.7}
+        activeOpacity={0.8}
       >
-        <AppText variant="h3" weight="semibold">
+        <AppText weight="bold" style={styles.collapsibleTitle}>
           {title}
         </AppText>
         <Ionicons
           name={isExpanded ? 'chevron-up' : 'chevron-down'}
           size={20}
-          color="#666"
+          color={Colors.primary[500]}
         />
       </TouchableOpacity>
       {isExpanded && <View style={styles.collapsibleContent}>{children}</View>}
@@ -46,126 +47,69 @@ export default function ExploreScreen() {
   return (
     <ErrorBoundary>
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={styles.header}>
+        <View style={styles.headerBlock}>
           <Image
             source={require('@/assets/images/logo_agaz.jpg')}
             style={styles.logo}
             contentFit="contain"
           />
-          <AppText variant="h1" weight="bold" align="center" style={styles.title}>
-            About Us
+          <AppText variant="h1" weight="bold" style={styles.headerTitleMain}>
+            Apna Ghar Apni Zameen
+          </AppText>
+          <AppText variant="body" color="secondary" style={styles.headerSubtitle}>
+            The Future of Real Estate in Pakistan
           </AppText>
         </View>
 
-        {/* Intro */}
-        <View style={styles.section}>
-          <AppText variant="body" style={styles.introText}>
-            Welcome to <AppText weight="bold">Apna Ghar Apni Zameen</AppText> — your trusted
-            partner for buying, selling, and investing in real estate across Pakistan.
-          </AppText>
+        <View style={styles.contentWrapper}>
+          {/* Intro */}
+          <View style={styles.introBlock}>
+            <AppText weight="semibold" style={styles.introBlockTitle}>
+                Welcome
+            </AppText>
+            <AppText variant="body" style={styles.introTextBlock}>
+              Welcome to <AppText weight="bold" style={{ color: Colors.primary[600] }}>Apna Ghar Apni Zameen</AppText> — your trusted
+              partner for buying, selling, and investing in real estate across Pakistan. Our platform
+              is designed to bring <AppText weight="bold">transparency, security, and efficiency</AppText> to the property market.
+            </AppText>
+          </View>
+
+          {/* Section: Key Pillars (Why Choose Us) */}
+          <CollapsibleSection title="Our Key Pillars">
+            <View style={styles.listContainer}>
+                {[
+                    'Transparency: Clear and honest property details.',
+                    'Verification: Every listing is checked for authenticity.',
+                    'Technology: State-of-the-art search and map features.',
+                    'Service: Dedicated support for buyers and sellers.',
+                ].map((item, index) => (
+                    <View key={index} style={styles.listItemRow}>
+                        <Ionicons name="checkmark-circle" size={16} color={Colors.primary[500]} style={{ marginRight: 8 }} />
+                        <AppText variant="body">{item}</AppText>
+                    </View>
+                ))}
+            </View>
+          </CollapsibleSection>
+
+          {/* Section: Contact & Website */}
+          <CollapsibleSection title="Contact & Resources">
+            <AppText variant="body" color="secondary" style={styles.sectionText}>
+              For immediate support, inquiries, or media requests, please visit our official website.
+            </AppText>
+            <AppButton
+                variant="outline"
+                onPress={handleWebsitePress}
+                style={styles.websiteButton}
+                textStyle={{ color: Colors.primary[500] }}
+                leftIcon={<Ionicons name="globe-outline" size={20} color={Colors.primary[500]} />}
+            >
+              Visit Official Website
+            </AppButton>
+          </CollapsibleSection>
         </View>
-
-        {/* Section: Company Overview */}
-        <CollapsibleSection title="Who We Are">
-          <AppText variant="body" style={styles.sectionText}>
-            Apna Ghar Apni Zameen is a modern real estate platform designed to make property
-            transactions simple, transparent, and secure. We help individuals and families find
-            their dream homes, prime plots, and profitable investment opportunities.
-          </AppText>
-        </CollapsibleSection>
-
-        {/* Section: Mission */}
-        <CollapsibleSection title="Our Mission">
-          <AppText variant="body" style={styles.sectionText}>
-            Our mission is to empower people with trustworthy real estate information, verified
-            listings, and a smooth property buying or selling experience — all in one app.
-          </AppText>
-        </CollapsibleSection>
-
-        {/* Section: App Features */}
-        <CollapsibleSection title="App Features">
-          <View style={styles.listContainer}>
-            <AppText variant="body" style={styles.listItem}>
-              • Browse verified properties across all major cities
-            </AppText>
-            <AppText variant="body" style={styles.listItem}>
-              • Advanced search with filters for price, location, and type
-            </AppText>
-            <AppText variant="body" style={styles.listItem}>
-              • High-quality photos and complete property details
-            </AppText>
-            <AppText variant="body" style={styles.listItem}>
-              • Favorites system to save properties
-            </AppText>
-            <AppText variant="body" style={styles.listItem}>
-              • Direct contact with property dealers
-            </AppText>
-            <AppText variant="body" style={styles.listItem}>
-              • Personalized recommendations
-            </AppText>
-          </View>
-        </CollapsibleSection>
-
-        {/* Section: Why Choose Us */}
-        <CollapsibleSection title="Why Choose Us">
-          <View style={styles.listContainer}>
-            <AppText variant="body" style={styles.listItem}>
-              ✔ 100% verified and trusted listings
-            </AppText>
-            <AppText variant="body" style={styles.listItem}>
-              ✔ Secure communication between buyers and sellers
-            </AppText>
-            <AppText variant="body" style={styles.listItem}>
-              ✔ Real-time updates on new properties
-            </AppText>
-            <AppText variant="body" style={styles.listItem}>
-              ✔ Transparent and smooth user experience
-            </AppText>
-            <AppText variant="body" style={styles.listItem}>
-              ✔ Designed for both buyers & investors
-            </AppText>
-          </View>
-        </CollapsibleSection>
-
-        {/* Section: Services */}
-        <CollapsibleSection title="Our Services">
-          <View style={styles.listContainer}>
-            <AppText variant="body" style={styles.listItem}>
-              • Residential Properties
-            </AppText>
-            <AppText variant="body" style={styles.listItem}>
-              • Commercial Spaces
-            </AppText>
-            <AppText variant="body" style={styles.listItem}>
-              • Plots for Investment
-            </AppText>
-            <AppText variant="body" style={styles.listItem}>
-              • Rental Properties
-            </AppText>
-            <AppText variant="body" style={styles.listItem}>
-              • Real Estate Consultancy
-            </AppText>
-          </View>
-        </CollapsibleSection>
-
-        {/* Section: Contact */}
-        <CollapsibleSection title="Learn More">
-          <AppText variant="body" style={styles.sectionText}>
-            Want to explore more about us? Visit our website or contact our support team.
-          </AppText>
-          <AppButton
-            variant="outline"
-            onPress={handleWebsitePress}
-            style={styles.websiteButton}
-            leftIcon={<Ionicons name="globe-outline" size={18} color="#4A89F3" />}
-          >
-            Visit Website
-          </AppButton>
-        </CollapsibleSection>
 
         {/* Bottom spacing */}
-        <View style={styles.bottomSpacing} />
+        <View style={{ height: 80 }} />
       </ScrollView>
     </ErrorBoundary>
   );
@@ -174,62 +118,99 @@ export default function ExploreScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.background.secondary,
   },
-  header: {
+  headerBlock: {
     alignItems: 'center',
-    paddingTop: 20,
-    paddingBottom: 10,
-    paddingHorizontal: 16,
+    paddingVertical: 32,
+    backgroundColor: Colors.primary[50],
   },
   logo: {
-    width: 120,
-    height: 120,
-    marginBottom: 16,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 2,
+    borderColor: 'white',
   },
-  title: {
-    marginBottom: 8,
+  headerTitleMain: {
+    fontSize: 24,
+    color: Colors.primary[700],
+    marginTop: 16,
   },
-  section: {
-    paddingHorizontal: 16,
-    marginBottom: 16,
+  headerSubtitle: {
+    fontSize: 16,
+    marginTop: 8,
+    textAlign: 'center',
   },
-  introText: {
+  contentWrapper: {
+    padding: 16,
+    gap: 16,
+  },
+  introBlock: {
+    backgroundColor: 'white',
+    padding: 16,
+    borderRadius: 12,
+    shadowColor: Colors.shadow.medium,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: Colors.border.light,
+    gap: 8,
+  },
+  introBlockTitle: {
+    fontSize: 18,
+    color: Colors.text.primary,
+  },
+  introTextBlock: {
     lineHeight: 24,
   },
   collapsibleContainer: {
-    marginHorizontal: 16,
-    marginBottom: 12,
-    backgroundColor: '#f8f9fa',
+    marginHorizontal: 0,
+    backgroundColor: 'white',
     borderRadius: 12,
+    shadowColor: Colors.shadow.medium,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: Colors.border.light,
   },
   collapsibleHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
+    backgroundColor: Colors.background.card,
+  },
+  collapsibleTitle: {
+    fontSize: 18,
+    color: Colors.text.primary,
   },
   collapsibleContent: {
     paddingHorizontal: 16,
     paddingBottom: 16,
+    gap: 12,
   },
   sectionText: {
     lineHeight: 24,
-    color: '#333',
+    color: Colors.gray[600],
   },
   listContainer: {
-    paddingTop: 4,
+    gap: 8,
+    paddingLeft: 8,
   },
-  listItem: {
-    marginBottom: 8,
-    lineHeight: 22,
-    color: '#333',
+  listItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   websiteButton: {
     marginTop: 12,
-  },
-  bottomSpacing: {
-    height: 40,
+    borderColor: Colors.primary[500],
+    backgroundColor: 'transparent',
+    borderWidth: 2,
   },
 });

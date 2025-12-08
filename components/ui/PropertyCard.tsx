@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React from 'react';
+import React, { memo } from 'react';
 import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
-import { Property } from '../../api/apiMock';
+import { AreaUnit, Property } from '../../api/apiMock'; // Imported AreaUnit
 import { Colors } from '../../constants/Colors';
 import { useFavorites } from '../../context/FavoritesContext';
 import AppText from '../base/AppText';
@@ -29,17 +29,25 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, onPress, variant 
     });
   };
 
-  const formatPrice = (price: number) => {
+  const formatPrice = (price: number): string => {
     if (price >= 10000000) {
-      return `${(price / 1000000).toFixed(1)}M`;
+      return `Rs ${(price / 10000000).toFixed(1)} Cr`;
     } else if (price >= 100000) {
-      return `${(price / 100000).toFixed(1)}L`;
+      return `Rs ${(price / 100000).toFixed(1)} Lac`;
     }
-    return price.toLocaleString();
+    return `Rs ${price.toLocaleString()}`;
   };
 
+  const formatArea = (size: number, unit: AreaUnit): string => {
+      const unitDisplay = unit.charAt(0).toUpperCase() + unit.slice(1);
+      return `${size.toLocaleString()} ${unitDisplay}`;
+  }
+
+  const bathrooms = property.bathrooms ?? 0;
+  const bedrooms = property.bedrooms ?? 0;
+
   return (
-    <TouchableOpacity onPress={handlePress} activeOpacity={0.9}>
+    <TouchableOpacity onPress={handlePress} activeOpacity={0.8} style={styles.touchable}>
       <View style={styles.card}>
         <View style={styles.imageContainer}>
           <Image
@@ -47,75 +55,94 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, onPress, variant 
             style={styles.image}
             resizeMode="cover"
           />
+          {/* Badges - Grouped top left, Featured top right */}
           <View style={styles.badgeContainer}>
             <View style={[
               styles.badge,
-              { backgroundColor: property.listingType === 'For Sale' ? '#10b981' : '#f59e0b' }
+              { backgroundColor: property.listingType === 'For Sale' ? Colors.status.forSale : Colors.status.forRent }
             ]}>
               <AppText variant="small" style={styles.badgeText}>
                 {property.listingType}
               </AppText>
             </View>
           </View>
+          
           {property.isFeatured && (
-            <View style={[styles.badgeContainer, styles.featuredBadgeContainer]}>
+            <View style={styles.featuredBadgeContainer}>
               <View style={[styles.badge, styles.featuredBadge]}>
+                <Ionicons name="star" size={14} color="white" style={{ marginRight: 4 }} />
                 <AppText variant="small" style={styles.badgeText}>
                   Featured
                 </AppText>
               </View>
             </View>
           )}
+          
+          {/* Favorite Button */}
           {!onPress && (
             <TouchableOpacity
               style={styles.favoriteButton}
-              onPress={() => toggleFavorite(property.id)}
+              onPress={(e) => {
+                e.stopPropagation(); // Prevent card press when tapping favorite
+                toggleFavorite(property.id);
+              }}
             >
               <Ionicons 
                 name={isFavorite(property.id) ? "heart" : "heart-outline"} 
-                size={20} 
-                color={isFavorite(property.id) ? Colors.status.featured : Colors.text.primary} 
+                size={22}
+                color={isFavorite(property.id) ? Colors.error[500] : Colors.gray[700]}
               />
             </TouchableOpacity>
           )}
         </View>
         
         <View style={styles.content}>
-          <AppText variant="h4" fontWeight="bold" numberOfLines={2} style={styles.title}>
+          <AppText variant="h4" weight="semibold" numberOfLines={2} style={styles.title}>
             {property.title}
           </AppText>
           
+          {/* Price and Area */}
           <View style={styles.priceRow}>
-            <AppText variant="h3" fontWeight="bold" style={styles.price}>
-              {formatPrice(property.price)} {property.currency}
+            <AppText variant="h3" weight="bold" style={styles.price}>
+              {formatPrice(property.price)}
             </AppText>
-            <AppText variant="body" color="secondary">
-              {property.areaSize} sq ft
+            <AppText variant="body" color="secondary" style={styles.areaText}>
+              {formatArea(property.areaSize, property.areaUnit)}
             </AppText>
           </View>
           
+          {/* Bedrooms and Bathrooms */}
           <View style={styles.detailsRow}>
             <View style={styles.detailItem}>
               <Ionicons name="bed-outline" size={16} color={Colors.text.secondary} />
               <AppText variant="body" color="secondary" style={styles.detailText}>
-                {property.bedrooms} {property.bedrooms === 1 ? 'Bed' : 'Beds'}
+                {bedrooms} {bedrooms === 1 ? 'Bed' : 'Beds'}
               </AppText>
             </View>
             <View style={styles.detailItem}>
-              <Ionicons name="business-outline" size={16} color={Colors.text.secondary} />
+              <Ionicons name="water-outline" size={16} color={Colors.text.secondary} />
               <AppText variant="body" color="secondary" style={styles.detailText}>
+                {bathrooms} {bathrooms === 1 ? 'Bath' : 'Baths'}
+              </AppText>
+            </View>
+            {/* Property Category */}
+            <View style={styles.detailItem}>
+              <Ionicons name="business-outline" size={16} color={Colors.text.secondary} />
+              <AppText variant="body" color="secondary" style={styles.detailText} numberOfLines={1}>
                 {property.propertyCategory}
               </AppText>
             </View>
           </View>
           
+          {/* Location */}
           <View style={styles.locationRow}>
-            <Ionicons name="location-outline" size={14} color={Colors.text.secondary} />
+            <Ionicons name="location-outline" size={16} color={Colors.text.secondary} />
             <AppText variant="body" color="secondary" numberOfLines={1} style={styles.locationText}>
               {property.address.line1}, {property.address.city}
             </AppText>
           </View>
           
+          {/* Date Posted */}
           <AppText variant="small" color="disabled" style={styles.dateText}>
             Posted {new Date(property.datePosted).toLocaleDateString()}
           </AppText>
@@ -126,82 +153,109 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, onPress, variant 
 };
 
 const styles = StyleSheet.create({
+  touchable: {
+    marginHorizontal: 16,
+    marginTop: 8,
+  },
   card: {
     backgroundColor: 'white',
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    marginBottom: 16,
+    borderRadius: 12,
+    shadowColor: Colors.shadow.dark,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 4,
+    marginBottom: 8,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: Colors.border.light,
   },
   imageContainer: {
     position: 'relative',
   },
   image: {
     width: '100%',
-    height: 200,
+    height: 220,
   },
   badgeContainer: {
     position: 'absolute',
-    top: 8,
-    left: 8,
+    top: 10,
+    left: 10,
+    flexDirection: 'row',
   },
   featuredBadgeContainer: {
-    left: undefined,
-    right: 8,
+    position: 'absolute',
+    top: 10,
+    right: 10,
   },
   badge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   featuredBadge: {
-    backgroundColor: '#8b5cf6',
+    backgroundColor: Colors.status.featured,
   },
   badgeText: {
     color: 'white',
-    fontWeight: '600',
+    fontWeight: '700',
   },
   favoriteButton: {
     position: 'absolute',
-    bottom: 8,
-    right: 8,
-    backgroundColor: 'white',
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    top: 10,
+    right: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 5,
   },
   content: {
     padding: 16,
   },
   title: {
-    marginBottom: 8,
+    marginBottom: 4,
+    fontSize: 18,
+    color: Colors.text.primary,
   },
   priceRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
+    alignItems: 'baseline',
+    marginTop: 8,
+    marginBottom: 10,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border.light,
+    paddingTop: 10,
   },
   price: {
     color: Colors.primary[500],
+    fontSize: 24,
+  },
+  areaText: {
+    fontSize: 14,
   },
   detailsRow: {
     flexDirection: 'row',
-    marginBottom: 8,
+    marginBottom: 12,
+    flexWrap: 'wrap',
+    gap: 12,
   },
   detailItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginRight: 16,
   },
   detailText: {
     marginLeft: 4,
+    fontSize: 14,
   },
   locationRow: {
     flexDirection: 'row',
@@ -209,12 +263,14 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   locationText: {
-    marginLeft: 4,
+    marginLeft: 6,
     flex: 1,
+    fontSize: 14,
   },
   dateText: {
-    fontSize: 12,
+    fontSize: 11,
+    color: Colors.gray[400],
   },
 });
 
-export default PropertyCard;
+export default memo(PropertyCard);
