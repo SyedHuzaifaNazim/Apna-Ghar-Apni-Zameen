@@ -4,7 +4,7 @@ import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
 import { debounce } from 'lodash';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { SafeAreaView, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { ImageBackground, SafeAreaView, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 
 import { Property } from '@/api/apiMock';
 import AppText from '@/components/base/AppText';
@@ -193,41 +193,51 @@ const HomeScreen: React.FC = () => {
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           <View>
-            {/* 1. IMMERSIVE HEADER/SEARCH BLOCK (Primary Color) */}
+            {/* 1. IMMERSIVE HEADER/SEARCH BLOCK (Primary Color + Image) */}
             <SafeAreaView style={styles.immersiveHeaderSafeArea}>
-              <View style={styles.immersiveHeader}>
-                <View style={styles.headerRow}>
-                  <AppText variant="h1" weight="bold" color="white" style={styles.headerTitle}>
-                    Apna Ghar Apni Zameen
-                  </AppText>
-                  <TouchableOpacity onPress={handleFilterPress} activeOpacity={0.8}>
-                    <View style={styles.filterIconWrapper}>
-                      <Ionicons name="options-outline" size={24} color="white" />
-                      {activeFilterCount > 0 && (
-                        <View style={styles.filterBadge}>
-                          <AppText variant="small" weight="bold" color="white" style={styles.filterBadgeText}>
-                            {activeFilterCount}
-                          </AppText>
-                        </View>
-                      )}
-                    </View>
-                  </TouchableOpacity>
-                </View>
+              <ImageBackground
+                // Placeholder image for Karachi skyline/premium area
+                source={require('assets/images/background.png')}
+                style={styles.imageBackground}
+                imageStyle={styles.imageStyle}
+              >
+                {/* Image Overlay: Blends image with primary color and ensures text readability */}
+                <View style={styles.imageOverlay} />
 
-                <View style={styles.headerSearchSection}>
-                  <AppText variant="h3" color="white">
-                    Find your next dream property
-                  </AppText>
-                  {/* Search Input in White */}
-                  <CustomInput
-                    value={searchQuery}
-                    onChangeText={handleSearchChange}
-                    onClear={() => handleSearchChange('')}
-                    placeholder="Search properties, locations..."
-                    iconName="search"
-                  />
+                <View style={styles.immersiveHeader}>
+                  <View style={styles.headerRow}>
+                    <AppText variant="h1" weight="bold" color="white" style={styles.headerTitle}>
+                      Apna Ghar Apni Zameen
+                    </AppText>
+                    <TouchableOpacity onPress={handleFilterPress} activeOpacity={0.8}>
+                      <View style={styles.filterIconWrapper}>
+                        <Ionicons name="options-outline" size={24} color="white" />
+                        {activeFilterCount > 0 && (
+                          <View style={styles.filterBadge}>
+                            <AppText variant="small" weight="bold" color="white" style={styles.filterBadgeText}>
+                              {activeFilterCount}
+                            </AppText>
+                          </View>
+                        )}
+                      </View>
+                    </TouchableOpacity>
+                  </View>
+
+                  <View style={styles.headerSearchSection}>
+                    <AppText variant="h3" color="white">
+                      Find your next dream property
+                    </AppText>
+                    {/* Search Input in White */}
+                    <CustomInput
+                      value={searchQuery}
+                      onChangeText={handleSearchChange}
+                      onClear={() => handleSearchChange('')}
+                      placeholder="Search properties, locations..."
+                      iconName="search"
+                    />
+                  </View>
                 </View>
-              </View>
+              </ImageBackground>
             </SafeAreaView>
             
             {/* 2. QUICK FILTER BAR (Floating Effect) */}
@@ -381,10 +391,27 @@ const styles = StyleSheet.create({
   immersiveHeaderSafeArea: {
     backgroundColor: Colors.primary[600],
   },
+  imageBackground: {
+    width: '100%',
+    minHeight: 250, // Ensure minimum height to show image
+    backgroundColor: Colors.primary[600],
+    justifyContent: 'center',
+  },
+  imageStyle: {
+    opacity: 0.2, // Subtle image effect
+  },
+  imageOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: Colors.primary[600],
+    backgroundImage: 'assets/images/background.png',
+    opacity: 0.75, // Dark green overlay for text readability
+  },
   immersiveHeader: {
     paddingHorizontal: 16,
     paddingBottom: 32, 
     paddingTop: 48, // Generous Top Padding for Status Bar Clearance
+    position: 'relative', // Necessary for zIndex stacking with overlay
+    zIndex: 10,
   },
   headerRow: {
     flexDirection: 'row',

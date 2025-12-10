@@ -59,6 +59,7 @@ const SearchScreen: React.FC = () => {
     0
   );
 
+  // Mock data for search suggestions
   const recentSearches = [
     '3 bed flat in Clifton',
     'Commercial shop in Saddar',

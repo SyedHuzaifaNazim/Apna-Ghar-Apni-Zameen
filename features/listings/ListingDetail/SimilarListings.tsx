@@ -1,8 +1,8 @@
-// @ts-nocheck
+// features/listings/ListingDetail/SimilarListings.tsx
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { Box, HStack, Pressable, ScrollView, VStack } from 'native-base';
 import React from 'react';
+import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 import { MOCK_PROPERTIES, Property } from '../../../api/apiMock';
 import AppText from '../../../components/base/AppText';
@@ -43,7 +43,11 @@ const SimilarListings: React.FC<SimilarListingsProps> = ({
       similarity_reason: 'category_location_price',
     });
 
-    navigation.navigate('ListingDetail', { propertyId: property.id });
+    // Navigate using the Expo router structure
+    navigation.navigate('listing', { 
+      screen: '[id]', 
+      params: { id: property.id.toString() } 
+    });
   };
 
   const handleViewAll = () => {
@@ -53,8 +57,12 @@ const SimilarListings: React.FC<SimilarListingsProps> = ({
     });
 
     // Navigate to search with similar filters
-    navigation.navigate('Search', { 
-      similarTo: currentProperty.id 
+    navigation.navigate('search', { 
+      screen: 'SearchScreen', 
+      params: { 
+          keywords: currentProperty.propertyCategory,
+          city: currentProperty.address.city 
+      } 
     });
   };
 
@@ -63,81 +71,123 @@ const SimilarListings: React.FC<SimilarListingsProps> = ({
   }
 
   return (
-    <VStack space={4} bg="white" p={5} borderRadius={BorderRadius.xl}>
+    <View style={styles.container}>
       {/* Header */}
-      <HStack justifyContent="space-between" alignItems="center">
-        <VStack space={1}>
+      <View style={styles.header}>
+        <View>
           <AppText variant="h4" weight="semibold">
             Similar Properties
           </AppText>
           <AppText variant="body" color="secondary">
             Properties you might also like
           </AppText>
-        </VStack>
+        </View>
         
         {similarProperties.length > 2 && (
-          <Pressable onPress={handleViewAll}>
+          <TouchableOpacity onPress={handleViewAll}>
             <AppText variant="body" color="primary" weight="medium">
               View All
             </AppText>
-          </Pressable>
+          </TouchableOpacity>
         )}
-      </HStack>
+      </View>
 
       {/* Properties List */}
       <ScrollView 
         horizontal 
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingRight: 16 }}
+        contentContainerStyle={styles.scrollViewContent}
       >
-        <HStack space={4}>
+        <View style={styles.horizontalList}>
           {similarProperties.map(property => (
-            <Box key={property.id} width={300}>
+            <View key={property.id} style={styles.cardWrapper}>
               <PropertyCard 
                 property={property}
                 onPress={() => handlePropertyPress(property)}
               />
-            </Box>
+            </View>
           ))}
-        </HStack>
+        </View>
       </ScrollView>
 
       {/* Why Similar Section */}
-      <VStack 
-        space={3} 
-        bg={Colors.background.secondary}
-        p={4}
-        borderRadius={BorderRadius.lg}
-      >
+      <View style={styles.whySimilarSection}>
         <AppText variant="body" weight="semibold">
           Why these properties are similar:
         </AppText>
         
-        <VStack space={2}>
-          <HStack space={3} alignItems="flex-start">
-            <Ionicons name="business" size={16} color={Colors.primary[500]} style={{ marginTop: 2 }} />
-            <AppText variant="body" color="secondary" flex={1}>
+        <View style={styles.reasonList}>
+          <View style={styles.reasonItem}>
+            <Ionicons name="business" size={16} color={Colors.primary[500]} style={styles.reasonIcon} />
+            <AppText variant="body" color="secondary" style={styles.reasonText}>
               Same property type: {currentProperty.propertyCategory}
             </AppText>
-          </HStack>
+          </View>
           
-          <HStack space={3} alignItems="flex-start">
-            <Ionicons name="location" size={16} color={Colors.primary[500]} style={{ marginTop: 2 }} />
-            <AppText variant="body" color="secondary" flex={1}>
+          <View style={styles.reasonItem}>
+            <Ionicons name="location" size={16} color={Colors.primary[500]} style={styles.reasonIcon} />
+            <AppText variant="body" color="secondary" style={styles.reasonText}>
               Similar location in {currentProperty.address.city}
             </AppText>
-          </HStack>
+          </View>
           
-          <HStack space={3} alignItems="flex-start">
-            <Ionicons name="pricetag" size={16} color={Colors.primary[500]} style={{ marginTop: 2 }} />
-            <AppText variant="body" color="secondary" flex={1}>
+          <View style={styles.reasonItem}>
+            <Ionicons name="pricetag" size={16} color={Colors.primary[500]} style={styles.reasonIcon} />
+            <AppText variant="body" color="secondary" style={styles.reasonText}>
               Comparable price range
             </AppText>
-          </HStack>
-        </VStack>
-      </VStack>
-    </VStack>
+          </View>
+        </View>
+      </View>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    padding: 20,
+    backgroundColor: 'white',
+    borderRadius: BorderRadius.xl,
+    marginTop: 16,
+    marginBottom: 16, // Add some margin at bottom
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  scrollViewContent: { 
+    paddingRight: 16,
+  },
+  horizontalList: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  cardWrapper: {
+    width: 300,
+  },
+  whySimilarSection: {
+    marginTop: 16,
+    gap: 12,
+    backgroundColor: Colors.background.secondary,
+    padding: 16,
+    borderRadius: BorderRadius.lg,
+  },
+  reasonList: {
+      gap: 8,
+  },
+  reasonItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  reasonIcon: {
+      marginTop: 2,
+      marginRight: 12,
+  },
+  reasonText: {
+      flex: 1,
+  }
+});
 
 export default SimilarListings;
