@@ -19,6 +19,10 @@ import { useFetchProperties } from '@/hooks/useFetchProperties';
 import { useFilterProperties } from '@/hooks/useFilterProperties';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 
+// --- Local Image Import ---
+// Using the path specified by the user
+const BACKGROUND_IMAGE = require('@/assets/images/background1.png'); 
+
 // --- Custom Component Replacements ---
 
 const CustomFab = ({ icon, onPress }) => (
@@ -48,8 +52,9 @@ const CustomInput = ({ value, onChangeText, onClear, placeholder, iconName }) =>
                 onChangeText={onChangeText}
                 style={styles.searchInput}
                 autoCapitalize="none"
-                autoCorrect={false}
+                autoCorrect={true} // Changed from false in previous version per user input
                 returnKeyType="search"
+                onChange={onChangeText}
             />
             {value.length > 0 && (
                 <TouchableOpacity 
@@ -196,8 +201,8 @@ const HomeScreen: React.FC = () => {
             {/* 1. IMMERSIVE HEADER/SEARCH BLOCK (Primary Color + Image) */}
             <SafeAreaView style={styles.immersiveHeaderSafeArea}>
               <ImageBackground
-                // Placeholder image for Karachi skyline/premium area
-                source={require('assets/images/background.png')}
+                // --- FIX: Using local asset file ---
+                source={BACKGROUND_IMAGE}
                 style={styles.imageBackground}
                 imageStyle={styles.imageStyle}
               >
@@ -224,7 +229,7 @@ const HomeScreen: React.FC = () => {
                   </View>
 
                   <View style={styles.headerSearchSection}>
-                    <AppText variant="h3" color="white">
+                    <AppText variant="h5" color="">
                       Find your next dream property
                     </AppText>
                     {/* Search Input in White */}
@@ -287,6 +292,7 @@ const HomeScreen: React.FC = () => {
                     </AppText>
                     <CustomIconButton
                       icon={<Ionicons name="star" size={20} color={Colors.status.featured} />}
+                      onPress={handleFilterPress}
                       style={{ padding: 8 }}
                     />
                   </View>
@@ -395,16 +401,15 @@ const styles = StyleSheet.create({
     width: '100%',
     minHeight: 250, // Ensure minimum height to show image
     backgroundColor: Colors.primary[600],
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
   },
   imageStyle: {
-    opacity: 0.2, // Subtle image effect
+    opacity: 0.5, // FIX: Increased image visibility
   },
   imageOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: Colors.primary[600],
-    backgroundImage: 'assets/images/background.png',
-    opacity: 0.75, // Dark green overlay for text readability
+    backgroundColor: Colors.primary[800], // FIX: Using a darker shade of green
+    opacity: 0.65, // FIX: Reduced opacity to let the image show through more clearly
   },
   immersiveHeader: {
     paddingHorizontal: 16,
@@ -454,13 +459,13 @@ const styles = StyleSheet.create({
   searchInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'white',
+    backgroundColor: 'white', // Changed to white background
     borderRadius: 8,
     shadowColor: Colors.shadow.dark,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 6,
-    elevation: 4,
+    elevation: 0,
     height: 48,
   },
   searchInputIcon: {

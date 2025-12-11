@@ -5,7 +5,6 @@ import React, { useEffect, useRef } from 'react';
 import {
   Animated,
   Easing,
-  ScrollView,
   StyleSheet,
   TouchableOpacity,
   View
@@ -30,6 +29,7 @@ const QuickFilterBar: React.FC<QuickFilterBarProps> = ({
   const slideAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    // Entrance animation for a smooth, floating look
     Animated.timing(slideAnim, {
       toValue: 1,
       duration: 300,
@@ -72,7 +72,7 @@ const QuickFilterBar: React.FC<QuickFilterBarProps> = ({
       label: 'House',
       value: 'Residential House',
       type: 'propertyCategory',
-      icon: 'business-outline',
+      icon: 'home-outline',
       activeColor: Colors.propertyType.residential,
     },
     {
@@ -157,6 +157,10 @@ const QuickFilterBar: React.FC<QuickFilterBarProps> = ({
     });
   };
 
+  // Separate options for rendering
+  const listingTypeOptions = filterOptions.filter(f => f.type === 'listingType');
+  const propertyTypeOptions = filterOptions.filter(f => f.type === 'propertyCategory');
+
   return (
     <Animated.View style={[styles.container, animatedStyle]}>
       
@@ -184,68 +188,125 @@ const QuickFilterBar: React.FC<QuickFilterBarProps> = ({
         )}
       </View>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {filterOptions.map((filter) => {
-          const isActive = isFilterActive(filter);
-          
-          return (
-            <TouchableOpacity
-              key={filter.id}
-              style={[
-                styles.filterButton,
-                isActive && { 
-                  backgroundColor: filter.activeColor,
-                  borderColor: filter.activeColor,
-                },
-              ]}
-              onPress={() => handleFilterPress(filter)}
-              activeOpacity={0.7}
-            >
-              <Ionicons
-                name={filter.icon as any}
-                size={16}
-                color={isActive ? Colors.background.card : filter.activeColor}
-                style={styles.filterIcon}
-              />
-              <AppText
-                variant="small"
-                weight="semibold"
+      {/* Vertical Grid for Listing Type (2 columns) */}
+      <View style={styles.contentSection}>
+        <View style={styles.sectionHeader}>
+            <Ionicons name="pricetags-outline" size={20} color={Colors.text.secondary} />
+            <AppText variant="body" weight="medium" style={styles.sectionTitle}>Listing Status</AppText>
+        </View>
+        <View style={styles.grid}>
+          {listingTypeOptions.map((filter) => {
+            const isActive = isFilterActive(filter);
+            
+            return (
+              <TouchableOpacity
+                key={filter.id}
                 style={[
-                  styles.filterText,
-                  isActive && styles.filterTextActive,
+                  styles.filterButton,
+                  styles.filterButtonHalf,
+                  isActive && { 
+                    backgroundColor: filter.activeColor,
+                    borderColor: filter.activeColor,
+                    shadowColor: filter.activeColor,
+                    shadowOpacity: 0.3,
+                    shadowRadius: 5,
+                    elevation: 3,
+                  },
                 ]}
+                onPress={() => handleFilterPress(filter)}
+                activeOpacity={0.7}
               >
-                {filter.label}
-              </AppText>
-            </TouchableOpacity>
-          );
-        })}
-        
-        <View style={{ width: 16 }} />
-      </ScrollView>
+                <Ionicons
+                  name={filter.icon as any}
+                  size={20}
+                  color={isActive ? Colors.background.card : filter.activeColor}
+                  style={styles.filterIcon}
+                />
+                <AppText
+                  variant="body"
+                  weight="semibold"
+                  style={[
+                    styles.filterText,
+                    isActive ? styles.filterTextActive : { color: filter.activeColor },
+                  ]}
+                >
+                  {filter.label}
+                </AppText>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
+
+      {/* Vertical Grid for Property Type (3 columns) */}
+      <View style={styles.contentSection}>
+        <View style={styles.sectionHeader}>
+            <Ionicons name="business-outline" size={20} color={Colors.text.secondary} />
+            <AppText variant="body" weight="medium" style={styles.sectionTitle}>Property Type</AppText>
+        </View>
+        <View style={styles.grid}>
+          {propertyTypeOptions.map((filter) => {
+            const isActive = isFilterActive(filter);
+            
+            return (
+              <TouchableOpacity
+                key={filter.id}
+                style={[
+                  styles.filterButton,
+                  styles.filterButtonThird,
+                  isActive && { 
+                    backgroundColor: filter.activeColor,
+                    borderColor: filter.activeColor,
+                    shadowColor: filter.activeColor,
+                    shadowOpacity: 0.3,
+                    shadowRadius: 5,
+                    elevation: 3,
+                  },
+                ]}
+                onPress={() => handleFilterPress(filter)}
+                activeOpacity={0.7}
+              >
+                <AppText
+                  variant="small"
+                  weight="semibold"
+                  align="center"
+                  style={[
+                    styles.filterText,
+                    isActive ? styles.filterTextActive : { color: filter.activeColor },
+                  ]}
+                >
+                  {filter.label}
+                </AppText>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
+      
     </Animated.View>
   );
 };
 
 const styles = StyleSheet.create({
+  // Main Container is now a fixed box structure
   container: {
     backgroundColor: Colors.background.card,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border.light,
-    position: 'relative',
+    borderRadius: 16, // Modern rounded corners
+    padding: 16,
+    shadowColor: Colors.shadow.dark, // Subtle floating shadow
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: Colors.border.light,
   },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    marginBottom: 8,
+    marginBottom: 12,
+    paddingHorizontal: 0,
   },
   title: {
     color: Colors.text.primary,
@@ -263,23 +324,56 @@ const styles = StyleSheet.create({
     marginLeft: 4,
     textDecorationLine: 'underline',
   },
-  scrollView: {
-    flexGrow: 0,
+  
+  // Content Sections
+  contentSection: {
+    marginBottom: 16,
+    borderTopWidth: 1,
+    borderTopColor: Colors.gray[100],
+    paddingTop: 12,
   },
-  scrollContent: {
-    paddingHorizontal: 16,
-    gap: 10,
+  sectionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 10,
   },
-  filterButton: {
+  sectionTitle: {
+      marginLeft: 8,
+      color: Colors.text.primary,
+  },
+  // Grid Layout
+  grid: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 25,
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: 8, // Standard gap between items
+  },
+  // Filter Button Base Styles
+  filterButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    borderRadius: 12, // More rounded than pills
     borderWidth: 1.5,
     borderColor: Colors.gray[300],
     backgroundColor: Colors.background.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+    minHeight: 50,
   },
+  // Column sizing for Listing Type (2 columns)
+  filterButtonHalf: {
+    width: '49%', // Ensures proper spacing with justify-content: 'space-between'
+    flexDirection: 'row',
+    paddingHorizontal: 12,
+  },
+  // Column sizing for Property Type (3 columns)
+  filterButtonThird: {
+    width: '32%', // Ensures 3 items fit with gap
+    minHeight: 60, // Taller button for tap target
+    paddingVertical: 8,
+  },
+  // Active State Styles
   filterIcon: {
     marginRight: 6,
   },
