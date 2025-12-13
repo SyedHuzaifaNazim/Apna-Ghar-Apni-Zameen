@@ -1,3 +1,4 @@
+// screens/HomeScreen.tsx
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { FlashList } from '@shopify/flash-list';
@@ -6,7 +7,7 @@ import { debounce } from 'lodash';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { ImageBackground, SafeAreaView, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 
-import { Property } from '@/api/apiMock';
+import AppButton from '@/components/base/AppButton'; // Ensure AppButton is imported
 import AppText from '@/components/base/AppText';
 import LoadingSpinner from '@/components/base/LoadingSpinner';
 import OfflineBanner from '@/components/base/OfflineBanner';
@@ -18,12 +19,9 @@ import { useFavorites } from '@/context/FavoritesContext';
 import { useFetchProperties } from '@/hooks/useFetchProperties';
 import { useFilterProperties } from '@/hooks/useFilterProperties';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
+import { useDrawer } from '../app/_layout'; // Import useDrawer for sidebar access
 
-// --- Local Image Import ---
-// Using the path specified by the user
 const BACKGROUND_IMAGE = require('@/assets/images/background1.png'); 
-
-// --- Custom Component Replacements ---
 
 const CustomFab = ({ icon, onPress }) => (
     <TouchableOpacity 
@@ -52,9 +50,8 @@ const CustomInput = ({ value, onChangeText, onClear, placeholder, iconName }) =>
                 onChangeText={onChangeText}
                 style={styles.searchInput}
                 autoCapitalize="none"
-                autoCorrect={true} // Changed from false in previous version per user input
+                autoCorrect={true}
                 returnKeyType="search"
-                onChange={onChangeText}
             />
             {value.length > 0 && (
                 <TouchableOpacity 
@@ -71,6 +68,7 @@ const CustomInput = ({ value, onChangeText, onClear, placeholder, iconName }) =>
 
 const HomeScreen: React.FC = () => {
   const router = useRouter();
+  const { openDrawer } = useDrawer(); // USE DRAWER
 
   const { properties, loading, error, refetch, lastUpdated, isOfflineData } = useFetchProperties();
   const { favorites } = useFavorites();
@@ -115,6 +113,8 @@ const HomeScreen: React.FC = () => {
     }),
     [activeFilters]
   );
+
+  const allListingsCount = properties.length; // Total listings count
 
   const featuredProperties = useMemo(() => {
     return properties
@@ -185,35 +185,36 @@ const HomeScreen: React.FC = () => {
 
       {loading && !refreshing && <LoadingSpinner text="Loading properties..." />}
 
-      <FlashList<Property>
-        data={filteredProperties}
-        renderItem={({ item }) => (
-          <PropertyCard 
-            property={item} 
-            onPress={p => handlePropertyPress(p.id)} 
-          />
-        )}
-        keyExtractor={item => `property-${item.id}`}
-        estimatedItemSize={300}
+      {/* Main FlashList wrapper - now essentially a ScrollView with pull-to-refresh */}
+      <FlashList
+        data={[]} // Data set to empty array (No listings on Home Screen)
+        renderItem={() => null} // No items rendered
+        keyExtractor={item => `empty-property-${item.id}`}
+        estimatedItemSize={0}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           <View>
             {/* 1. IMMERSIVE HEADER/SEARCH BLOCK (Primary Color + Image) */}
             <SafeAreaView style={styles.immersiveHeaderSafeArea}>
               <ImageBackground
-                // --- FIX: Using local asset file ---
                 source={BACKGROUND_IMAGE}
                 style={styles.imageBackground}
                 imageStyle={styles.imageStyle}
               >
-                {/* Image Overlay: Blends image with primary color and ensures text readability */}
+                {/* Image Overlay */}
                 <View style={styles.imageOverlay} />
 
                 <View style={styles.immersiveHeader}>
                   <View style={styles.headerRow}>
+                    {/* HAMBURGER ICON */}
+                    <TouchableOpacity onPress={openDrawer} activeOpacity={0.8} style={styles.hamburgerButton}>
+                        <Ionicons name="menu" size={30} color="white" />
+                    </TouchableOpacity>
+                    
                     <AppText variant="h1" weight="bold" color="white" style={styles.headerTitle}>
                       Apna Ghar Apni Zameen
                     </AppText>
+                    
                     <TouchableOpacity onPress={handleFilterPress} activeOpacity={0.8}>
                       <View style={styles.filterIconWrapper}>
                         <Ionicons name="options-outline" size={24} color="white" />
@@ -229,7 +230,7 @@ const HomeScreen: React.FC = () => {
                   </View>
 
                   <View style={styles.headerSearchSection}>
-                    <AppText variant="h5" color="">
+                    <AppText variant="h3" color="white">
                       Find your next dream property
                     </AppText>
                     {/* Search Input in White */}
@@ -259,7 +260,7 @@ const HomeScreen: React.FC = () => {
               <View style={styles.statsRow}>
                 <View style={styles.statBox}>
                   <AppText variant="h2" weight="bold" color="primary">
-                    {properties.length}+
+                    {allListingsCount}+
                   </AppText>
                   <AppText variant="small" color="secondary" align="center">
                     Total Listings
@@ -292,7 +293,6 @@ const HomeScreen: React.FC = () => {
                     </AppText>
                     <CustomIconButton
                       icon={<Ionicons name="star" size={20} color={Colors.status.featured} />}
-                      onPress={handleFilterPress}
                       style={{ padding: 8 }}
                     />
                   </View>
@@ -314,32 +314,22 @@ const HomeScreen: React.FC = () => {
                 </View>
               )}
 
-              {/* 5. All Listings Header */}
+              {/* 5. ALL LISTINGS REDIRECT BUTTON (Replaces List) */}
               <View style={styles.allListingsHeader}>
                 <View style={styles.allListingsTitleRow}>
                   <AppText variant="h2" weight="bold">
-                    All Listings
+                    Browse All Properties
                   </AppText>
-                  <View style={styles.allListingsInfo}>
-                    <AppText variant="body" color="primary">
-                      {filteredProperties.length} Properties
-                    </AppText>
-                    {lastUpdated && (
-                      <AppText variant="small" color="secondary">
-                        {isOfflineData || isOffline ? 'Offline data' : 'Updated'} •{' '}
-                        {new Date(lastUpdated).toLocaleTimeString()}
-                      </AppText>
-                    )}
-                    {syncStatus === 'error' && (
-                      <AppText variant="small" color="error">
-                        Sync failed, tap banner to retry
-                      </AppText>
-                    )}
-                  </View>
                 </View>
-                <AppText variant="body" color="secondary">
-                  {searchQuery ? `Showing results for "${searchQuery}"` : 'Browse all properties available'}
+                <AppText variant="body" color="secondary" style={{ marginBottom: 12 }}>
+                  See all {allListingsCount} listings in the Industrial Hub.
                 </AppText>
+                <AppButton
+                    onPress={() => router.push('/industrial-hub')}
+                    leftIcon={<Ionicons name="arrow-forward" size={18} color="white" />}
+                >
+                    Go to Industrial Hub
+                </AppButton>
               </View>
             </View>
           </View>
@@ -399,33 +389,45 @@ const styles = StyleSheet.create({
   },
   imageBackground: {
     width: '100%',
-    minHeight: 250, // Ensure minimum height to show image
+    minHeight: 250, 
     backgroundColor: Colors.primary[600],
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
   },
   imageStyle: {
-    opacity: 0.5, // FIX: Increased image visibility
+    opacity: 0.5, 
   },
   imageOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: Colors.primary[800], // FIX: Using a darker shade of green
-    opacity: 0.65, // FIX: Reduced opacity to let the image show through more clearly
+    backgroundColor: Colors.primary[800], 
+    opacity: 0.65, 
   },
   immersiveHeader: {
     paddingHorizontal: 16,
     paddingBottom: 32, 
-    paddingTop: 48, // Generous Top Padding for Status Bar Clearance
-    position: 'relative', // Necessary for zIndex stacking with overlay
+    paddingTop: 48, 
+    position: 'relative', 
     zIndex: 10,
   },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 20, 
+    position: 'relative',
+  },
+  hamburgerButton: {
+    position: 'absolute',
+    left: 0,
+    top: -5, 
+    zIndex: 20,
+    padding: 5,
   },
   headerTitle: {
     fontSize: 26,
     color: 'white',
+    flex: 1,
+    textAlign: 'center',
+    marginHorizontal: 40, 
   },
   filterIconWrapper: {
     padding: 8,
@@ -433,7 +435,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
-    position: 'relative',
+    position: 'absolute',
+    right: 0,
+    top: -5,
   },
   filterBadge: {
     position: 'absolute',
@@ -459,13 +463,13 @@ const styles = StyleSheet.create({
   searchInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'white', // Changed to white background
+    backgroundColor: 'white',
     borderRadius: 8,
     shadowColor: Colors.shadow.dark,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 6,
-    elevation: 0,
+    elevation: 4,
     height: 48,
   },
   searchInputIcon: {

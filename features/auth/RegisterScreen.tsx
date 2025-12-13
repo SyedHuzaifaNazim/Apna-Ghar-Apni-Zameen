@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useRouter } from 'expo-router'; // FIX: Replaced useNavigation with useRouter
+// Removed: useNavigation and NativeStackNavigationProp imports
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
@@ -16,15 +16,6 @@ import {
   View,
 } from 'react-native';
 
-// Navigation types
-type RootStackParamList = {
-  '(tabs)': undefined;
-  login: undefined;
-  Home: undefined;
-};
-
-type RegisterScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
-
 // Mock services
 const analyticsService = {
   track: (event: string, data?: any) => console.log('Analytics:', event, data),
@@ -38,7 +29,7 @@ const storageService = {
 };
 
 const RegisterScreen: React.FC = () => {
-  const navigation = useNavigation<RegisterScreenNavigationProp>();
+  const router = useRouter(); // FIX: Initialize router
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     fullName: '',
@@ -152,11 +143,8 @@ const RegisterScreen: React.FC = () => {
         {
           text: 'Continue',
           onPress: () => {
-            // Navigate to main tabs
-            navigation.reset({
-              index: 0,
-              routes: [{ name: '(tabs)' }],
-            });
+            // FIX: Navigate to main tabs using router.replace with the path
+            router.replace('/(tabs)');
           }
         }
       ]);
@@ -197,10 +185,8 @@ const RegisterScreen: React.FC = () => {
         {
           text: 'Continue',
           onPress: () => {
-            navigation.reset({
-              index: 0,
-              routes: [{ name: '(tabs)' }],
-            });
+            // FIX: Navigate to main tabs using router.replace with the path
+            router.replace('/(tabs)');
           }
         }
       ]);
@@ -218,12 +204,14 @@ const RegisterScreen: React.FC = () => {
   };
 
   const handleSwitchToLogin = () => {
-    navigation.navigate('login');
+    // FIX: Use router.replace with the absolute path '/login'
+    router.replace('/login');
     analyticsService.track('switch_to_login');
   };
 
   const handleBackPress = () => {
-    navigation.goBack();
+    // router.back() is the Expo Router equivalent of navigation.goBack()
+    router.back(); 
     analyticsService.track('register_back_press');
   };
 
@@ -726,6 +714,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 12,
+    backgroundColor: '#EEF2FF',
     justifyContent: 'center',
     alignItems: 'center',
   },

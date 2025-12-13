@@ -331,7 +331,7 @@ const SettingsScreen: React.FC = () => {
                   Cancel
                 </AppButton>
                 <AppButton 
-                  variant="solid" 
+                  variant="ghost" 
                   style={styles.modalButtonRed}
                   onPress={confirmLogout}
                 >

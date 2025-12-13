@@ -1,8 +1,9 @@
+// screens/FavoritesScreen.tsx
 import { Ionicons } from '@expo/vector-icons';
 import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
 import { Box, Center, HStack, IconButton, useToast, VStack } from 'native-base';
-import React from 'react';
+import React, { useMemo } from 'react';
 
 import { MOCK_PROPERTIES } from '@/api/apiMock';
 import AppButton from '@/components/base/AppButton';
@@ -10,15 +11,23 @@ import AppText from '@/components/base/AppText';
 import PropertyCard from '@/components/ui/PropertyCard';
 import { Colors } from '@/constants/Colors';
 import { useFavorites } from '@/context/FavoritesContext';
+// import { useAuth } from '@/hooks/useAuth'; // Assuming you have this hook
 
 const FavoritesScreen: React.FC = () => {
   const router = useRouter();
   const toast = useToast();
   const { favorites, removeFromFavorites } = useFavorites();
+  
+  // Mock Auth State (Replace with actual useAuth hook)
+  const isAuthenticated = false; 
 
-  const favoriteProperties = MOCK_PROPERTIES.filter(property => 
-    favorites.includes(property.id)
-  );
+  const favoriteProperties = useMemo(() => {
+    if (!isAuthenticated) return [];
+    
+    return MOCK_PROPERTIES.filter(property => 
+      favorites.includes(property.id)
+    );
+  }, [favorites, isAuthenticated]);
 
   const handlePropertyPress = (propertyId: number) => {
     router.push(`/listing/${propertyId}`);
@@ -43,26 +52,71 @@ const FavoritesScreen: React.FC = () => {
     });
   };
 
-  const handleStartExploring = () => {
-    router.replace('/');
+  const handleSignIn = () => {
+    router.replace('/login');
   };
+  
+  const renderHeader = () => (
+    <Box bg="white" px={4} py={3} shadow={1} borderBottomWidth={1} borderBottomColor="gray.200">
+      <HStack alignItems="center" space={4}>
+        {router.canGoBack() && (
+          <IconButton
+            icon={<Ionicons name="arrow-back" size={24} color={Colors.primary[500]} />}
+            onPress={() => router.back()}
+            variant="ghost"
+          />
+        )}
+        
+        <VStack flex={1}>
+          <AppText variant="h2" weight="bold">Favorites</AppText>
+          {isAuthenticated && (
+            <AppText variant="body" color="secondary">
+              {favoriteProperties.length} saved properties
+            </AppText>
+          )}
+        </VStack>
+
+        {isAuthenticated && favoriteProperties.length > 0 && (
+          <IconButton
+            icon={<Ionicons name="trash-outline" size={20} color={Colors.error[500]} />}
+            onPress={handleClearAll}
+            variant="ghost"
+          />
+        )}
+      </HStack>
+    </Box>
+  );
+
+  // --- Conditional Rendering based on Auth Status ---
+  
+  if (!isAuthenticated) {
+    return (
+      <Box flex={1} bg="white" safeArea>
+        {renderHeader()}
+        <Center flex={1} px={6}>
+          <Ionicons name="lock-closed-outline" size={80} color={Colors.text.disabled} />
+          <AppText variant="h2" weight="bold" align="center" mt={6}>
+            Sign In to View Favorites
+          </AppText>
+          <AppText variant="body" color="secondary" align="center" mt={2}>
+            Your favorite properties are saved securely to your account.
+          </AppText>
+          <AppButton 
+            onPress={handleSignIn}
+            style={{ marginTop: 24 }}
+            leftIcon={<Ionicons name="log-in" size={16} color="white" />}
+          >
+            Sign In Now
+          </AppButton>
+        </Center>
+      </Box>
+    );
+  }
 
   if (favoriteProperties.length === 0) {
     return (
       <Box flex={1} bg="white" safeArea>
-        {/* Header */}
-        <HStack alignItems="center" p={4} space={4}>
-          {router.canGoBack() && (
-            <IconButton
-              icon={<Ionicons name="arrow-back" size={24} color={Colors.primary[500]} />}
-              onPress={() => router.back()}
-              variant="ghost"
-            />
-          )}
-          <AppText variant="h2" weight="bold">Favorites</AppText>
-        </HStack>
-
-        {/* Empty State */}
+        {renderHeader()}
         <Center flex={1} px={4}>
           <Ionicons name="heart-outline" size={80} color={Colors.text.disabled} />
           <AppText variant="h2" weight="bold" align="center" style={{ marginTop: 24 }}>
@@ -72,8 +126,7 @@ const FavoritesScreen: React.FC = () => {
             Start exploring properties and save your favorites to see them here
           </AppText>
           <AppButton 
-            onPress={handleStartExploring}
-            variant="primary"
+            onPress={() => router.replace('/')}
             style={{ marginTop: 24 }}
             leftIcon={<Ionicons name="search" size={16} color="white" />}
           >
@@ -86,31 +139,7 @@ const FavoritesScreen: React.FC = () => {
 
   return (
     <Box flex={1} bg="gray.50" safeArea>
-      {/* Header */}
-      <Box bg="white" px={4} py={3} shadow={1}>
-        <HStack alignItems="center" space={4}>
-          {router.canGoBack() && (
-            <IconButton
-              icon={<Ionicons name="arrow-back" size={24} color={Colors.primary[500]} />}
-              onPress={() => router.back()}
-              variant="ghost"
-            />
-          )}
-          
-          <VStack flex={1}>
-            <AppText variant="h2" weight="bold">Favorites</AppText>
-            <AppText variant="body" color="secondary">
-              {favoriteProperties.length} saved properties
-            </AppText>
-          </VStack>
-
-          <IconButton
-            icon={<Ionicons name="trash-outline" size={20} color={Colors.error[500]} />}
-            onPress={handleClearAll}
-            variant="ghost"
-          />
-        </HStack>
-      </Box>
+      {renderHeader()}
 
       {/* Favorites List */}
       <FlashList
@@ -170,7 +199,6 @@ const FavoritesScreen: React.FC = () => {
               variant="primary" 
               style={{ flex: 1 }}
               onPress={() => {
-                // This would share the favorites list
                 toast.show({
                   title: "Share Favorites",
                   description: "Share your favorite properties with others",

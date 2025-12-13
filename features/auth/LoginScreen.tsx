@@ -1,19 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  SafeAreaView,
+  ActivityIndicator, Alert, KeyboardAvoidingView, Platform, SafeAreaView,
   ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+  StyleSheet, Text, TextInput, TouchableOpacity, View
 } from 'react-native';
 
 // Navigation types
@@ -40,6 +33,7 @@ const storageService = {
 };
 
 const LoginScreen: React.FC = () => {
+  const router = useRouter();
   const navigation = useNavigation<LoginScreenNavigationProp>();
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
@@ -163,11 +157,19 @@ const LoginScreen: React.FC = () => {
   const handleSwitchToRegister = () => {
     navigation.navigate('register');
     analyticsService.track('switch_to_register');
+    router.push('/register');
   };
 
   const handleBackPress = () => {
     navigation.goBack();
     analyticsService.track('login_back_press');
+    if (router.canGoBack()) {
+            router.back();
+        } else {
+            // If there's no history (e.g., if launched directly to login), redirect to the main app (Home tabs)
+            router.replace('/(tabs)'); 
+            Alert.alert("Welcome!", "You've been redirected to the main screen.");
+        }
   };
 
   return (

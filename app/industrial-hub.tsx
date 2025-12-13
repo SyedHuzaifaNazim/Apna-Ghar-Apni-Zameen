@@ -1,5 +1,4 @@
-// app/(tabs)/explore.tsx
+// app/industrial-hub.tsx
 import IndustrialHubScreen from '@/screens/IndustrialHubScreen';
 
-// Redirect the original 'explore' tab path to the new listing hub
 export default IndustrialHubScreen;
