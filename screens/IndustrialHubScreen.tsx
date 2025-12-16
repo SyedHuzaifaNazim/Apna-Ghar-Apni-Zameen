@@ -67,6 +67,7 @@ const IndustrialHubScreen: React.FC = () => {
                         </View>
                     )}
                     keyExtractor={item => item.id.toString()}
+                    getItemType={() => 'Property'}
                     estimatedItemSize={300}
                     showsVerticalScrollIndicator={false}
                     ListHeaderComponent={
@@ -79,7 +80,7 @@ const IndustrialHubScreen: React.FC = () => {
                     ListEmptyComponent={
                         <View style={styles.emptyContainer}>
                             <Ionicons name="business-outline" size={64} color={Colors.text.disabled} />
-                            <AppText variant="h3" fontWeight="semibold" style={styles.emptyTitle}>
+                            <AppText variant="h3" weight="semibold" style={styles.emptyTitle}>
                                 No Industrial Properties Available
                             </AppText>
                         </View>

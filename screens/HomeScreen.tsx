@@ -5,9 +5,10 @@ import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
 import { debounce } from 'lodash';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { ImageBackground, SafeAreaView, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { Image, ImageBackground, SafeAreaView, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 
-import AppButton from '@/components/base/AppButton'; // Ensure AppButton is imported
+import { Property } from '@/api/apiMock';
+import AppButton from '@/components/base/AppButton';
 import AppText from '@/components/base/AppText';
 import LoadingSpinner from '@/components/base/LoadingSpinner';
 import OfflineBanner from '@/components/base/OfflineBanner';
@@ -19,11 +20,30 @@ import { useFavorites } from '@/context/FavoritesContext';
 import { useFetchProperties } from '@/hooks/useFetchProperties';
 import { useFilterProperties } from '@/hooks/useFilterProperties';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
-import { useDrawer } from '../app/_layout'; // Import useDrawer for sidebar access
+import { useDrawer } from '../app/_layout';
+
+// --- Component Types ---
+interface CustomFabProps {
+    icon: React.ReactNode;
+    onPress: () => void;
+}
+interface CustomIconButtonProps {
+    icon: React.ReactNode;
+    onPress: () => void; 
+    style?: any;
+}
+interface CustomInputProps {
+    value: string;
+    onChangeText: (text: string) => void;
+    onClear: () => void;
+    placeholder: string;
+    iconName: string;
+}
+// -----------------------
 
 const BACKGROUND_IMAGE = require('@/assets/images/background1.png'); 
 
-const CustomFab = ({ icon, onPress }) => (
+const CustomFab: React.FC<CustomFabProps> = ({ icon, onPress }) => (
     <TouchableOpacity 
         style={styles.fab}
         onPress={onPress}
@@ -33,13 +53,13 @@ const CustomFab = ({ icon, onPress }) => (
     </TouchableOpacity>
 );
 
-const CustomIconButton = ({ icon, onPress, style }) => (
+const CustomIconButton: React.FC<CustomIconButtonProps> = ({ icon, onPress, style }) => (
     <TouchableOpacity onPress={onPress} style={style} activeOpacity={0.7}>
         {icon}
     </TouchableOpacity>
 );
 
-const CustomInput = ({ value, onChangeText, onClear, placeholder, iconName }) => (
+const CustomInput: React.FC<CustomInputProps> = ({ value, onChangeText, onClear, placeholder, iconName }) => (
     <View style={styles.searchInputWrapper}>
         <View style={styles.searchInputContainer}>
             <Ionicons name={iconName} size={22} color={Colors.gray[500]} style={styles.searchInputIcon} />
@@ -48,7 +68,7 @@ const CustomInput = ({ value, onChangeText, onClear, placeholder, iconName }) =>
                 placeholderTextColor={Colors.gray[500]}
                 value={value}
                 onChangeText={onChangeText}
-                style={styles.searchInput}
+                style={styles.input}
                 autoCapitalize="none"
                 autoCorrect={true}
                 returnKeyType="search"
@@ -68,7 +88,7 @@ const CustomInput = ({ value, onChangeText, onClear, placeholder, iconName }) =>
 
 const HomeScreen: React.FC = () => {
   const router = useRouter();
-  const { openDrawer } = useDrawer(); // USE DRAWER
+  const { openDrawer } = useDrawer(); 
 
   const { properties, loading, error, refetch, lastUpdated, isOfflineData } = useFetchProperties();
   const { favorites } = useFavorites();
@@ -105,7 +125,7 @@ const HomeScreen: React.FC = () => {
     () => ({
       listingType: activeFilters.listingType || '',
       propertyCategory: activeFilters.propertyCategory || '',
-      city: activeFilters.city || '',
+      cities: activeFilters.cities || [], 
       minPrice: activeFilters.minPrice ?? 0,
       maxPrice: activeFilters.maxPrice ?? 100000000,
       bedrooms: activeFilters.bedrooms ?? 0,
@@ -114,7 +134,10 @@ const HomeScreen: React.FC = () => {
     [activeFilters]
   );
 
-  const allListingsCount = properties.length; // Total listings count
+  const allListingsCount = properties.length; 
+  
+  const showFilteredResultsList = filterCount > 0;
+  const mainListData: Property[] = showFilteredResultsList ? filteredProperties : [];
 
   const featuredProperties = useMemo(() => {
     return properties
@@ -149,7 +172,7 @@ const HomeScreen: React.FC = () => {
     router.push('/map');
   }, [router]);
 
-  const handleFilterPress = useCallback(() => {
+  const handleOpenAdvancedFilters = useCallback(() => {
     setShowFilters(true);
   }, []);
 
@@ -178,6 +201,65 @@ const HomeScreen: React.FC = () => {
       </SafeAreaView>
     );
   }
+  
+  const renderAllListingsSection = () => (
+      <View style={styles.allListingsHeader}>
+          <View style={styles.allListingsTitleRow}>
+              <AppText variant="h2" weight="bold">
+                  {showFilteredResultsList ? 'Filter Results' : 'Browse All Properties'}
+              </AppText>
+          </View>
+          
+          {showFilteredResultsList ? (
+              <AppText variant="body" color="primary" style={{ marginBottom: 12 }}>
+                  Found {filteredProperties.length} matching properties.
+              </AppText>
+          ) : (
+              <>
+                {/* Featured Properties Section (shown only when no filters are active) */}
+                {featuredProperties.length > 0 && (
+                    <View style={styles.featuredSection}>
+                        <View style={styles.featuredHeaderRow}>
+                            <AppText variant="h2" weight="bold">
+                            Featured Properties
+                            </AppText>
+                            <CustomIconButton
+                            icon={<Ionicons name="star" size={20} color={Colors.status.featured} />}
+                            style={{ padding: 8 }}
+                            onPress={() => {}} 
+                            />
+                        </View>
+                        <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={styles.featuredScrollViewContent}
+                        >
+                            {featuredProperties.map(property => (
+                            <View key={`featured-${property.id}`} style={styles.featuredCardWrapper}>
+                                <PropertyCard
+                                property={property}
+                                variant="featured"
+                                onPress={p => handlePropertyPress(p.id)}
+                                />
+                            </View>
+                            ))}
+                        </ScrollView>
+                    </View>
+                )}
+                
+                <AppText variant="body" color="secondary" style={{ marginBottom: 12, marginTop: 16 }}>
+                    See all {allListingsCount} listings in the Industrial Hub.
+                </AppText>
+                <AppButton
+                    onPress={() => router.push('/industrial-hub')}
+                    leftIcon={<Ionicons name="arrow-forward" size={18} color="white" />}
+                >
+                    Go to Industrial Hub
+                </AppButton>
+              </>
+          )}
+      </View>
+  );
 
   return (
     <View style={[styles.flex1, { backgroundColor: Colors.background.secondary }]}>
@@ -185,16 +267,21 @@ const HomeScreen: React.FC = () => {
 
       {loading && !refreshing && <LoadingSpinner text="Loading properties..." />}
 
-      {/* Main FlashList wrapper - now essentially a ScrollView with pull-to-refresh */}
-      <FlashList
-        data={[]} // Data set to empty array (No listings on Home Screen)
-        renderItem={() => null} // No items rendered
-        keyExtractor={item => `empty-property-${item.id}`}
-        estimatedItemSize={0}
+      <FlashList<Property>
+        data={mainListData}
+        renderItem={({ item }) => (
+          <View style={styles.cardWrapper}> 
+              <PropertyCard 
+                property={item} 
+                onPress={p => handlePropertyPress(p.id)} 
+              />
+          </View>
+        )}
+        keyExtractor={item => `property-${item.id}`}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           <View>
-            {/* 1. IMMERSIVE HEADER/SEARCH BLOCK (Primary Color + Image) */}
+            {/* 1. IMMERSIVE HEADER/SEARCH BLOCK */}
             <SafeAreaView style={styles.immersiveHeaderSafeArea}>
               <ImageBackground
                 source={BACKGROUND_IMAGE}
@@ -210,30 +297,38 @@ const HomeScreen: React.FC = () => {
                     <TouchableOpacity onPress={openDrawer} activeOpacity={0.8} style={styles.hamburgerButton}>
                         <Ionicons name="menu" size={30} color="white" />
                     </TouchableOpacity>
-                    
                     <AppText variant="h1" weight="bold" color="white" style={styles.headerTitle}>
-                      Apna Ghar Apni Zameen
+                    <Image
+                      source={require('@/assets/images/transparent-logo1.png')}
+                      resizeMode="contain"
+                      style={styles.logoImage}
+                    />
+                      {/* Apna Ghar Apni Zameen */}
+                      
                     </AppText>
-                    
-                    <TouchableOpacity onPress={handleFilterPress} activeOpacity={0.8}>
+                                        <TouchableOpacity onPress={handleOpenAdvancedFilters} activeOpacity={0.8}>
                       <View style={styles.filterIconWrapper}>
                         <Ionicons name="options-outline" size={24} color="white" />
-                        {activeFilterCount > 0 && (
+                        {filterCount > 0 && ( 
                           <View style={styles.filterBadge}>
                             <AppText variant="small" weight="bold" color="white" style={styles.filterBadgeText}>
-                              {activeFilterCount}
+                              {filterCount}
                             </AppText>
                           </View>
                         )}
                       </View>
+                      
                     </TouchableOpacity>
+                    
                   </View>
-
-                  <View style={styles.headerSearchSection}>
-                    <AppText variant="h3" color="white">
-                      Find your next dream property
+                  
+                    <AppText variant="h3" color='#d1cfcf'>
+                      Find your next dream property!
                     </AppText>
-                    {/* Search Input in White */}
+
+                    <AppText style={styles.spacer}></AppText>
+                  <View style={styles.headerSearchSection}>
+                    {/* Search Input (Styled round) */}
                     <CustomInput
                       value={searchQuery}
                       onChangeText={handleSearchChange}
@@ -246,17 +341,18 @@ const HomeScreen: React.FC = () => {
               </ImageBackground>
             </SafeAreaView>
             
-            {/* 2. QUICK FILTER BAR (Floating Effect) */}
+            {/* 2. QUICK FILTER BAR (Static Grid) */}
             <View style={styles.quickFilterBarWrapper}>
               <QuickFilterBar
                 activeFilters={activeFilters}
-                filterCount={activeFilterCount}
+                filterCount={filterCount}
                 updateFilters={updateFilters}
+                onOpenAdvancedFilters={handleOpenAdvancedFilters}
               />
             </View>
 
             <View style={styles.contentContainer}>
-              {/* 3. Stats Row */}
+              {/* 3. Stats Row (Always visible) */}
               <View style={styles.statsRow}>
                 <View style={styles.statBox}>
                   <AppText variant="h2" weight="bold" color="primary">
@@ -284,56 +380,23 @@ const HomeScreen: React.FC = () => {
                 </View>
               </View>
 
-              {/* 4. Featured Properties Section */}
-              {featuredProperties.length > 0 && (
-                <View style={styles.featuredSection}>
-                  <View style={styles.featuredHeaderRow}>
-                    <AppText variant="h2" weight="bold">
-                      Featured Properties
+              {/* 5. ALL LISTINGS / FILTER RESULTS HEADER */}
+              {renderAllListingsSection()}
+              
+              {/* Render an empty component if filters are active but yield no results */}
+              {showFilteredResultsList && mainListData.length === 0 && (
+                <View style={styles.emptyFilterResults}>
+                    <Ionicons name="sad-outline" size={64} color={Colors.gray[400]} />
+                    <AppText variant="h3" weight="bold" style={{ marginTop: 16 }}>No Results Found</AppText>
+                    <AppText variant="body" color="secondary" align="center" style={{ marginTop: 8, paddingHorizontal: 40 }}>
+                        Try adjusting your quick filters or use the advanced options for a wider search.
                     </AppText>
-                    <CustomIconButton
-                      icon={<Ionicons name="star" size={20} color={Colors.status.featured} />}
-                      style={{ padding: 8 }}
-                    />
-                  </View>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.featuredScrollViewContent}
-                  >
-                    {featuredProperties.map(property => (
-                      <View key={`featured-${property.id}`} style={styles.featuredCardWrapper}>
-                        <PropertyCard
-                          property={property}
-                          variant="featured"
-                          onPress={p => handlePropertyPress(p.id)}
-                        />
-                      </View>
-                    ))}
-                  </ScrollView>
                 </View>
               )}
-
-              {/* 5. ALL LISTINGS REDIRECT BUTTON (Replaces List) */}
-              <View style={styles.allListingsHeader}>
-                <View style={styles.allListingsTitleRow}>
-                  <AppText variant="h2" weight="bold">
-                    Browse All Properties
-                  </AppText>
-                </View>
-                <AppText variant="body" color="secondary" style={{ marginBottom: 12 }}>
-                  See all {allListingsCount} listings in the Industrial Hub.
-                </AppText>
-                <AppButton
-                    onPress={() => router.push('/industrial-hub')}
-                    leftIcon={<Ionicons name="arrow-forward" size={18} color="white" />}
-                >
-                    Go to Industrial Hub
-                </AppButton>
-              </View>
             </View>
           </View>
         }
+        ListFooterComponent={showFilteredResultsList && mainListData.length > 0 ? <View style={{ height: 100 }} /> : null}
         contentContainerStyle={styles.flashListContent}
         onRefresh={handleRefresh}
         refreshing={refreshing}
@@ -383,13 +446,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.primary[500],
   },
-  // --- Immersive Header Styles (NativeBase Replacements) ---
+  // --- Immersive Header Styles (UI FIX for search bar overlap) ---
   immersiveHeaderSafeArea: {
     backgroundColor: Colors.primary[600],
   },
   imageBackground: {
     width: '100%',
-    minHeight: 250, 
+    minHeight: 200, 
     backgroundColor: Colors.primary[600],
     justifyContent: 'center',
   },
@@ -403,7 +466,7 @@ const styles = StyleSheet.create({
   },
   immersiveHeader: {
     paddingHorizontal: 16,
-    paddingBottom: 32, 
+    paddingBottom: 60, // Sufficient space above search bar
     paddingTop: 48, 
     position: 'relative', 
     zIndex: 10,
@@ -456,26 +519,28 @@ const styles = StyleSheet.create({
   headerSearchSection: {
     marginTop: 16,
     marginBottom: 0,
+    color: Colors.text.primary,
   },
   searchInputWrapper: {
-    marginTop: 8,
+    marginTop: 5,
   },
   searchInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'white',
-    borderRadius: 8,
+    // FIX: Make search bar rounder and add shadow for visual impact
+    borderRadius: 999, 
     shadowColor: Colors.shadow.dark,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 4,
-    height: 48,
+    shadowOffset: { width: 0, height: 6 }, 
+    shadowOpacity: 0.3, 
+    shadowRadius: 10,
+    elevation: 8, 
+    height: 40, 
   },
   searchInputIcon: {
-    marginLeft: 12,
+    marginLeft: 16,
   },
-  searchInput: {
+  input: {
     flex: 1,
     height: '100%',
     fontSize: 16,
@@ -485,17 +550,18 @@ const styles = StyleSheet.create({
   },
   searchInputClearButton: {
     padding: 8,
-    marginRight: 8,
+    marginRight: 12,
   },
-  // --- Quick Filter Floating ---
+  // --- Quick Filter Positioning (Pulls up under search bar) ---
   quickFilterBarWrapper: {
-    marginTop: -20,
+    marginTop: -40, // Aggressively pull the filter box up over the banner
     zIndex: 1,
     paddingHorizontal: 16,
+    marginBottom: 16, 
   },
   // --- Content Styles ---
   contentContainer: {
-    paddingTop: 24,
+    paddingTop: 16, 
     backgroundColor: Colors.background.secondary,
   },
   // Stats Row
@@ -523,23 +589,24 @@ const styles = StyleSheet.create({
   featuredSection: {
     marginTop: 8,
     marginBottom: 16,
+    paddingHorizontal: 16,
   },
   featuredHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 0, 
     marginBottom: 12,
   },
   featuredScrollViewContent: {
-    paddingHorizontal: 16,
-    paddingRight: 32,
+    paddingHorizontal: 0, 
+    paddingRight: 16, 
     gap: 12,
   },
   featuredCardWrapper: {
     width: 280,
   },
-  // All Listings Header
+  // All Listings / Filter Results Header
   allListingsHeader: {
     paddingHorizontal: 16,
     marginTop: 16,
@@ -550,12 +617,19 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  allListingsInfo: {
-    alignItems: 'flex-end',
-  },
   // FlashList
   flashListContent: {
     paddingBottom: 100,
+    alignSelf: 'stretch',
+  },
+  // FIX: Wrapper style for individual list items to ensure padding
+  cardWrapper: {
+    paddingHorizontal: 16,
+    marginBottom: 16,
+  },
+  emptyFilterResults: {
+      alignItems: 'center',
+      padding: 40,
   },
   // Floating Action Button (FAB)
   fab: {
@@ -573,6 +647,16 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 5,
     elevation: 6,
+  },
+  spacer: {
+    height: 35,
+  },
+  logoImage: {
+    width: 400,
+    height: 100,
+    marginRight: 8,
+    // Ensure the image isn't hidden behind the absolute positioned hamburger
+    zIndex: 10, 
   },
 });
 

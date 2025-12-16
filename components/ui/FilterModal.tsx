@@ -1,23 +1,51 @@
 import { Ionicons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Modal, SafeAreaView, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 import AppButton from '@/components/base/AppButton';
 import AppText from '@/components/base/AppText';
 import { Colors } from '@/constants/Colors';
 import { BorderRadius } from '@/constants/Layout';
+import { FilterOptions } from '@/hooks/useFilterProperties';
 
-// Mock FilterOptions interface based on usage in HomeScreen
-interface FilterOptions {
-  listingType: string;
-  propertyCategory: string;
-  city: string;
-  minPrice: number;
-  maxPrice: number;
-  bedrooms: number; // 0, 1, 2, 3, 4, 5+
-  amenities: string[];
-}
+// --- Constants ---
+const ABSOLUTE_MIN = 100000;
+const ABSOLUTE_MAX = 100000000;
+const PRICE_STEP = 500000;
+
+const formatCurrency = (amount: number): string => {
+  if (amount >= 10000000) return `Rs ${(amount / 10000000).toFixed(1)} Cr`;
+  if (amount >= 100000) return `Rs ${(amount / 100000).toFixed(1)} Lac`;
+  return `Rs ${amount.toLocaleString()}`;
+};
+
+// --- MOCK CITY & AREA DATA ---
+const CITY_AREA_DATA: { [key: string]: string[] } = {
+    Karachi: ["DHA Karachi", "Clifton", "Gulshan-e-Iqbal", "Bahria Town Karachi", "Malir", "Federal B. Area"],
+    Lahore: ["DHA Lahore", "Bahria Town Lahore", "Gulberg", "Model Town", "Askari 11", "Raiwind Road"],
+    Islamabad: ["F-7", "E-11", "G-11", "Bahria Town Islamabad", "B-17 Multi Gardens", "Chaklala"],
+    Rawalpindi: ["Bahria Town Rawalpindi", "DHA Valley", "Adiala Road", "Askari 14", "Saddar"],
+    Faisalabad: ["Samanabad", "People's Colony", "Sargodha Road", "Jaranwala Road"],
+    Sialkot: ["Cantt", "Wazirabad Road", "Sambrial"],
+    Peshawar: ["Hayatabad", "University Town", "Warsak Road"],
+};
+const ALL_CITIES = Object.keys(CITY_AREA_DATA);
+
+// Mock data for other filters
+const BEDROOM_OPTIONS = [0, 1, 2, 3, 4, 5];
+const PROPERTY_CATEGORIES = [
+    { label: 'Apartment', value: 'Residential Flat' },
+    { label: 'House', value: 'Residential House' },
+    { label: 'Plot/Land', value: 'Industrial Plot' },
+    { label: 'Commercial', value: 'Commercial Office' },
+];
+const AMENITY_OPTIONS = [
+    { label: 'Parking', value: 'Parking' },
+    { label: 'Gym', value: 'Gym' },
+    { label: 'Security', value: 'Security' },
+    { label: 'Power Backup', value: 'Power Backup' },
+];
 
 interface FilterModalProps {
   isVisible: boolean;
@@ -26,60 +54,33 @@ interface FilterModalProps {
   currentFilters: FilterOptions;
 }
 
-// --- CONSTANTS AND MOCK DATA ---
-
-const ABSOLUTE_MIN = 100000; 
-const ABSOLUTE_MAX = 100000000; 
-const PRICE_STEP = 500000; 
-
-const BEDROOM_OPTIONS = [0, 1, 2, 3, 4, 5]; // 0=Studio/Comm, 5=5+ Beds
-
-const PROPERTY_CATEGORIES = [
-    { label: 'Apartment', value: 'Residential Flat' },
-    { label: 'House', value: 'Residential House' },
-    { label: 'Plot/Land', value: 'Industrial Plot' },
-    { label: 'Commercial', value: 'Commercial Office' },
-    { label: 'Studio', value: 'Studio' },
-    { label: 'Farm House', value: 'Farm House' },
-];
-
-const AMENITY_OPTIONS = [
-    { label: 'Parking', value: 'Parking' },
-    { label: 'Gym', value: 'Gym' },
-    { label: 'Security', value: 'Security' },
-    { label: 'Power Backup', value: 'Power Backup' },
-    { label: 'Lift', value: 'Lift' },
-    { label: 'Swimming Pool', value: 'Swimming Pool' },
-];
-
-
-const formatCurrency = (amount: number): string => {
-  if (amount >= 10000000) return `Rs ${(amount / 10000000).toFixed(1)} Cr`;
-  if (amount >= 100000) return `Rs ${(amount / 100000).toFixed(1)} Lac`;
-  return `Rs ${amount.toLocaleString()}`;
-};
-
-
 const FilterModal: React.FC<FilterModalProps> = ({ isVisible, onClose, onApplyFilters, currentFilters }) => {
-  // Local Price State
-  const [minPrice, setMinPrice] = useState(currentFilters.minPrice);
-  const [maxPrice, setMaxPrice] = useState(currentFilters.maxPrice);
+  // --- Local States ---
+  const [minPrice, setMinPrice] = useState(currentFilters.minPrice ?? ABSOLUTE_MIN);
+  const [maxPrice, setMaxPrice] = useState(currentFilters.maxPrice ?? ABSOLUTE_MAX);
+  const [selectedBedrooms, setSelectedBedrooms] = useState(currentFilters.bedrooms ?? 0);
+  const [selectedType, setSelectedType] = useState(currentFilters.propertyCategory || '');
+  const [selectedAmenities, setSelectedAmenities] = useState(currentFilters.amenities || []);
   
-  // Local Selection States
-  const [selectedBedrooms, setSelectedBedrooms] = useState(currentFilters.bedrooms);
-  const [selectedType, setSelectedType] = useState(currentFilters.propertyCategory);
-  const [selectedAmenities, setSelectedAmenities] = useState(currentFilters.amenities);
+  // ADDED: Location States
+  const [selectedCities, setSelectedCities] = useState(currentFilters.cities || []);
+  const [selectedAreas, setSelectedAreas] = useState(currentFilters.areas || []);
 
+  // Sync local state when the modal opens or parent filters change
   useEffect(() => {
     if (isVisible) {
-      const initialMin = Math.max(currentFilters.minPrice, ABSOLUTE_MIN);
-      const initialMax = Math.min(currentFilters.maxPrice, ABSOLUTE_MAX);
+      const initialMin = Math.max(currentFilters.minPrice ?? 0, ABSOLUTE_MIN);
+      const initialMax = Math.min(currentFilters.maxPrice ?? 0, ABSOLUTE_MAX);
       
       setMinPrice(initialMin);
       setMaxPrice(initialMax);
-      setSelectedBedrooms(currentFilters.bedrooms);
-      setSelectedType(currentFilters.propertyCategory);
-      setSelectedAmenities(currentFilters.amenities);
+      setSelectedBedrooms(currentFilters.bedrooms ?? 0);
+      setSelectedType(currentFilters.propertyCategory || '');
+      setSelectedAmenities(currentFilters.amenities || []);
+      
+      // Sync Location States
+      setSelectedCities(currentFilters.cities || []);
+      setSelectedAreas(currentFilters.areas || []);
     }
   }, [currentFilters, isVisible]);
   
@@ -99,8 +100,8 @@ const FilterModal: React.FC<FilterModalProps> = ({ isVisible, onClose, onApplyFi
           setMinPrice(roundedValue);
       }
   }
-  
-  // --- Selection Handlers ---
+
+  // --- Selection Handlers (Existing) ---
   const handleAmenityToggle = (amenityValue: string) => {
       setSelectedAmenities(prev => 
           prev.includes(amenityValue)
@@ -116,6 +117,45 @@ const FilterModal: React.FC<FilterModalProps> = ({ isVisible, onClose, onApplyFi
   const handleTypeSelect = (typeValue: string) => {
       setSelectedType(prev => prev === typeValue ? '' : typeValue);
   };
+  
+  // --- ADDED: Location Handlers ---
+  const handleCityToggle = (city: string) => {
+      setSelectedCities(prev => {
+          let nextCities: string[];
+          if (prev.includes(city)) {
+              nextCities = prev.filter(c => c !== city);
+          } else {
+              nextCities = [...prev, city];
+          }
+          
+          // Clear areas if a city selection changes to prevent invalid area selection
+          setSelectedAreas([]); 
+          return nextCities;
+      });
+  };
+  
+  const handleAreaToggle = (area: string) => {
+      setSelectedAreas(prev => 
+          prev.includes(area)
+              ? prev.filter(a => a !== area)
+              : [...prev, area]
+      );
+  };
+  
+  // Memoize available areas based on selected cities
+  const availableAreas = useMemo(() => {
+      if (selectedCities.length === 0) return [];
+      
+      let areas: string[] = [];
+      selectedCities.forEach(city => {
+          if (CITY_AREA_DATA[city]) {
+              areas = areas.concat(CITY_AREA_DATA[city]);
+          }
+      });
+      // Ensure only unique areas are shown (if an area name exists in multiple cities)
+      return Array.from(new Set(areas)); 
+  }, [selectedCities]);
+
 
   // --- Apply/Reset ---
   const handleApply = () => {
@@ -125,6 +165,8 @@ const FilterModal: React.FC<FilterModalProps> = ({ isVisible, onClose, onApplyFi
       bedrooms: selectedBedrooms,
       propertyCategory: selectedType,
       amenities: selectedAmenities,
+      cities: selectedCities, // Passed array of cities
+      areas: selectedAreas,   // Passed array of areas
     });
     onClose();
   };
@@ -135,17 +177,46 @@ const FilterModal: React.FC<FilterModalProps> = ({ isVisible, onClose, onApplyFi
     setSelectedBedrooms(0);
     setSelectedType('');
     setSelectedAmenities([]);
+    setSelectedCities([]);
+    setSelectedAreas([]);
     
     onApplyFilters({
       listingType: '',
       propertyCategory: '',
-      city: '',
       minPrice: ABSOLUTE_MIN,
       maxPrice: ABSOLUTE_MAX,
       bedrooms: 0,
       amenities: [],
+      cities: [],
+      areas: [],
     });
   };
+
+  const renderPillButton = (
+    label: string, 
+    value: string | number, 
+    isActive: boolean, 
+    onPress: (value: any) => void,
+    isSmall: boolean = false
+  ) => (
+      <TouchableOpacity
+          key={value}
+          style={[
+              styles.pillButton, 
+              isSmall ? styles.pillButtonSmall : styles.pillButtonRegular,
+              isActive && styles.pillButtonActive
+          ]}
+          onPress={() => onPress(value)}
+      >
+          <AppText 
+              variant="small" 
+              weight="medium" 
+              style={isActive ? styles.pillTextActive : styles.pillText}
+          >
+              {label}
+          </AppText>
+      </TouchableOpacity>
+  );
 
   return (
     <Modal
@@ -165,25 +236,62 @@ const FilterModal: React.FC<FilterModalProps> = ({ isVisible, onClose, onApplyFi
         </View>
 
         <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
-            {/* 1. Price Range Section */}
+            
+            {/* 1. Location Filters (City & Area) */}
             <View style={styles.section}>
-                <AppText variant="h3" weight="semibold">Price Range</AppText>
+                <AppText variant="h3" weight="semibold" style={styles.sectionTitleText}>Location</AppText>
+                
+                {/* City Selector */}
+                <AppText variant="body" weight="medium" style={styles.subSectionTitle}>Select City</AppText>
+                <View style={styles.selectionGrid}>
+                    {ALL_CITIES.map(city => 
+                        renderPillButton(
+                            city,
+                            city,
+                            selectedCities.includes(city),
+                            handleCityToggle
+                        )
+                    )}
+                </View>
+                
+                {/* Area Selector (Conditional) */}
+                {selectedCities.length > 0 && (
+                    <View style={styles.subSection}>
+                        <AppText variant="body" weight="medium" style={styles.subSectionTitle}>
+                            Select Area ({availableAreas.length} Areas in selected cities)
+                        </AppText>
+                        <View style={styles.selectionGrid}>
+                            {availableAreas.map(area => 
+                                renderPillButton(
+                                    area,
+                                    area,
+                                    selectedAreas.includes(area),
+                                    handleAreaToggle,
+                                    true 
+                                )
+                            )}
+                        </View>
+                        {availableAreas.length === 0 && (
+                            <AppText color="secondary" variant="small">No specific areas listed for selected cities.</AppText>
+                        )}
+                    </View>
+                )}
+            </View>
+
+            {/* 2. Price Range Section */}
+            <View style={styles.section}>
+                <AppText variant="h3" weight="semibold" style={styles.sectionTitleText}>Price Range</AppText>
                 
                 <View style={styles.priceDisplay}>
-                    <AppText variant="body" weight="medium">
-                        Min: {formatCurrency(minPrice)}
-                    </AppText>
-                    <AppText variant="body" weight="medium">
-                        Max: {formatCurrency(maxPrice)}
-                    </AppText>
+                    <AppText variant="body" weight="medium">Min: {formatCurrency(minPrice)}</AppText>
+                    <AppText variant="body" weight="medium">Max: {formatCurrency(maxPrice)}</AppText>
                 </View>
                 
                 <View style={styles.priceSliderContainer}>
-                    <AppText variant="small" color="secondary">Minimum Price</AppText>
                     <Slider
                         style={styles.slider}
                         minimumValue={ABSOLUTE_MIN}
-                        maximumValue={ABSOLUTE_MAX} 
+                        maximumValue={ABSOLUTE_MAX}
                         step={PRICE_STEP}
                         value={minPrice}
                         onValueChange={setMinPrice}
@@ -192,10 +300,6 @@ const FilterModal: React.FC<FilterModalProps> = ({ isVisible, onClose, onApplyFi
                         maximumTrackTintColor={Colors.gray[300]}
                         thumbTintColor={Colors.primary[500]}
                     />
-                </View>
-                
-                <View style={styles.priceSliderContainer}>
-                    <AppText variant="small" color="secondary">Maximum Price</AppText>
                     <Slider
                         style={styles.slider}
                         minimumValue={ABSOLUTE_MIN}
@@ -211,69 +315,47 @@ const FilterModal: React.FC<FilterModalProps> = ({ isVisible, onClose, onApplyFi
                 </View>
                 
                 <View style={styles.rangeLimitText}>
-                    <AppText variant="small" color="secondary">
-                        {formatCurrency(ABSOLUTE_MIN)}
-                    </AppText>
-                    <AppText variant="small" color="secondary">
-                        {formatCurrency(ABSOLUTE_MAX)}
-                    </AppText>
+                    <AppText variant="small" color="secondary">{formatCurrency(ABSOLUTE_MIN)}</AppText>
+                    <AppText variant="small" color="secondary">{formatCurrency(ABSOLUTE_MAX)}</AppText>
                 </View>
             </View>
 
-            {/* 2. Property Type Selection */}
+
+            {/* 3. Property Type Selection */}
             <View style={styles.section}>
-                <AppText variant="h3" weight="semibold">Property Type</AppText>
+                <AppText variant="h3" weight="semibold" style={styles.sectionTitleText}>Property Type</AppText>
                 <View style={styles.selectionGrid}>
-                    {PROPERTY_CATEGORIES.map(type => {
-                        const isActive = selectedType === type.value;
-                        return (
-                            <TouchableOpacity
-                                key={type.value}
-                                style={[styles.pillButton, isActive && styles.pillButtonActive]}
-                                onPress={() => handleTypeSelect(type.value)}
-                            >
-                                <AppText 
-                                    variant="small" 
-                                    weight="medium" 
-                                    style={isActive ? styles.pillTextActive : styles.pillText}
-                                >
-                                    {type.label}
-                                </AppText>
-                            </TouchableOpacity>
-                        );
-                    })}
+                    {PROPERTY_CATEGORIES.map(type => 
+                        renderPillButton(
+                            type.label,
+                            type.value,
+                            selectedType === type.value,
+                            handleTypeSelect
+                        )
+                    )}
                 </View>
             </View>
             
-            {/* 3. Bedrooms Selection */}
+            {/* 4. Bedrooms Selection */}
             <View style={styles.section}>
-                <AppText variant="h3" weight="semibold">Bedrooms</AppText>
+                <AppText variant="h3" weight="semibold" style={styles.sectionTitleText}>Bedrooms</AppText>
                 <View style={styles.selectionGrid}>
                     {BEDROOM_OPTIONS.map(count => {
-                        const label = count === 0 ? 'Studio/Comm' : (count === 5 ? '5+' : count.toString());
-                        const isActive = selectedBedrooms === count;
-                        return (
-                            <TouchableOpacity
-                                key={count}
-                                style={[styles.pillButton, styles.pillButtonSmall, isActive && styles.pillButtonActive]}
-                                onPress={() => handleBedroomSelect(count)}
-                            >
-                                <AppText 
-                                    variant="body" 
-                                    weight="medium" 
-                                    style={isActive ? styles.pillTextActive : styles.pillText}
-                                >
-                                    {label}
-                                </AppText>
-                            </TouchableOpacity>
+                        const label = count === 0 ? 'Any' : (count === 5 ? '5+' : count.toString());
+                        return renderPillButton(
+                            label,
+                            count,
+                            selectedBedrooms === count,
+                            handleBedroomSelect,
+                            true 
                         );
                     })}
                 </View>
             </View>
             
-            {/* 4. Amenities Selection */}
+            {/* 5. Amenities Selection */}
             <View style={styles.section}>
-                <AppText variant="h3" weight="semibold">Amenities</AppText>
+                <AppText variant="h3" weight="semibold" style={styles.sectionTitleText}>Amenities</AppText>
                 <View style={styles.selectionGridAmenities}>
                     {AMENITY_OPTIONS.map(amenity => {
                         const isActive = selectedAmenities.includes(amenity.value);
@@ -357,20 +439,29 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border.light,
   },
-  sectionText: {
-    marginTop: 8,
+  sectionTitleText: {
+    marginBottom: 12,
+  },
+  subSection: {
+      marginTop: 16,
+      paddingTop: 16,
+      borderTopWidth: 1,
+      borderTopColor: Colors.gray[100],
+  },
+  subSectionTitle: {
+      marginBottom: 10,
+      color: Colors.primary[700],
   },
   // --- Selection Styles ---
   selectionGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginTop: 12,
     gap: 8,
+    marginBottom: 8,
   },
   selectionGridAmenities: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginTop: 12,
     gap: 12,
   },
   pillButton: {
@@ -381,12 +472,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.gray[300],
   },
+  pillButtonRegular: {
+      // styles for standard pills
+  },
   pillButtonSmall: {
     paddingVertical: 8,
-    paddingHorizontal: 16,
-    minWidth: 60,
-    alignItems: 'center',
-    justifyContent: 'center',
+    paddingHorizontal: 12,
   },
   pillButtonActive: {
     backgroundColor: Colors.primary[500],
@@ -416,7 +507,7 @@ const styles = StyleSheet.create({
     color: Colors.primary[700],
     marginLeft: 8,
   },
-  // --- Price Slider Styles ---
+  // Price Slider Styles
   priceDisplay: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -437,7 +528,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 8,
   },
-  // --- Footer Styles ---
+  // Footer Styles
   footer: {
     flexDirection: 'row',
     padding: 16,

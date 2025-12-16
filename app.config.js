@@ -1,5 +1,7 @@
-{
-  "expo": {
+// app.config.js (Simplified and Cleaned Version)
+
+module.exports = {
+  expo: {
     "name": "Apna Ghar Apni Zameen",
     "slug": "apaz",
     "version": "1.0.0",
@@ -25,11 +27,13 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": true,
       "package": "com.agaz.apaz"
+      // ENSURE NO "metaData" BLOCK IS PRESENT HERE!
     },
     "web": {
       "output": "static",
       "favicon": "./assets/images/logo_agaz.png"
     },
+    // Keep your original, non-AR related plugins
     "plugins": [
       "expo-router",
       [
@@ -64,4 +68,4 @@
       "url": "https://u.expo.dev/e871bd0b-bc88-4eeb-bc30-1e24aa621ad4"
     }
   }
-}
+};

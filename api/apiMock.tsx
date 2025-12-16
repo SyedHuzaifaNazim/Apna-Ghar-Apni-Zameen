@@ -2004,7 +2004,7 @@ export const MOCK_PROPERTIES: Property[] = [
       "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800",
       "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800"
     ]
-  }
+  },
 ];
 // ---------------------------------------------------------------
 // ---------------------------------------------------------------

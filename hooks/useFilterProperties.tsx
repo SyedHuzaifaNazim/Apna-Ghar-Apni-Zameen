@@ -6,7 +6,8 @@ import { useDebounce } from './useDebounce';
 export interface FilterOptions {
   listingType?: string;
   propertyCategory?: string;
-  city?: string;
+  cities?: string[]; 
+  areas?: string[]; // ADDED: Multi-select areas
   minPrice?: number;
   maxPrice?: number;
   bedrooms?: number;
@@ -31,7 +32,8 @@ interface UseFilterPropertiesReturn {
 const defaultFilters: FilterOptions = {
   listingType: '',
   propertyCategory: '',
-  city: '',
+  cities: [],
+  areas: [], // Default to empty array
   minPrice: 0,
   maxPrice: 1000000000,
   bedrooms: 0,
@@ -67,9 +69,18 @@ export const useFilterProperties = (
         return false;
       }
 
-      // City filter
-      if (activeFilters.city && property.address.city !== activeFilters.city) {
-        return false;
+      // City filter logic (must match one of the selected cities)
+      if (activeFilters.cities && activeFilters.cities.length > 0) {
+        if (!activeFilters.cities.includes(property.address.city)) {
+          return false;
+        }
+      }
+      
+      // ADDED: Area filter logic (must match one of the selected areas)
+      if (activeFilters.areas && activeFilters.areas.length > 0) {
+        if (!activeFilters.areas.includes(property.address.area)) {
+            return false;
+        }
       }
 
       // Price range filter
@@ -85,7 +96,7 @@ export const useFilterProperties = (
         return false;
       }
 
-      // Area range filter
+      // Area range filter (using property area size, not city area name)
       if (activeFilters.areaMin && property.areaSize < activeFilters.areaMin) {
         return false;
       }
@@ -101,6 +112,7 @@ export const useFilterProperties = (
           ${property.description.toLowerCase()}
           ${property.address.line1.toLowerCase()}
           ${property.address.city.toLowerCase()}
+          ${property.address.area.toLowerCase()} // Included area in search
           ${property.propertyCategory.toLowerCase()}
         `;
         
@@ -109,10 +121,9 @@ export const useFilterProperties = (
         }
       }
 
-      // Amenities filter (simplified - in real app, property would have amenities array)
+      // Amenities filter (simplified)
       if (activeFilters.amenities && activeFilters.amenities.length > 0) {
-        // This is a simplified check - real implementation would check property.amenities
-        return true;
+        return true; 
       }
 
       return true;
@@ -144,7 +155,8 @@ export const useFilterProperties = (
 
     if (activeFilters.listingType && activeFilters.listingType !== defaultFilters.listingType) count++;
     if (activeFilters.propertyCategory && activeFilters.propertyCategory !== defaultFilters.propertyCategory) count++;
-    if (activeFilters.city && activeFilters.city !== defaultFilters.city) count++;
+    if (activeFilters.cities && activeFilters.cities.length > 0) count++;
+    if (activeFilters.areas && activeFilters.areas.length > 0) count++; // ADDED: Area count
     if (activeFilters.minPrice && activeFilters.minPrice !== defaultFilters.minPrice) count++;
     if (activeFilters.maxPrice && activeFilters.maxPrice !== defaultFilters.maxPrice) count++;
     if (activeFilters.bedrooms && activeFilters.bedrooms !== defaultFilters.bedrooms) count++;
@@ -161,8 +173,22 @@ export const useFilterProperties = (
 
   const updateFilters = useCallback((newFilters: Partial<FilterOptions>) => {
     setActiveFilters(prev => {
-      const updated = { ...prev, ...newFilters };
+      let updated = { ...prev, ...newFilters };
       
+      // Logic to clear areas if cities selection changes or is cleared
+      if (newFilters.cities !== undefined) {
+          if (newFilters.cities.length === 0) {
+              // If cities are cleared, clear areas too
+              updated.areas = [];
+          } else {
+              // If cities are added/removed, ensure existing areas are still valid (or clear them to be strict)
+              // We choose to clear them for simplicity and to force area re-selection in the modal.
+              if (prev.cities?.length !== newFilters.cities.length) {
+                  updated.areas = [];
+              }
+          }
+      }
+
       // Track filter changes
       analyticsService.track('filters_updated', {
         filter_count: Object.keys(newFilters).length,
@@ -205,7 +231,6 @@ export const useFilterProperties = (
   };
 };
 
-// Specialized hook for search with debouncing
 export const useSearchProperties = (properties: Property[], delay = 300) => {
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedQuery = useDebounce(searchQuery, delay);
