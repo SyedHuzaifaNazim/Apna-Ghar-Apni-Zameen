@@ -26,7 +26,12 @@ module.exports = {
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": true,
-      "package": "com.agaz.apaz"
+      "package": "com.agaz.apaz",
+      "permissions": [
+        "CAMERA",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ]
       // ENSURE NO "metaData" BLOCK IS PRESENT HERE!
     },
     "web": {
@@ -36,6 +41,7 @@ module.exports = {
     // Keep your original, non-AR related plugins
     "plugins": [
       "expo-router",
+      "./withAROptional",
       [
         "expo-splash-screen",
         {
