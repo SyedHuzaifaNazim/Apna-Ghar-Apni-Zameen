@@ -1,12 +1,12 @@
-// screens/IndustrialHubScreen.tsx (Main Listings Feed)
+// screens/IndustrialHubScreen.tsx
 import { Ionicons } from '@expo/vector-icons';
-import { FlashList } from '@shopify/flash-list';
+import { FlashList, ListRenderItem } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { SafeAreaView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 import { Property } from '@/api/apiMock';
-import { useDrawer } from '@/app/_layout'; // CORRECTED: Now imports via absolute alias
+import { useDrawer } from '@/app/_layout';
 import AppText from '@/components/base/AppText';
 import PropertyCard from '@/components/ui/PropertyCard';
 import { Colors } from '@/constants/Colors';
@@ -14,11 +14,10 @@ import { useFetchProperties } from '@/hooks/useFetchProperties';
 
 const IndustrialHubScreen: React.FC = () => {
     const router = useRouter();
-    // Assuming useDrawer is defined in app/_layout.tsx
     const { openDrawer } = useDrawer(); 
-    const { properties, loading, error, refetch } = useFetchProperties();
+    const { properties, loading, refetch } = useFetchProperties();
     
-    // Logic to ensure property data is loaded correctly.
+    // Logic to ensure property data is filtered correctly.
     const industrialProperties = useMemo(() => {
         return properties.filter(p => 
             p.propertyCategory.includes('Commercial') || 
@@ -32,11 +31,16 @@ const IndustrialHubScreen: React.FC = () => {
     const handlePropertyPress = (id: number) => {
         router.push(`/listing/${id}`);
     };
-    
-    // Mock refresh function for demonstration
-    const handleRefresh = () => {
-        // In a real app, you'd set refreshing state and call refetch
-    };
+
+    // 1. Explicitly typing renderItem solves most TS mismatch issues
+    const renderItem: ListRenderItem<Property> = useCallback(({ item }) => (
+        <View style={styles.cardWrapper}>
+            <PropertyCard 
+                property={item} 
+                onPress={() => handlePropertyPress(item.id)}
+            />
+        </View>
+    ), []);
 
     return (
         <SafeAreaView style={styles.flex1}>
@@ -56,20 +60,15 @@ const IndustrialHubScreen: React.FC = () => {
                     <AppText variant="body" color="secondary">Loading Industrial Listings...</AppText>
                 </View>
             ) : (
-                <FlashList<Property>
+                <FlashList
                     data={industrialProperties}
-                    renderItem={({ item }) => (
-                        <View style={styles.cardWrapper}>
-                            <PropertyCard 
-                                property={item} 
-                                onPress={() => handlePropertyPress(item.id)}
-                            />
-                        </View>
-                    )}
-                    keyExtractor={item => item.id.toString()}
-                    getItemType={() => 'Property'}
-                    estimatedItemSize={300}
+                    renderItem={renderItem}
+                    keyExtractor={(item: Property) => item.id.toString()}
+                    estimatedItemSize={300} // FlashList now recognizes this correctly
+                    getItemType={(item: Property) => 'Property'}
                     showsVerticalScrollIndicator={false}
+                    onRefresh={() => refetch()} // Wrapped in arrow function for type safety
+                    refreshing={false}
                     ListHeaderComponent={
                         <View style={styles.listHeader}>
                             <AppText variant="h3" color="secondary">
@@ -86,8 +85,6 @@ const IndustrialHubScreen: React.FC = () => {
                         </View>
                     }
                     contentContainerStyle={styles.listContent}
-                    onRefresh={refetch}
-                    refreshing={false}
                 />
             )}
         </SafeAreaView>
@@ -115,7 +112,7 @@ const styles = StyleSheet.create({
     headerTitle: {
         flex: 1,
         textAlign: 'center',
-        marginLeft: -36, // Adjust to center title
+        marginLeft: -36, 
     },
     searchButton: {
         padding: 8,

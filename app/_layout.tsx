@@ -1,10 +1,10 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { NativeBaseProvider } from 'native-base';
 import React, { createContext, useContext, useRef, useState } from 'react';
 import { Animated, BackHandler, Easing, Modal, StyleSheet, TouchableWithoutFeedback, useColorScheme, View } from 'react-native';
 import 'react-native-reanimated';
+import { SafeAreaProvider } from 'react-native-safe-area-context'; // <--- NEW IMPORT
 
 import SideDrawer from '@/components/ui/SideDrawer';
 import Colors from '@/constants/Colors';
@@ -55,6 +55,7 @@ const DrawerProvider = ({ children }: { children: React.ReactNode }) => {
     );
 };
 
+// Defined properly before usage
 const DrawerRenderer = ({ isDrawerOpen, slideAnim, closeDrawer }: { isDrawerOpen: boolean, slideAnim: Animated.Value, closeDrawer: () => void }) => {
     // Mock isAuthenticated: Replace with actual hook access (e.g., const { isAuthenticated } = useAuth();)
     const isAuthenticated = true; 
@@ -76,9 +77,9 @@ const DrawerRenderer = ({ isDrawerOpen, slideAnim, closeDrawer }: { isDrawerOpen
         }),
         // Ensure the overlay fades out quickly but the visibility stays until the animation is complete
         pointerEvents: isDrawerOpen ? 'auto' : 'none',
-    };
+    } as any;
 
-    if (!isDrawerOpen && slideAnim.__getValue() === 0) return null;
+    if (!isDrawerOpen && (slideAnim as any)._value === 0) return null;
 
     return (
         <Modal 
@@ -122,9 +123,33 @@ const drawerStyles = StyleSheet.create({
 });
 // --- END Drawer Context and Renderer ---
 
-// Define custom themes... (retained)
-const CustomDefaultTheme: typeof DefaultTheme = { /* ... */ };
-const CustomDarkTheme: typeof DarkTheme = { /* ... */ };
+// Define custom themes...
+const CustomDefaultTheme = {
+  ...DefaultTheme,
+  colors: {
+    ...DefaultTheme.colors,
+    primary: Colors.primary[500],
+    background: Colors.background.primary,
+    card: Colors.background.card,
+    text: Colors.text.primary,
+    border: Colors.border.light,
+    notification: Colors.status.featured,
+  },
+};
+
+const CustomDarkTheme = {
+  ...DarkTheme,
+  colors: {
+    ...DarkTheme.colors,
+    primary: Colors.primary[500],
+    background: '#000000',
+    card: '#1c1c1c',
+    text: '#ffffff',
+    border: '#333333',
+    notification: Colors.status.featured,
+  },
+};
+
 if (BackHandler && typeof (BackHandler as any).removeEventListener === 'undefined') { /* ... */ }
 
 export const unstable_settings = {
@@ -133,10 +158,10 @@ export const unstable_settings = {
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
-  const theme = colorScheme === 'dark' ? CustomDarkTheme : DefaultTheme;
+  const theme = colorScheme === 'dark' ? CustomDarkTheme : CustomDefaultTheme;
 
   return (
-    <NativeBaseProvider> 
+    <SafeAreaProvider> 
       <DrawerProvider>
       <NetworkProvider>
         <FavoritesProvider>
@@ -148,8 +173,6 @@ export default function RootLayout() {
                 gestureEnabled: true, 
                 headerStyle: {
                   backgroundColor: theme.colors.card,
-                  shadowColor: 'transparent', 
-                  elevation: 0,
                 },
                 headerTintColor: theme.colors.text,
                 headerTitleStyle: {
@@ -188,6 +211,6 @@ export default function RootLayout() {
         </FavoritesProvider>
       </NetworkProvider>
       </DrawerProvider>
-    </NativeBaseProvider>
+    </SafeAreaProvider>
   );
 }

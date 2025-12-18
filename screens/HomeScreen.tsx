@@ -5,7 +5,7 @@ import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
 import { debounce } from 'lodash';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { Image, ImageBackground, SafeAreaView, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { ImageBackground, SafeAreaView, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 
 import { Property } from '@/api/apiMock';
 import AppButton from '@/components/base/AppButton';
@@ -62,7 +62,7 @@ const CustomIconButton: React.FC<CustomIconButtonProps> = ({ icon, onPress, styl
 const CustomInput: React.FC<CustomInputProps> = ({ value, onChangeText, onClear, placeholder, iconName }) => (
     <View style={styles.searchInputWrapper}>
         <View style={styles.searchInputContainer}>
-            <Ionicons name={iconName} size={22} color={Colors.gray[500]} style={styles.searchInputIcon} />
+            <Ionicons  size={22} color={Colors.gray[500]} style={styles.searchInputIcon} />
             <TextInput
                 placeholder={placeholder}
                 placeholderTextColor={Colors.gray[500]}
@@ -297,16 +297,12 @@ const HomeScreen: React.FC = () => {
                     <TouchableOpacity onPress={openDrawer} activeOpacity={0.8} style={styles.hamburgerButton}>
                         <Ionicons name="menu" size={30} color="white" />
                     </TouchableOpacity>
+                    
                     <AppText variant="h1" weight="bold" color="white" style={styles.headerTitle}>
-                    <Image
-                      source={require('@/assets/images/transparent-logo1.png')}
-                      resizeMode="contain"
-                      style={styles.logoImage}
-                    />
-                      {/* Apna Ghar Apni Zameen */}
-                      
+                      Apna Ghar Apni Zameen
                     </AppText>
-                                        <TouchableOpacity onPress={handleOpenAdvancedFilters} activeOpacity={0.8}>
+                    
+                    <TouchableOpacity onPress={handleOpenAdvancedFilters} activeOpacity={0.8}>
                       <View style={styles.filterIconWrapper}>
                         <Ionicons name="options-outline" size={24} color="white" />
                         {filterCount > 0 && ( 
@@ -317,17 +313,13 @@ const HomeScreen: React.FC = () => {
                           </View>
                         )}
                       </View>
-                      
                     </TouchableOpacity>
-                    
                   </View>
-                  
-                    <AppText variant="h3" color='#d1cfcf'>
-                      Find your next dream property!
-                    </AppText>
 
-                    <AppText style={styles.spacer}></AppText>
                   <View style={styles.headerSearchSection}>
+                    <AppText variant="h3" color="white">
+                      Find your next dream property
+                    </AppText>
                     {/* Search Input (Styled round) */}
                     <CustomInput
                       value={searchQuery}
@@ -519,10 +511,9 @@ const styles = StyleSheet.create({
   headerSearchSection: {
     marginTop: 16,
     marginBottom: 0,
-    color: Colors.text.primary,
   },
   searchInputWrapper: {
-    marginTop: 5,
+    marginTop: 8,
   },
   searchInputContainer: {
     flexDirection: 'row',
@@ -535,7 +526,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3, 
     shadowRadius: 10,
     elevation: 8, 
-    height: 40, 
+    height: 52, 
   },
   searchInputIcon: {
     marginLeft: 16,
@@ -554,7 +545,7 @@ const styles = StyleSheet.create({
   },
   // --- Quick Filter Positioning (Pulls up under search bar) ---
   quickFilterBarWrapper: {
-    marginTop: -40, // Aggressively pull the filter box up over the banner
+    marginTop: -80, // Aggressively pull the filter box up over the banner
     zIndex: 1,
     paddingHorizontal: 16,
     marginBottom: 16, 
@@ -647,16 +638,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 5,
     elevation: 6,
-  },
-  spacer: {
-    height: 35,
-  },
-  logoImage: {
-    width: 400,
-    height: 100,
-    marginRight: 8,
-    // Ensure the image isn't hidden behind the absolute positioned hamburger
-    zIndex: 10, 
   },
 });
 

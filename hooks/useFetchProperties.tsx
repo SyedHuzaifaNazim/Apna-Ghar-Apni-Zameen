@@ -1,5 +1,5 @@
-import { useToast } from 'native-base';
 import { useCallback, useEffect, useState } from 'react';
+import { Alert } from 'react-native'; // Replaced useToast with Alert for stability
 import { MOCK_PROPERTIES, Property } from '../api/apiMock';
 import { analyticsService } from '../services/analyticsService';
 import { storageService } from '../services/storageService';
@@ -32,7 +32,7 @@ export const useFetchProperties = (options: FetchPropertiesOptions = {}): UseFet
     refetchOnFocus = true,
   } = options;
 
-  const toast = useToast();
+  // Removed useToast() as it causes crashes without NativeBaseProvider
   const { isOnline } = useNetworkStatus();
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
@@ -125,17 +125,14 @@ export const useFetchProperties = (options: FetchPropertiesOptions = {}): UseFet
       });
 
       if (!isLoadMore && isOnline) {
-        toast.show({
-          title: 'Error',
-          description: errorMessage,
-          duration: 3000,
-        });
+        // Replaced toast.show with Alert.alert
+        Alert.alert('Error', errorMessage);
       }
     } finally {
       setLoading(false);
       setIsRefreshing(false);
     }
-  }, [enabled, page, pageSize, cacheTimeout, toast, buildCacheKey, isOnline]);
+  }, [enabled, page, pageSize, cacheTimeout, buildCacheKey, isOnline]);
 
   const fetchFreshData = useCallback(async () => {
     try {
@@ -211,7 +208,7 @@ export const useFetchProperties = (options: FetchPropertiesOptions = {}): UseFet
 
 // Hook for fetching a single property
 export const useFetchProperty = (propertyId: number | null) => {
-  const toast = useToast();
+  // Removed useToast()
   const [property, setProperty] = useState<Property | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -270,15 +267,12 @@ export const useFetchProperty = (propertyId: number | null) => {
         property_id: propertyId,
       });
 
-      toast.show({
-        title: 'Error',
-        description: errorMessage,
-        duration: 3000,
-      });
+      // Replaced toast with Alert
+      Alert.alert('Error', errorMessage);
     } finally {
       setLoading(false);
     }
-  }, [propertyId, toast]);
+  }, [propertyId]);
 
   const fetchFreshProperty = useCallback(async (id: number) => {
     try {

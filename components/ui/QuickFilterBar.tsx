@@ -1,7 +1,7 @@
 import AppText from '@/components/base/AppText';
 import { Colors } from '@/constants/Colors';
 import { Ionicons } from '@expo/vector-icons';
-import React, { useCallback, useMemo, useRef } from 'react';
+import React, { useCallback, useMemo, useRef } from 'react'; // FIX: useRef is now correctly imported from 'react'
 import {
   Animated,
   StyleSheet,
@@ -21,13 +21,12 @@ interface QuickFilterBarProps {
   onOpenAdvancedFilters: () => void; 
 }
 
-// --- MOCK CITY DATA (Top 5 for clean 3-column wrap) ---
+// --- MOCK CITY DATA ---
 const POPULAR_CITIES = [
     { label: 'All', value: 'all', icon: 'globe-outline' },
     { label: 'Karachi', value: 'Karachi', icon: 'pin-outline' },
     { label: 'Lahore', value: 'Lahore', icon: 'pin-outline' },
     { label: 'Islamabad', value: 'Islamabad', icon: 'pin-outline' },
-    { label: 'Rawalpindi', value: 'Rawalpindi', icon: 'pin-outline' },
 ];
 
 const QuickFilterBar: React.FC<QuickFilterBarProps> = ({
@@ -160,21 +159,17 @@ const QuickFilterBar: React.FC<QuickFilterBarProps> = ({
     });
   };
 
-  // Separation of filters for rendering
+  // Separate options for clear visual layout
   const listingTypeOptions = filterOptions.filter(f => f.isPrimary);
   const propertyTypeOptions = filterOptions.filter(f => !f.isPrimary);
 
+  // Animation setup kept simple/static as per final UI request
   const slideAnim = useRef(new Animated.Value(1)).current; 
   const animatedStyle = { opacity: 1, transform: [{ translateY: 0 }] };
   
   const isCityFilterActive = currentCities.length > 0;
+  const citiesTitle = isCityFilterActive ? `${currentCities.length} Cities Selected` : 'Select City';
   
-  const advancedButtonLabel = isCityFilterActive 
-    ? `Cities (${currentCities.length} Active) & More Filters` 
-    : 'Price, Beds, Areas & More Filters';
-    
-  const advancedButtonIcon = isCityFilterActive ? 'options' : 'options-outline';
-
   return (
     <Animated.View style={[styles.container, animatedStyle]}>
       
@@ -204,7 +199,7 @@ const QuickFilterBar: React.FC<QuickFilterBarProps> = ({
 
       <View style={styles.gridContainer}>
         
-        {/* Row 1: Listing Status (Buy/Rent - 2 columns) */}
+        {/* Row 1: Listing Status (Buy/Rent) */}
         <View style={styles.gridRow}>
             {listingTypeOptions.map((filter) => {
                 const isActive = isFilterActive(filter);
@@ -242,54 +237,7 @@ const QuickFilterBar: React.FC<QuickFilterBarProps> = ({
             })}
         </View>
         
-        {/* Row 2: Conditional City Selection Grid (3 columns) */}
-        {showCityFilters && (
-            <View style={[styles.gridRow, styles.cityGridRow]}>
-                {POPULAR_CITIES.map((city) => {
-                    // All is active if no other city is selected
-                    const isAllActive = city.value === 'all' && currentCities.length === 0;
-                    // Individual city is active if its value is in the array
-                    const isIndividualActive = city.value !== 'all' && currentCities.includes(city.value);
-                    const isActive = isAllActive || isIndividualActive;
-                    
-                    const cityColor = isActive ? Colors.text.inverse : Colors.primary[700];
-
-                    return (
-                        <TouchableOpacity
-                            key={city.value}
-                            style={[
-                                styles.filterButton,
-                                styles.filterButtonThird,
-                                isActive 
-                                    ? styles.filterButtonActive 
-                                    : styles.cityButtonBase
-                            ]}
-                            onPress={() => handleFilterPress({ type: 'city', value: city.value })}
-                            activeOpacity={0.7}
-                        >
-                            <Ionicons 
-                                name={city.icon as any} 
-                                size={20} 
-                                color={cityColor}
-                                style={styles.filterIconSmall}
-                            />
-                            <AppText
-                                variant="small"
-                                weight="medium"
-                                style={[
-                                    styles.filterText,
-                                    { color: cityColor },
-                                ]}
-                            >
-                                {city.label}
-                            </AppText>
-                        </TouchableOpacity>
-                    );
-                })}
-            </View>
-        )}
-        
-        {/* Row 3 (Conditional): Property Type Grid (4 columns) */}
+        {/* Row 2: Property Type Grid */}
         <View style={styles.gridRow}>
             {propertyTypeOptions.map((filter) => {
                 const isActive = isFilterActive(filter);
@@ -300,7 +248,7 @@ const QuickFilterBar: React.FC<QuickFilterBarProps> = ({
                         key={filter.id}
                         style={[
                             styles.filterButton,
-                            styles.filterButtonQuarter, 
+                            styles.filterButtonQuarter, // Changed to 4 columns
                             isActive && styles.filterButtonActive,
                         ]}
                         onPress={() => handleFilterPress(filter)}
@@ -327,19 +275,14 @@ const QuickFilterBar: React.FC<QuickFilterBarProps> = ({
             })}
         </View>
         
-        {/* Row 4: Advanced/Area Filter Button (Full Width, opens modal) */}
+        {/* Row 3: Advanced/City Filter Button (Full Width) */}
         <TouchableOpacity
-            style={[
-                styles.advancedButton, 
-                isCityFilterActive 
-                    ? { backgroundColor: Colors.primary[700], borderColor: Colors.primary[700] }
-                    : styles.advancedButtonBase
-            ]}
+            style={[styles.advancedButton, isCityFilterActive && styles.filterButtonActive]}
             onPress={onOpenAdvancedFilters}
             activeOpacity={0.8}
         >
             <Ionicons 
-                name={advancedButtonIcon as any} 
+                name="pin-outline" 
                 size={20} 
                 color={isCityFilterActive ? Colors.text.inverse : Colors.primary[700]}
             />
@@ -348,7 +291,7 @@ const QuickFilterBar: React.FC<QuickFilterBarProps> = ({
                 weight="semibold" 
                 style={{ color: isCityFilterActive ? Colors.text.inverse : Colors.primary[700] }}
             >
-                {advancedButtonLabel}
+                {citiesTitle}
             </AppText>
              <Ionicons 
                 name="chevron-forward" 
@@ -412,13 +355,10 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 8,
   },
-  cityGridRow: {
-      justifyContent: 'flex-start',
-  },
   
   // Filter Button Base Styles
   filterButton: {
-    paddingVertical: 10,
+    paddingVertical: 12,
     paddingHorizontal: 10,
     borderRadius: 12, 
     borderWidth: 1.5,
@@ -430,20 +370,13 @@ const styles = StyleSheet.create({
     minHeight: 80, 
   },
   filterButtonHalf: {
-    width: '45%', 
+    width: '49%', 
   },
-  // City button size (3 columns)
-  filterButtonThird: {
-    width: '31.5%', 
-    minHeight: 65, 
-    paddingVertical: 8,
-  },
-  // Property Type button size (4 columns)
+  // New size for 4-column grid (Property Type)
   filterButtonQuarter: {
-      width: '21%', 
-      minHeight: 40, 
+      width: '23%', 
+      minHeight: 70, 
       paddingVertical: 8,
-      paddingHorizontal: 1,
   },
   
   filterButtonActive: { 
@@ -454,10 +387,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 5,
     elevation: 3,
-  },
-  cityButtonBase: {
-      borderColor: Colors.primary[200],
-      backgroundColor: Colors.primary[50],
   },
   
   // Icon and Text Styles
@@ -487,13 +416,11 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 12,
     borderWidth: 1.5,
+    borderColor: Colors.primary[300],
+    backgroundColor: Colors.primary[50], 
     marginTop: 12,
     gap: 12,
   },
-  advancedButtonBase: {
-    borderColor: Colors.primary[300],
-    backgroundColor: Colors.primary[50], 
-  }
 });
 
 export default QuickFilterBar;
