@@ -1,4 +1,3 @@
-// features/listings/ListingDetail/ContactAgent.tsx
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
@@ -41,7 +40,7 @@ const ContactAgent: React.FC<ContactAgentProps> = ({ property }) => {
   });
   const [loading, setLoading] = useState(false);
 
-  // Agent details use property.ownerDetails if available (based on new apiMock.tsx structure)
+  // Agent details use property.ownerDetails if available
   const defaultAgent = {
     name: 'Rajesh Kumar',
     phone: '+923001234567',
@@ -203,10 +202,10 @@ const ContactAgent: React.FC<ContactAgentProps> = ({ property }) => {
           
           <AppButton
             variant="outline"
-            style={[styles.quickContactButton, { borderColor: Colors.social.whatsapp }]}
-            textStyle={{ color: Colors.social.whatsapp }}
+            style={[styles.quickContactButton, { borderColor: Colors.social?.whatsapp || '#25D366' }]}
+            textStyle={{ color: Colors.social?.whatsapp || '#25D366' }}
             onPress={handleWhatsApp}
-            leftIcon={<Ionicons name="logo-whatsapp" size={16} color={Colors.social.whatsapp} />}
+            leftIcon={<Ionicons name="logo-whatsapp" size={16} color={Colors.social?.whatsapp || '#25D366'} />}
           >
             WhatsApp
           </AppButton>
@@ -225,7 +224,7 @@ const ContactAgent: React.FC<ContactAgentProps> = ({ property }) => {
       {/* Schedule Viewing */}
       <View style={styles.section}>
         <AppButton
-          variant="solid"
+          variant="primary"
           onPress={handleScheduleViewing}
           leftIcon={<Ionicons name="calendar" size={16} color="white" />}
         >
@@ -275,7 +274,7 @@ const ContactAgent: React.FC<ContactAgentProps> = ({ property }) => {
           />
           
           <AppButton
-            variant="solid"
+            variant="primary"
             onPress={handleEmail}
             leftIcon={<Ionicons name="send" size={16} color="white" />}
           >
@@ -284,7 +283,7 @@ const ContactAgent: React.FC<ContactAgentProps> = ({ property }) => {
         </View>
       </View>
 
-      {/* Schedule Viewing Modal (Replaced Actionsheet) */}
+      {/* Schedule Viewing Modal */}
       <Modal visible={isModalOpen} transparent={true} animationType="fade" onRequestClose={() => setIsModalOpen(false)}>
         <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
@@ -305,6 +304,7 @@ const ContactAgent: React.FC<ContactAgentProps> = ({ property }) => {
                                 style={styles.modalSelectButton}
                                 textStyle={styles.modalSelectButtonText}
                                 rightIcon={<Ionicons name="calendar" size={16} color={Colors.primary[500]} />}
+                                onPress={() => {}} // Placeholder
                             >
                                 Select Date
                             </AppButton>
@@ -317,6 +317,7 @@ const ContactAgent: React.FC<ContactAgentProps> = ({ property }) => {
                                 style={styles.modalSelectButton}
                                 textStyle={styles.modalSelectButtonText}
                                 rightIcon={<Ionicons name="time" size={16} color={Colors.primary[500]} />}
+                                onPress={() => {}} // Placeholder
                             >
                                 Select Time
                             </AppButton>
@@ -337,10 +338,10 @@ const ContactAgent: React.FC<ContactAgentProps> = ({ property }) => {
                             Cancel
                         </AppButton>
                         <AppButton
-                            variant="solid"
+                            variant="primary"
                             style={styles.modalButton}
                             onPress={handleSubmitSchedule}
-                            loading={loading}
+                            isLoading={loading}
                         >
                             Schedule
                         </AppButton>
@@ -363,7 +364,6 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     gap: 16,
   },
-  // Agent Info
   agentInfoRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -392,7 +392,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
   },
-  // Quick Contact
   quickContactTitle: {
       marginBottom: 0,
   },
@@ -405,11 +404,9 @@ const styles = StyleSheet.create({
     borderColor: Colors.primary[500],
     borderWidth: 1,
   },
-  // Schedule Viewing
   scheduleText: {
     textAlign: 'center',
   },
-  // Form
   formVStack: {
     gap: 12,
     marginTop: 12,
@@ -428,7 +425,6 @@ const styles = StyleSheet.create({
     minHeight: 100,
     textAlignVertical: 'top',
   },
-  // Modal Styles
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',

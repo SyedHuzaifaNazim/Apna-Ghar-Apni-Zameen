@@ -1,8 +1,8 @@
-import NetInfo, { NetInfoState } from '@react-native-community/netinfo';
+import NetInfo, { NetInfoState, NetInfoStateType } from '@react-native-community/netinfo';
 import React, { createContext, useCallback, useEffect, useMemo, useState } from 'react';
 
-import '@/services/offlineSyncService';
 import { offlineQueueService } from '@/services/offlineQueueService';
+import '@/services/offlineSyncService';
 
 type SyncStatus = 'idle' | 'syncing' | 'error';
 
@@ -20,7 +20,8 @@ interface NetworkContextValue {
 const defaultState: NetworkContextValue = {
   isOnline: true,
   isInternetReachable: true,
-  connectionType: 'unknown',
+  // Fix: Use NetInfoStateType enum instead of string literal
+  connectionType: NetInfoStateType.unknown, 
   lastOnlineAt: Date.now(),
   syncStatus: 'idle',
   pendingActions: 0,
@@ -108,4 +109,3 @@ export const NetworkProvider: React.FC<React.PropsWithChildren> = ({ children })
 
   return <NetworkContext.Provider value={value}>{children}</NetworkContext.Provider>;
 };
-

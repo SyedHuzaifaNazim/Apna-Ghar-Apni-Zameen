@@ -8,10 +8,10 @@ import {
   Modal,
   Pressable,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import AppText from '../../../components/base/AppText';
 import { Colors } from '../../../constants/Colors';
 import { BorderRadius } from '../../../constants/Layout';
 
@@ -78,7 +78,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
     return (
       <View style={[styles.noImagesContainer, { height }]}>
         <Ionicons name="image-outline" size={48} color={Colors.gray[400]} />
-        <Text style={styles.noImagesText}>No images available</Text>
+        <AppText variant="body" color="secondary" style={styles.noImagesText}>No images available</AppText>
       </View>
     );
   }
@@ -109,9 +109,9 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
 
             {/* Image Counter */}
             <View style={styles.imageCounter}>
-              <Text style={styles.imageCounterText}>
+              <AppText variant="small" style={styles.imageCounterText}>
                 {currentIndex + 1} / {images.length}
-              </Text>
+              </AppText>
             </View>
 
             {/* Navigation Arrows */}
@@ -187,9 +187,9 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({
             </TouchableOpacity>
             
             <View style={styles.modalImageCounter}>
-              <Text style={styles.modalImageCounterText}>
+              <AppText variant="body" style={styles.modalImageCounterText}>
                 {modalIndex + 1} / {images.length}
-              </Text>
+              </AppText>
             </View>
             
             <View style={styles.headerSpacer} />
@@ -304,8 +304,6 @@ const styles = StyleSheet.create({
   },
   imageCounterText: {
     color: 'white',
-    fontSize: 12,
-    fontWeight: '600',
   },
   navButton: {
     position: 'absolute',
@@ -346,9 +344,7 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.lg,
   },
   noImagesText: {
-    color: Colors.text.secondary,
     marginTop: 8,
-    fontSize: 14,
   },
   modalContainer: {
     flex: 1,
@@ -381,8 +377,6 @@ const styles = StyleSheet.create({
   },
   modalImageCounterText: {
     color: 'white',
-    fontSize: 14,
-    fontWeight: '600',
   },
   headerSpacer: {
     width: 40,

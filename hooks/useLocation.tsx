@@ -1,5 +1,5 @@
-import { useToast } from 'native-base';
 import { useCallback, useEffect, useState } from 'react';
+import { Alert } from 'react-native';
 import { analyticsService } from '../services/analyticsService';
 import { LocationCoords, LocationData, locationService } from '../services/locationService';
 
@@ -16,7 +16,6 @@ interface UseLocationReturn {
 }
 
 export const useLocation = (autoRequest = true): UseLocationReturn => {
-  const toast = useToast();
   const [location, setLocation] = useState<LocationData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -60,21 +59,16 @@ export const useLocation = (autoRequest = true): UseLocationReturn => {
         
         await analyticsService.track('location_permission_granted');
         
-        toast.show({
-          title: 'Location enabled',
-          description: 'Location services are now active',
-          status: 'success',
-        });
+        // Success feedback can be added here if needed
       } else {
         setError('Location permission denied');
         
         await analyticsService.track('location_permission_denied');
         
-        toast.show({
-          title: 'Location disabled',
-          description: 'Enable location for better property recommendations',
-          status: 'warning',
-        });
+        Alert.alert(
+          'Location disabled',
+          'Enable location for better property recommendations'
+        );
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to request location permission';
@@ -86,7 +80,7 @@ export const useLocation = (autoRequest = true): UseLocationReturn => {
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, []);
 
   const getCurrentLocation = useCallback(async (): Promise<LocationData | null> => {
     try {
@@ -96,9 +90,10 @@ export const useLocation = (autoRequest = true): UseLocationReturn => {
       const currentLocation = await locationService.getCurrentLocation();
       setLocation(currentLocation);
 
+      // Fixed: Added optional chaining because currentLocation can be null
       await analyticsService.track('location_updated', {
-        has_address: !!currentLocation.address,
-        city: currentLocation.address?.city,
+        has_address: !!currentLocation?.address,
+        city: currentLocation?.address?.city,
       });
 
       return currentLocation;
@@ -110,17 +105,13 @@ export const useLocation = (autoRequest = true): UseLocationReturn => {
         context: 'get_current_location',
       });
 
-      toast.show({
-        title: 'Location error',
-        description: errorMessage,
-        status: 'error',
-      });
+      Alert.alert('Location error', errorMessage);
 
       return null;
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, []);
 
   const watchPosition = useCallback((callback: (location: LocationData) => void) => {
     return locationService.watchPosition((newLocation) => {

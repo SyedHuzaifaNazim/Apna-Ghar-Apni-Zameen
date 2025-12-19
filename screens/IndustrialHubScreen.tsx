@@ -64,7 +64,7 @@ const IndustrialHubScreen: React.FC = () => {
                     data={industrialProperties}
                     renderItem={renderItem}
                     keyExtractor={(item: Property) => item.id.toString()}
-                    estimatedItemSize={300} // FlashList now recognizes this correctly
+                    // estimatedItemSize removed for FlashList v2
                     getItemType={(item: Property) => 'Property'}
                     showsVerticalScrollIndicator={false}
                     onRefresh={() => refetch()} // Wrapped in arrow function for type safety

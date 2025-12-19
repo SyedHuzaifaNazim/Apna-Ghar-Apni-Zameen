@@ -1,4 +1,3 @@
-// features/listings/ListingDetail/SimilarListings.tsx
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import React from 'react';
@@ -20,16 +19,16 @@ const SimilarListings: React.FC<SimilarListingsProps> = ({
   currentProperty, 
   count = 4 
 }) => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
 
   // Filter similar properties based on criteria
   const getSimilarProperties = (): Property[] => {
     return MOCK_PROPERTIES
       .filter(property => 
-        property.id !== currentProperty.id && // Exclude current property
+        property.id !== currentProperty.id && 
         (property.propertyCategory === currentProperty.propertyCategory ||
          property.address.city === currentProperty.address.city ||
-         Math.abs(property.price - currentProperty.price) / currentProperty.price < 0.3) // Within 30% price range
+         Math.abs(property.price - currentProperty.price) / currentProperty.price < 0.3)
       )
       .slice(0, count);
   };
@@ -43,11 +42,7 @@ const SimilarListings: React.FC<SimilarListingsProps> = ({
       similarity_reason: 'category_location_price',
     });
 
-    // Navigate using the Expo router structure
-    navigation.navigate('listing', { 
-      screen: '[id]', 
-      params: { id: property.id.toString() } 
-    });
+    navigation.push('listing/[id]', { id: property.id.toString() });
   };
 
   const handleViewAll = () => {
@@ -56,7 +51,6 @@ const SimilarListings: React.FC<SimilarListingsProps> = ({
       similar_count: similarProperties.length,
     });
 
-    // Navigate to search with similar filters
     navigation.navigate('search', { 
       screen: 'SearchScreen', 
       params: { 
@@ -149,7 +143,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderRadius: BorderRadius.xl,
     marginTop: 16,
-    marginBottom: 16, // Add some margin at bottom
+    marginBottom: 16,
   },
   header: {
     flexDirection: 'row',

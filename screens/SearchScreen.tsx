@@ -36,7 +36,8 @@ const SearchScreen: React.FC = () => {
     () => ({
       listingType: activeFilters.listingType || '',
       propertyCategory: activeFilters.propertyCategory || '',
-      city: activeFilters.city || '',
+      // Fixed: changed 'city' to 'cities' to match FilterOptions interface
+      cities: activeFilters.cities || [], 
       minPrice: activeFilters.minPrice ?? 0,
       maxPrice: activeFilters.maxPrice ?? 100000000,
       bedrooms: activeFilters.bedrooms ?? 0,
@@ -157,7 +158,7 @@ const SearchScreen: React.FC = () => {
             showsVerticalScrollIndicator={false}
             ListHeaderComponent={
               <View style={styles.resultsHeader}>
-                <AppText variant="h3" fontWeight="bold">
+                <AppText variant="h3" weight="bold">
                   Search Results ({filteredProperties.length})
                 </AppText>
                 {searchQuery && (
@@ -170,7 +171,7 @@ const SearchScreen: React.FC = () => {
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
                 <Ionicons name="search-outline" size={64} color={Colors.text.disabled} />
-                <AppText variant="h3" fontWeight="semibold" style={styles.emptyTitle}>
+                <AppText variant="h3" weight="semibold" style={styles.emptyTitle}>
                   No properties found
                 </AppText>
                 <AppText variant="body" color="secondary" style={styles.emptyText}>
@@ -188,7 +189,7 @@ const SearchScreen: React.FC = () => {
               </View>
             }
             contentContainerStyle={styles.listContent}
-            estimatedItemSize={200}
+            // estimatedItemSize={200} Removed for FlashList v2 compatibility
           />
         ) : (
           // Search Suggestions

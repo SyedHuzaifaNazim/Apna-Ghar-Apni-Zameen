@@ -21,6 +21,7 @@ interface ProfileLinkProps {
   route: string;
   color?: string;
   isDanger?: boolean;
+  onPress?: () => void;
 }
 
 const ProfileLink: React.FC<ProfileLinkProps> = ({
@@ -30,12 +31,22 @@ const ProfileLink: React.FC<ProfileLinkProps> = ({
   route,
   color = Colors.primary[500],
   isDanger = false,
+  onPress,
 }) => {
   const router = useRouter();
+  
+  const handlePress = () => {
+    if (onPress) {
+      onPress();
+    } else if (route) {
+      router.push(route as any);
+    }
+  };
+
   return (
     <TouchableOpacity 
       style={styles.linkContainer}
-      onPress={() => router.push(route)}
+      onPress={handlePress}
       activeOpacity={0.7}
     >
       <View style={[styles.iconWrapper, { backgroundColor: isDanger ? Colors.error[50] : Colors.primary[50] }]}>

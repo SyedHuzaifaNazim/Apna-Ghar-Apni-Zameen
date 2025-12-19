@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
-import { HStack, IconButton, Switch, VStack } from 'native-base';
 import React, { useCallback, useEffect, useState } from 'react';
+import { Platform, StyleSheet, Switch, View } from 'react-native';
 
-import Colors from '@/constants/Colors';
+import { Colors } from '@/constants/Colors';
 import AppText from '../../components/base/AppText';
 import { STORAGE_KEYS, storageService } from '../../services/storageService';
 
@@ -84,45 +84,91 @@ const AccountSettings: React.FC = () => {
   }
 
   return (
-    <VStack space={4} bg="white" p={4} borderRadius="2xl" shadow={1}>
-      <AppText variant="h3" weight="bold">
+    <View style={styles.card}>
+      <AppText variant="h3" weight="bold" style={styles.title}>
         Account Settings
       </AppText>
 
-      {TOGGLES.map(toggle => (
-        <HStack
+      {TOGGLES.map((toggle, index) => (
+        <View
           key={toggle.key}
-          justifyContent="space-between"
-          alignItems="center"
-          borderBottomWidth={1}
-          borderBottomColor="gray.100"
-          pb={3}
-          mb={1}
+          style={[
+            styles.row,
+            index !== TOGGLES.length - 1 && styles.borderBottom
+          ]}
         >
-          <HStack space={3} alignItems="center" flex={1}>
-            <IconButton
-              icon={<Ionicons name={toggle.icon} size={20} color={Colors.primary[500]} />}
-              variant="ghost"
-            />
-            <VStack flex={1}>
+          <View style={styles.infoContainer}>
+            <View style={styles.iconContainer}>
+              <Ionicons name={toggle.icon} size={20} color={Colors.primary[500]} />
+            </View>
+            <View style={styles.textContainer}>
               <AppText variant="body" weight="medium">
                 {toggle.label}
               </AppText>
-              <AppText variant="small" color={Colors.text.secondary}>
+              <AppText variant="small" color="secondary">
                 {toggle.description}
               </AppText>
-            </VStack>
-          </HStack>
+            </View>
+          </View>
 
           <Switch
-            isChecked={preferences[toggle.key]}
-            onToggle={() => handleToggle(toggle.key)}
-            colorScheme="primary"
+            value={preferences[toggle.key]}
+            onValueChange={() => handleToggle(toggle.key)}
+            trackColor={{ false: Colors.gray ? Colors.gray[300] : '#d1d5db', true: Colors.primary[500] }}
+            thumbColor={'white'}
           />
-        </HStack>
+        </View>
       ))}
-    </VStack>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  card: {
+    backgroundColor: 'white',
+    padding: 16,
+    borderRadius: 16,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  title: {
+    marginBottom: 16,
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  borderBottom: {
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.gray ? Colors.gray[100] : '#f3f4f6',
+  },
+  infoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 16,
+  },
+  iconContainer: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  textContainer: {
+    flex: 1,
+  },
+});
 
 export default AccountSettings;

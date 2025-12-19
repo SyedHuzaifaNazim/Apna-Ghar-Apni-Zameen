@@ -1,4 +1,3 @@
-import { Box, VStack } from 'native-base';
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Colors } from '../../constants/Colors';
@@ -44,9 +43,9 @@ class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 16 }}>
-          <Box flex={1} justifyContent="center" alignItems="center" p={6}>
-            <VStack space={4} alignItems="center">
+        <View style={styles.container}>
+          <View style={styles.content}>
+            <View style={styles.textStack}>
               <AppText variant="h1" color="error" align="center">
                 Oops!
               </AppText>
@@ -56,22 +55,22 @@ class ErrorBoundary extends Component<Props, State> {
               </AppText>
 
               {this.state.error && (
-                <AppText variant="small" color="disabled" align="center">
+                <AppText variant="small" color="disabled" align="center" style={styles.errorText}>
                   {this.state.error.message}
                 </AppText>
               )}
+            </View>
 
-              <VStack space={2} width="100%">
-                <AppButton onPress={this.handleRetry} variant="primary">
-                  Try Again
-                </AppButton>
-                
-                <AppButton onPress={this.handleReport} variant="outline">
-                  Report Issue
-                </AppButton>
-              </VStack>
-            </VStack>
-          </Box>
+            <View style={styles.buttonStack}>
+              <AppButton onPress={this.handleRetry} variant="primary">
+                Try Again
+              </AppButton>
+              
+              <AppButton onPress={this.handleReport} variant="outline">
+                Report Issue
+              </AppButton>
+            </View>
+          </View>
         </View>
       );
     }
@@ -83,7 +82,30 @@ class ErrorBoundary extends Component<Props, State> {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: Colors.background.primary || '#fff',
+    padding: 16,
+  },
+  content: {
+    width: '100%',
+    maxWidth: 400,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+    gap: 32,
+  },
+  textStack: {
+    width: '100%',
+    alignItems: 'center',
+    gap: 16,
+  },
+  errorText: {
+    marginTop: 8,
+  },
+  buttonStack: {
+    width: '100%',
+    gap: 12,
   },
 });
 

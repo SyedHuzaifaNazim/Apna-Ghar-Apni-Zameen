@@ -1,5 +1,5 @@
-import { useToast } from 'native-base';
 import { useCallback, useState } from 'react';
+import { Alert } from 'react-native';
 
 import { analyticsService } from '../services/analyticsService';
 import { storageService } from '../services/storageService';
@@ -24,7 +24,6 @@ interface UseAuthReturn {
 const USER_STORAGE_KEY = 'auth_user';
 
 export const useAuth = (): UseAuthReturn => {
-  const toast = useToast();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -49,15 +48,17 @@ export const useAuth = (): UseAuthReturn => {
       };
       await persistUser(mockUser);
       await analyticsService.track('user_login', { method: 'email', user_id: mockUser.id });
-      toast.show({ title: 'Welcome back!', description: 'Signed in successfully', variant: 'solid', bg: 'green.500' });
+      
+      // Replaced toast with Alert
+      Alert.alert('Welcome back!', 'Signed in successfully');
     } catch (error) {
       await analyticsService.trackError(error as Error, { context: 'auth_login', email });
-      toast.show({ title: 'Login failed', description: 'Please try again', variant: 'solid', bg: 'red.500' });
+      Alert.alert('Login failed', 'Please try again');
       throw error;
     } finally {
       setLoading(false);
     }
-  }, [persistUser, toast]);
+  }, [persistUser]);
 
   const register = useCallback(async ({ name, email, phone }: { name: string; email: string; password: string; phone?: string }) => {
     setLoading(true);
@@ -72,15 +73,17 @@ export const useAuth = (): UseAuthReturn => {
       };
       await persistUser(mockUser);
       await analyticsService.track('user_register', { method: 'email', user_id: mockUser.id });
-      toast.show({ title: 'Account created', description: 'You are now signed in', variant: 'solid', bg: 'green.500' });
+      
+      // Replaced toast with Alert
+      Alert.alert('Account created', 'You are now signed in');
     } catch (error) {
       await analyticsService.trackError(error as Error, { context: 'auth_register', email });
-      toast.show({ title: 'Registration failed', description: 'Please try again', variant: 'solid', bg: 'red.500' });
+      Alert.alert('Registration failed', 'Please try again');
       throw error;
     } finally {
       setLoading(false);
     }
-  }, [persistUser, toast]);
+  }, [persistUser]);
 
   const logout = useCallback(async () => {
     setLoading(true);

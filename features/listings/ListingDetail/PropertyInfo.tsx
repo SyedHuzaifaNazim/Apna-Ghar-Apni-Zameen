@@ -1,7 +1,6 @@
-// @ts-nocheck
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, ViewStyle } from 'react-native';
 
 import { Property } from '../../../api/apiMock';
 import AppText from '../../../components/base/AppText';
@@ -16,13 +15,23 @@ interface PropertyInfoProps {
 
 const CustomDivider = () => <View style={styles.divider} />;
 
-const CustomBadge = ({ children, colorScheme, style }) => {
-    const badgeStyle = {
-        backgroundColor: colorScheme === 'success' ? Colors.success[500] : (colorScheme === 'warning' ? Colors.warning[500] : Colors.secondary[500]),
-        ...style
-    };
+interface CustomBadgeProps {
+    children: React.ReactNode;
+    colorScheme: 'success' | 'warning' | 'secondary' | 'primary';
+    style?: ViewStyle;
+}
+
+const CustomBadge = ({ children, colorScheme, style }: CustomBadgeProps) => {
+    let backgroundColor;
+    switch (colorScheme) {
+        case 'success': backgroundColor = Colors.success[500]; break;
+        case 'warning': backgroundColor = Colors.warning[500]; break;
+        case 'secondary': backgroundColor = Colors.secondary[500]; break;
+        default: backgroundColor = Colors.primary[500];
+    }
+
     return (
-        <View style={[styles.badge, badgeStyle]}>
+        <View style={[styles.badge, { backgroundColor }, style]}>
             <AppText variant="small" weight="bold" style={styles.badgeText}>{children}</AppText>
         </View>
     );
@@ -55,38 +64,38 @@ const PropertyInfo: React.FC<PropertyInfoProps> = ({ property }) => {
 
   const keyMetrics = [
     {
-      icon: 'bed-outline',
+      icon: 'bed-outline' as const,
       label: 'Bedrooms',
       value: `${property.bedrooms}`,
     },
     {
-      icon: 'water-outline',
+      icon: 'water-outline' as const,
       label: 'Bathrooms',
       value: `${property.bathrooms ?? 0}`, 
     },
     {
-      icon: 'expand-outline',
+      icon: 'expand-outline' as const,
       label: 'Area',
       value: `${property.areaSize.toLocaleString()} ${property.areaUnit}`,
     },
     {
-      icon: 'build-outline',
+      icon: 'build-outline' as const,
       label: 'Condition',
       value: property.propertyCondition,
     },
     {
-      icon: 'color-palette-outline',
+      icon: 'color-palette-outline' as const,
       label: 'Furnishing',
       value: property.furnishing,
     },
     {
-      icon: 'calendar-outline',
+      icon: 'calendar-outline' as const,
       label: 'Year Built',
       value: `${property.yearBuilt ?? 'N/A'}`,
     },
   ];
 
-  const amenityMap = {
+  const amenityMap: Record<string, keyof typeof Ionicons.glyphMap> = {
     'Swimming Pool': 'water-outline',
     'Gym': 'barbell-outline',
     'Security': 'shield-checkmark-outline',
@@ -109,13 +118,13 @@ const PropertyInfo: React.FC<PropertyInfoProps> = ({ property }) => {
   const details = [
       { label: 'Property Type', value: property.propertyCategory },
       { label: 'Listing Type', value: property.listingType },
-      { label: 'Floor Level', value: property.floorLevel !== null ? `${property.floorLevel}` : property.propertyCategory.includes('House') ? 'N/A' : 'Ground/House' },
+      { label: 'Floor Level', value: property.floorLevel !== null && property.floorLevel !== undefined ? `${property.floorLevel}` : property.propertyCategory.includes('House') ? 'N/A' : 'Ground/House' },
       { label: 'Electricity Backup', value: property.electricityBackup },
       { label: 'Water Supply', value: property.waterSupply },
       { label: 'Parking Spaces', value: `${property.parkingSpaces ?? 0}` },
   ];
   
-  const filteredDetails = details.filter(d => d.value !== 'N/A');
+  const filteredDetails = details.filter(d => d.value !== 'N/A' && d.value !== undefined);
 
   return (
     <View style={styles.container}>
@@ -155,11 +164,11 @@ const PropertyInfo: React.FC<PropertyInfoProps> = ({ property }) => {
 
       <CustomDivider />
 
-      {/* Key Metrics Grid (Bed, Bath, Area, etc.) */}
+      {/* Key Metrics Grid */}
       <View style={styles.section}>
         <AppText variant="h4" weight="semibold">Key Metrics</AppText>
         <View style={styles.metricsGrid}>
-          {keyMetrics.map((metric, index) => (
+          {keyMetrics.map((metric) => (
             <View 
               key={metric.label}
               style={styles.metricItem}
@@ -197,7 +206,7 @@ const PropertyInfo: React.FC<PropertyInfoProps> = ({ property }) => {
           <View style={styles.section}>
             <AppText variant="h4" weight="semibold">Amenities & Facilities</AppText>
             <View style={styles.wrapContainer}>
-              {allAmenities.map((amenity, index) => (
+              {allAmenities.map((amenity) => (
                 <View
                   key={amenity}
                   style={styles.amenityBadge}
@@ -213,14 +222,14 @@ const PropertyInfo: React.FC<PropertyInfoProps> = ({ property }) => {
         </>
       )}
 
-      {/* Additional Features/Tags */}
+      {/* Highlights */}
       {allFeatures.length > 0 && (
         <>
           <CustomDivider />
           <View style={styles.section}>
             <AppText variant="h4" weight="semibold">Highlights</AppText>
             <View style={styles.wrapContainer}>
-              {allFeatures.map((feature, index) => (
+              {allFeatures.map((feature) => (
                 <View
                   key={feature}
                   style={styles.highlightBadge}
@@ -244,7 +253,7 @@ const PropertyInfo: React.FC<PropertyInfoProps> = ({ property }) => {
             {filteredDetails.map((detail, index) => (
                 <View key={index} style={styles.detailsTableRow}>
                     <AppText variant="body" color="secondary">{detail.label}</AppText>
-                    <AppText variant="body" weight="medium">{detail.value}</AppText>
+                    <AppText variant="body" weight="medium">{String(detail.value)}</AppText>
                 </View>
             ))}
             <View style={styles.detailsTableRow}>
@@ -315,7 +324,6 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     color: 'white',
-    fontWeight: 'bold',
     fontSize: 12,
   },
   divider: {
@@ -323,7 +331,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.border.light,
     marginVertical: 16,
   },
-  // Metrics Grid
   metricsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -352,12 +359,10 @@ const styles = StyleSheet.create({
   metricValue: {
     fontSize: 14,
   },
-  // Description
   descriptionText: {
     lineHeight: 24,
     marginTop: 8,
   },
-  // Amenities and Features
   wrapContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -388,7 +393,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     fontSize: 12,
   },
-  // Details Table
   detailsTable: {
     backgroundColor: Colors.background.secondary,
     padding: 16,

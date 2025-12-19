@@ -1,8 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { FlashList } from '@shopify/flash-list';
-import { Box, HStack, IconButton, Image, Pressable } from 'native-base';
-import React, { useState } from 'react';
-import { Dimensions } from 'react-native';
+import React, { useRef, useState } from 'react';
+import { Dimensions, Image, Pressable, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 import { Colors } from '../../constants/Colors';
 import AppText from '../base/AppText';
@@ -25,6 +24,8 @@ const ImageCarousel: React.FC<ImageCarouselProps> = ({
   onImagePress
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  // Fixed: Changed FlashList<string> to any to resolve "refers to a value" error
+  const listRef = useRef<any>(null);
 
   const handleScroll = (event: any) => {
     const contentOffset = event.nativeEvent.contentOffset;
@@ -35,13 +36,17 @@ const ImageCarousel: React.FC<ImageCarouselProps> = ({
 
   const goToNext = () => {
     if (currentIndex < images.length - 1) {
-      setCurrentIndex(currentIndex + 1);
+      const nextIndex = currentIndex + 1;
+      setCurrentIndex(nextIndex);
+      listRef.current?.scrollToIndex({ index: nextIndex, animated: true });
     }
   };
 
   const goToPrev = () => {
     if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1);
+      const prevIndex = currentIndex - 1;
+      setCurrentIndex(prevIndex);
+      listRef.current?.scrollToIndex({ index: prevIndex, animated: true });
     }
   };
 
@@ -49,12 +54,12 @@ const ImageCarousel: React.FC<ImageCarouselProps> = ({
     <Pressable 
       onPress={() => onImagePress?.(index)}
       disabled={!onImagePress}
+      style={{ width: screenWidth, height: height }}
     >
       <Image
         source={{ uri: item }}
-        alt={`Property image ${index + 1}`}
-        width={screenWidth}
-        height={height}
+        accessibilityLabel={`Property image ${index + 1}`}
+        style={{ width: screenWidth, height: height }}
         resizeMode="cover"
       />
     </Pressable>
@@ -62,18 +67,19 @@ const ImageCarousel: React.FC<ImageCarouselProps> = ({
 
   if (images.length === 0) {
     return (
-      <Box width={screenWidth} height={height} bg="gray.100" justifyContent="center" alignItems="center">
+      <View style={[styles.emptyContainer, { height, width: screenWidth }]}>
         <Ionicons name="image-outline" size={48} color={Colors.text.disabled} />
-        <AppText variant="body" color="disabled">
+        <AppText variant="body" color="disabled" style={styles.emptyText}>
           No images available
         </AppText>
-      </Box>
+      </View>
     );
   }
 
   return (
-    <Box position="relative" height={height}>
+    <View style={[styles.container, { height }]}>
       <FlashList
+        ref={listRef}
         data={images}
         renderItem={renderItem}
         keyExtractor={(item, index) => index.toString()}
@@ -82,79 +88,111 @@ const ImageCarousel: React.FC<ImageCarouselProps> = ({
         showsHorizontalScrollIndicator={false}
         onScroll={handleScroll}
         scrollEventThrottle={16}
+        // estimatedItemSize removed for FlashList v2 compatibility
       />
 
       {/* Navigation Arrows */}
       {images.length > 1 && (
         <>
           {currentIndex > 0 && (
-            <IconButton
-              position="absolute"
-              left={2}
-              top={height / 2 - 20}
-              backgroundColor="rgba(0,0,0,0.5)"
-              borderRadius="full"
-              icon={<Ionicons name="chevron-back" size={24} color="white" />}
+            <TouchableOpacity
+              style={[styles.arrowButton, styles.leftArrow, { top: height / 2 - 20 }]}
               onPress={goToPrev}
-              _pressed={{ backgroundColor: "rgba(0,0,0,0.7)" }}
-            />
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons name="chevron-back" size={24} color="white" />
+            </TouchableOpacity>
           )}
           
           {currentIndex < images.length - 1 && (
-            <IconButton
-              position="absolute"
-              right={2}
-              top={height / 2 - 20}
-              backgroundColor="rgba(0,0,0,0.5)"
-              borderRadius="full"
-              icon={<Ionicons name="chevron-forward" size={24} color="white" />}
+            <TouchableOpacity
+              style={[styles.arrowButton, styles.rightArrow, { top: height / 2 - 20 }]}
               onPress={goToNext}
-              _pressed={{ backgroundColor: "rgba(0,0,0,0.7)" }}
-            />
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons name="chevron-forward" size={24} color="white" />
+            </TouchableOpacity>
           )}
         </>
       )}
 
        {/* Image Counter */}
        {showCounter && images.length > 1 && (
-        <Box
-          position="absolute"
-          top={4}
-          right={4}
-          backgroundColor="rgba(0,0,0,0.7)"
-          borderRadius="full"
-          px={3}
-          py={1}
-        >
-          <AppText variant="small" color="primary">
+        <View style={styles.counterContainer}>
+          <AppText variant="small" style={{ color: Colors.primary[500] }}>
             {currentIndex + 1} / {images.length}
           </AppText>
-        </Box>
+        </View>
       )}
 
       {/* Indicators */}
       {showIndicators && images.length > 1 && (
-        <HStack 
-          position="absolute" 
-          bottom={4} 
-          left={0} 
-          right={0} 
-          justifyContent="center" 
-          space={2}
-        >
+        <View style={styles.indicatorsContainer}>
           {images.map((_, index) => (
-            <Box
+            <View
               key={index}
-              width={2}
-              height={2}
-              borderRadius="full"
-              backgroundColor={index === currentIndex ? 'white' : 'rgba(255,255,255,0.5)'}
+              style={[
+                styles.indicatorDot,
+                { backgroundColor: index === currentIndex ? 'white' : 'rgba(255,255,255,0.5)' }
+              ]}
             />
           ))}
-        </HStack>
+        </View>
       )}
-    </Box>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    position: 'relative',
+  },
+  emptyContainer: {
+    backgroundColor: '#F3F4F6', // gray.100
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyText: {
+    marginTop: 8,
+  },
+  arrowButton: {
+    position: 'absolute',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 999,
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  leftArrow: {
+    left: 8,
+  },
+  rightArrow: {
+    right: 8,
+  },
+  counterContainer: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+  },
+  indicatorsContainer: {
+    position: 'absolute',
+    bottom: 16,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  indicatorDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+});
 
 export default ImageCarousel;

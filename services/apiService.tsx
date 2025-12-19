@@ -426,7 +426,7 @@ export const agentApi = {
     apiService.get(`/agents/${id}`),
 
   contactAgent: (agentId: string | number, message: string) => 
-    apiService.post(`/agents/${id}/contact`, { message }),
+    apiService.post(`/agents/${agentId}/contact`, { message }),
 
   scheduleViewing: (propertyId: string | number, dateTime: string, message?: string) => 
     apiService.post('/viewings/schedule', { propertyId, dateTime, message }),

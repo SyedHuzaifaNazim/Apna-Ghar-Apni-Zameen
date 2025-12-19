@@ -1,49 +1,57 @@
-import { IInputProps, Input as NativeBaseInput } from 'native-base';
-import React, { forwardRef } from 'react';
+import { Colors } from '@/constants/Colors';
+import React, { forwardRef, useState } from 'react';
+import { StyleSheet, TextInput, TextInputProps } from 'react-native';
 
-const InputComponent = forwardRef<any, IInputProps>((props, ref) => {
-  // Clean up all style props to ensure they're numbers, not strings
-  const cleanProps = {
-    ...props,
-    // Ensure all numeric props are numbers
-    borderRadius: typeof props.borderRadius === 'string' ? 8 : (props.borderRadius || 8),
-    borderWidth: typeof props.borderWidth === 'string' ? 1 : (props.borderWidth || 1),
-    fontSize: props.fontSize || "md",
-    height: typeof props.height === 'string' ? 40 : (props.height || 40),
+interface InputProps extends TextInputProps {
+  // Add any custom props here if needed
+}
+
+export const Input = forwardRef<TextInput, InputProps>((props, ref) => {
+  const [isFocused, setIsFocused] = useState(false);
+
+  const handleFocus = (e: any) => {
+    setIsFocused(true);
+    props.onFocus?.(e);
   };
 
-  // Remove _focus styles that might contain problematic web props
-  const { _focus, ...restProps } = cleanProps;
-
-  // Create safe focus styles without web-specific properties
-  const safeFocusStyles = _focus ? {
-    _focus: {
-      ..._focus,
-      borderColor: _focus.borderColor || "primary.500",
-      backgroundColor: _focus.backgroundColor || "white",
-      borderWidth: typeof _focus?.borderWidth === 'string' ? 2 : (_focus?.borderWidth || 2),
-      // Remove any web-specific styles that might cause issues
-      _web: undefined
-    }
-  } : {};
+  const handleBlur = (e: any) => {
+    setIsFocused(false);
+    props.onBlur?.(e);
+  };
 
   return (
-    <NativeBaseInput
-      {...restProps}
-      {...safeFocusStyles}
-      ref={ref || undefined}
-      // Add explicit style cleanup
+    <TextInput
+      ref={ref}
+      {...props}
       style={[
-        { outlineWidth: 0 }, // Explicitly set as number
-        props.style
+        styles.input,
+        props.style,
+        isFocused && styles.focusedInput
       ]}
+      placeholderTextColor={Colors.text?.disabled || '#9CA3AF'}
+      onFocus={handleFocus}
+      onBlur={handleBlur}
     />
   );
 });
 
-InputComponent.displayName = 'Input';
+const styles = StyleSheet.create({
+  input: {
+    height: 40,
+    borderWidth: 1,
+    borderColor: Colors.gray?.[300] || '#D1D5DB',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    fontSize: 16,
+    color: Colors.text?.primary || '#111827',
+    backgroundColor: 'white',
+  },
+  focusedInput: {
+    borderColor: Colors.primary?.[500] || '#2563EB',
+    borderWidth: 2,
+    // Add 1px padding compensation if needed to prevent layout shift with border width change, 
+    // or just accept the slight shift which is standard in many inputs.
+  },
+});
 
-export const Input = InputComponent as React.ForwardRefExoticComponent<
-  IInputProps & 
-  React.RefAttributes<any>
->;
+Input.displayName = 'Input';

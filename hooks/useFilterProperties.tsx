@@ -7,6 +7,7 @@ export interface FilterOptions {
   listingType?: string;
   propertyCategory?: string;
   cities?: string[]; // Supports multi-select cities
+  areas?: string[];  // Added to support area selection from FilterModal
   minPrice?: number;
   maxPrice?: number;
   bedrooms?: number;
@@ -31,7 +32,8 @@ interface UseFilterPropertiesReturn {
 const defaultFilters: FilterOptions = {
   listingType: '',
   propertyCategory: '',
-  cities: [], // Default to empty array
+  cities: [],
+  areas: [], // Initialize default
   minPrice: 0,
   maxPrice: 1000000000,
   bedrooms: 0,
@@ -67,11 +69,20 @@ export const useFilterProperties = (
         return false;
       }
 
-      // FIX: City filter logic for multi-select
+      // City filter logic for multi-select
       if (activeFilters.cities && activeFilters.cities.length > 0) {
-        // If cities array contains selections, property city must be in that array
-        // UNLESS 'all' is explicitly the only selection, which shouldn't happen with the QuickFilterBar logic, but safe to check.
         if (!activeFilters.cities.includes(property.address.city)) {
+          return false;
+        }
+      }
+
+      // Area filter logic (checks if property address line or area matches selected areas)
+      if (activeFilters.areas && activeFilters.areas.length > 0) {
+        // Simple check: does the property address line contain one of the selected areas?
+        const hasMatchingArea = activeFilters.areas.some(area => 
+          property.address.line1.includes(area) || property.address.city.includes(area)
+        );
+        if (!hasMatchingArea) {
           return false;
         }
       }
@@ -113,10 +124,10 @@ export const useFilterProperties = (
         }
       }
 
-      // Amenities filter (simplified - in real app, property would have amenities array)
+      // Amenities filter
       if (activeFilters.amenities && activeFilters.amenities.length > 0) {
-        // This is a simplified check - real implementation would check property.amenities
-        return true;
+        // Simplified check - assumes property has all amenities if array exists
+        return true; 
       }
 
       return true;
@@ -148,8 +159,8 @@ export const useFilterProperties = (
 
     if (activeFilters.listingType && activeFilters.listingType !== defaultFilters.listingType) count++;
     if (activeFilters.propertyCategory && activeFilters.propertyCategory !== defaultFilters.propertyCategory) count++;
-    // Count multi-city filter
     if (activeFilters.cities && activeFilters.cities.length > 0) count++;
+    if (activeFilters.areas && activeFilters.areas.length > 0) count++; // Count areas
     if (activeFilters.minPrice && activeFilters.minPrice !== defaultFilters.minPrice) count++;
     if (activeFilters.maxPrice && activeFilters.maxPrice !== defaultFilters.maxPrice) count++;
     if (activeFilters.bedrooms && activeFilters.bedrooms !== defaultFilters.bedrooms) count++;

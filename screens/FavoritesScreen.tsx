@@ -142,7 +142,7 @@ const FavoritesScreen: React.FC = () => {
         keyExtractor={item => item.id.toString()}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
-        estimatedItemSize={300}
+        // estimatedItemSize removed for FlashList v2
       />
 
       <View style={styles.footer}>

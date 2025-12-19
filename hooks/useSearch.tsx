@@ -1,5 +1,5 @@
-import { useToast } from 'native-base';
 import { useCallback, useEffect, useState } from 'react';
+import { Alert } from 'react-native';
 import { analyticsService } from '../services/analyticsService';
 import { offlineQueueService } from '../services/offlineQueueService';
 import { storageService } from '../services/storageService';
@@ -66,7 +66,6 @@ const POPULAR_SEARCHES = [
 ];
 
 export const useSearch = (allProperties: any[]): UseSearchReturn => {
-  const toast = useToast();
   const { isOnline } = useNetworkStatus();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<any[]>([]);
@@ -195,14 +194,14 @@ export const useSearch = (allProperties: any[]): UseSearchReturn => {
         query: searchQuery,
       });
 
-      toast.show({
-        title: 'Search failed',
-        description: 'Unable to perform search. Please try again.',
-      });
+      Alert.alert(
+        'Search failed',
+        'Unable to perform search. Please try again.'
+      );
     } finally {
       setLoading(false);
     }
-  }, [allProperties, searchHistory, searchStats.totalSearches, saveSearchHistory, saveSearchStats, toast, trackOrQueue]);
+  }, [allProperties, searchHistory, searchStats.totalSearches, saveSearchHistory, saveSearchStats, trackOrQueue]);
 
   // Debounced search
   const debouncedQuery = useDebounce(query, 300);
@@ -242,11 +241,11 @@ export const useSearch = (allProperties: any[]): UseSearchReturn => {
     
     await trackOrQueue('search_history_cleared');
     
-    toast.show({
-      title: 'History cleared',
-      description: 'Search history has been cleared',
-    });
-  }, [saveSearchHistory, toast]);
+    Alert.alert(
+      'History cleared',
+      'Search history has been cleared'
+    );
+  }, [saveSearchHistory, trackOrQueue]);
 
   // Remove item from history
   const removeFromHistory = useCallback(async (id: string) => {

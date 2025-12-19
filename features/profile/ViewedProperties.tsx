@@ -1,10 +1,10 @@
-import { Box, Center, VStack } from 'native-base';
 import React, { useEffect, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 
 import { Property } from '../../api/apiMock';
 import AppText from '../../components/base/AppText';
 import PropertyCard from '../../components/ui/PropertyCard';
-import { storageService, STORAGE_KEYS } from '../../services/storageService';
+import { STORAGE_KEYS, storageService } from '../../services/storageService';
 
 interface ViewedPropertiesProps {
   properties: Property[];
@@ -23,29 +23,54 @@ const ViewedProperties: React.FC<ViewedPropertiesProps> = ({ properties }) => {
 
   if (viewedProperties.length === 0) {
     return (
-      <Center py={8}>
+      <View style={styles.emptyContainer}>
         <AppText variant="body" color="secondary" align="center">
           You haven’t viewed any properties yet. Browse listings to start your history.
         </AppText>
-      </Center>
+      </View>
     );
   }
 
   return (
-    <VStack space={4}>
-      <Box>
+    <View style={styles.container}>
+      <View style={styles.header}>
         <AppText variant="h3" weight="bold">
           Recently Viewed
         </AppText>
         <AppText variant="small" color="secondary">
           Based on your last {viewedProperties.length} visits
         </AppText>
-      </Box>
-      {viewedProperties.map(property => (
-        <PropertyCard key={property.id} property={property} />
-      ))}
-    </VStack>
+      </View>
+      
+      <View style={styles.list}>
+        {viewedProperties.map(property => (
+          <View key={property.id} style={styles.cardWrapper}>
+             <PropertyCard property={property} />
+          </View>
+        ))}
+      </View>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    gap: 16,
+  },
+  header: {
+    marginBottom: 4,
+  },
+  emptyContainer: {
+    paddingVertical: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  list: {
+    gap: 16,
+  },
+  cardWrapper: {
+    marginBottom: 4,
+  }
+});
 
 export default ViewedProperties;

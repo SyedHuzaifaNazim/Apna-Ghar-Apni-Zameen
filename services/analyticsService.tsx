@@ -56,7 +56,8 @@ class AnalyticsService {
   private queue: AnalyticsEvent[] = [];
   private currentSession: AnalyticsSession | null = null;
   private currentUser: AnalyticsUser | null = null;
-  private flushTimer: NodeJS.Timeout | null = null;
+  // Fixed: Changed from NodeJS.Timeout to any to support React Native's number return type
+  private flushTimer: any = null;
   private isInitialized = false;
 
   // Initialization

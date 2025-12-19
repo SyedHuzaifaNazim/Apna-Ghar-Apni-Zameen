@@ -1,10 +1,11 @@
 import { FlashList } from '@shopify/flash-list';
-import { Box, Center, HStack, Spinner } from 'native-base';
 import React from 'react';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { Property } from '../../api/apiMock';
 import AppText from '../../components/base/AppText';
 import PropertyCard from '../../components/ui/PropertyCard';
+import { Colors } from '../../constants/Colors';
 
 interface SearchResultsProps {
   properties: Property[];
@@ -19,44 +20,74 @@ const SearchResults: React.FC<SearchResultsProps> = ({
 }) => {
   if (loading) {
     return (
-      <Center py={8}>
-        <Spinner color="primary.500" size="lg" />
-        <AppText variant="body" color="secondary" style={{ marginTop: 12 }}>
+      <View style={styles.centerContainer}>
+        <ActivityIndicator color={Colors.primary[500]} size="large" />
+        <AppText variant="body" color="secondary" style={styles.loadingText}>
           Searching properties…
         </AppText>
-      </Center>
+      </View>
     );
   }
 
   if (properties.length === 0) {
     return (
-      <Center py={10}>
+      <View style={[styles.centerContainer, styles.emptyContainer]}>
         <AppText variant="body" color="secondary" align="center">
           {emptyMessage}
         </AppText>
-      </Center>
+      </View>
     );
   }
 
   return (
     <FlashList
       data={properties}
-      // estimatedItemSize={280}
+      // estimatedItemSize removed for FlashList v2 compatibility
       keyExtractor={(item, index) => `${index}-${item.id}`}
       renderItem={({ item }) => (
-        <Box mb={4}>
+        <View style={styles.itemContainer}>
           <PropertyCard property={item} />
-        </Box>
+        </View>
       )}
       ListHeaderComponent={
-        <HStack justifyContent="space-between" alignItems="center" mb={2}>
+        <View style={styles.header}>
           <AppText variant="h3" weight="bold">
             {properties.length} properties found
           </AppText>
-        </HStack>
+        </View>
       }
+      contentContainerStyle={styles.listContent}
+      showsVerticalScrollIndicator={false}
     />
   );
 };
+
+const styles = StyleSheet.create({
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 32,
+  },
+  emptyContainer: {
+    paddingVertical: 40,
+  },
+  loadingText: {
+    marginTop: 12,
+  },
+  itemContainer: {
+    marginBottom: 16,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+    paddingHorizontal: 4, // Add slight padding to align with cards if needed
+  },
+  listContent: {
+    paddingBottom: 20,
+  },
+});
 
 export default SearchResults;

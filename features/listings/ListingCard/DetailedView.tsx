@@ -1,12 +1,11 @@
-// @ts-nocheck
 import { Ionicons } from '@expo/vector-icons';
-import { Badge, Box, HStack, IconButton, Image, Pressable, VStack } from 'native-base';
 import React from 'react';
+import { Image, Pressable, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 import { Property } from '../../../api/apiMock';
 import AppText from '../../../components/base/AppText';
 import { Colors } from '../../../constants/Colors';
-import { BorderRadius, Shadows } from '../../../constants/Layout';
+import { BorderRadius } from '../../../constants/Layout';
 import { useFavorites } from '../../../context/FavoritesContext';
 
 interface DetailedViewProps {
@@ -66,141 +65,218 @@ const DetailedView: React.FC<DetailedViewProps> = ({
   };
 
   return (
-    <Pressable onPress={handlePress}>
-      {({ isPressed }) => (
-        <Box 
-          bg="white" 
-          borderRadius={BorderRadius.xl}
-          shadow={Shadows.md}
-          overflow="hidden"
-          opacity={isPressed ? 0.9 : 1}
-          style={{ transform: [{ scale: isPressed ? 0.98 : 1 }] }}
-        >
-          {/* Property Image */}
-          <Box position="relative">
-            <Image
-              source={{ uri: property.images[0] }}
-              alt={property.title}
-              width="100%"
-              height={200}
-              resizeMode="cover"
+    <Pressable 
+      onPress={handlePress} 
+      style={({ pressed }) => [
+        styles.container,
+        pressed && styles.pressed
+      ]}
+    >
+      {/* Property Image */}
+      <View style={styles.imageContainer}>
+        <Image
+          source={{ uri: property.images[0] }}
+          style={styles.image}
+          resizeMode="cover"
+        />
+        
+        {/* Badges */}
+        <View style={styles.badgesContainer}>
+          <View style={[
+            styles.badge, 
+            { backgroundColor: property.listingType === 'For Sale' ? Colors.success[500] : Colors.warning[500] }
+          ]}>
+            <AppText variant="small" weight="bold" style={styles.badgeText}>
+              {property.listingType}
+            </AppText>
+          </View>
+          
+          {property.isFeatured && (
+            <View style={[styles.badge, { backgroundColor: Colors.secondary[500] }]}>
+              <AppText variant="small" weight="bold" style={styles.badgeText}>
+                Featured
+              </AppText>
+            </View>
+          )}
+        </View>
+
+        {/* Action Buttons */}
+        <View style={styles.actionsContainer}>
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={handleSharePress}
+          >
+            <Ionicons name="share-outline" size={16} color="white" />
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={styles.iconButton}
+            onPress={handleFavoritePress}
+          >
+            <Ionicons 
+              name={isFavorite(property.id) ? "heart" : "heart-outline"} 
+              size={16} 
+              color={isFavorite(property.id) ? Colors.status.featured : "white"} 
             />
-            
-            {/* Badges */}
-            <HStack position="absolute" top={3} left={3} space={2}>
-              <Badge 
-                colorScheme={property.listingType === 'For Sale' ? 'success' : 'warning'}
-                variant="solid"
-                borderRadius={BorderRadius.md}
-              >
-                {property.listingType}
-              </Badge>
-              
-              {property.isFeatured && (
-                <Badge 
-                  colorScheme="secondary" 
-                  variant="solid"
-                  borderRadius={BorderRadius.md}
-                >
-                  Featured
-                </Badge>
-              )}
-            </HStack>
+          </TouchableOpacity>
+        </View>
+      </View>
 
-            {/* Action Buttons */}
-            <HStack position="absolute" top={3} right={3} space={1}>
-              <IconButton
-                icon={<Ionicons name="share-outline" size={16} color="white" />}
-                onPress={handleSharePress}
-                bg="rgba(0,0,0,0.5)"
-                borderRadius="full"
-                size="sm"
-                _pressed={{ bg: 'rgba(0,0,0,0.7)' }}
-              />
-              
-              <IconButton
-                icon={
-                  <Ionicons 
-                    name={isFavorite(property.id) ? "heart" : "heart-outline"} 
-                    size={16} 
-                    color={isFavorite(property.id) ? Colors.status.featured : "white"} 
-                  />
-                }
-                onPress={handleFavoritePress}
-                bg="rgba(0,0,0,0.5)"
-                borderRadius="full"
-                size="sm"
-                _pressed={{ bg: 'rgba(0,0,0,0.7)' }}
-              />
-            </HStack>
-          </Box>
+      {/* Property Details */}
+      <View style={styles.detailsContainer}>
+        {/* Title and Price */}
+        <View style={styles.headerInfo}>
+          <AppText variant="h4" weight="semibold" numberOfLines={2}>
+            {property.title}
+          </AppText>
+          <AppText variant="h2" weight="bold" color="primary">
+            {formatPrice(property.price)}
+          </AppText>
+        </View>
 
-          {/* Property Details */}
-          <VStack space={3} p={4}>
-            {/* Title and Price */}
-            <VStack space={1}>
-              <AppText variant="h4" weight="semibold" numberOfLines={2}>
-                {property.title}
-              </AppText>
-              <AppText variant="h2" weight="bold" color="primary">
-                {formatPrice(property.price)}
-              </AppText>
-            </VStack>
-
-            {/* Key Features */}
-            <HStack justifyContent="space-between" alignItems="center">
-              <HStack space={4}>
-                <HStack space={1} alignItems="center">
-                  <Ionicons name="bed-outline" size={16} color={Colors.text.secondary} />
-                  <AppText variant="body" color="secondary">
-                    {property.bedrooms} {property.bedrooms === 1 ? 'Bed' : 'Beds'}
-                  </AppText>
-                </HStack>
-                
-                <HStack space={1} alignItems="center">
-                  <Ionicons name="expand-outline" size={16} color={Colors.text.secondary} />
-                  <AppText variant="body" color="secondary">
-                    {property.areaSize} sq ft
-                  </AppText>
-                </HStack>
-              </HStack>
-              
+        {/* Key Features */}
+        <View style={styles.featuresRow}>
+          <View style={styles.featureGroup}>
+            <View style={styles.featureItem}>
+              <Ionicons name="bed-outline" size={16} color={Colors.text.secondary} />
               <AppText variant="body" color="secondary">
-                {property.propertyCategory}
+                {property.bedrooms} {property.bedrooms === 1 ? 'Bed' : 'Beds'}
               </AppText>
-            </HStack>
+            </View>
+            
+            <View style={styles.featureItem}>
+              <Ionicons name="expand-outline" size={16} color={Colors.text.secondary} />
+              <AppText variant="body" color="secondary">
+                {property.areaSize} sq ft
+              </AppText>
+            </View>
+          </View>
+          
+          <AppText variant="body" color="secondary">
+            {property.propertyCategory}
+          </AppText>
+        </View>
 
-            {/* Location */}
-            <HStack space={2} alignItems="flex-start">
-              <Ionicons name="location-outline" size={14} color={Colors.text.secondary} style={{ marginTop: 2 }} />
-              <AppText variant="body" color="secondary" numberOfLines={2} flex={1}>
-                {property.address.line1}, {property.address.city}
-              </AppText>
-            </HStack>
+        {/* Location */}
+        <View style={styles.locationRow}>
+          <Ionicons name="location-outline" size={14} color={Colors.text.secondary} style={{ marginTop: 2 }} />
+          <AppText variant="body" color="secondary" numberOfLines={2} style={styles.locationText}>
+            {property.address.line1}, {property.address.city}
+          </AppText>
+        </View>
 
-            {/* Additional Info and Actions */}
-            <HStack justifyContent="space-between" alignItems="center">
-              <AppText variant="small" color="disabled">
-                {getPropertyAge(property.datePosted)}
-              </AppText>
-              
-              <Pressable 
-                onPress={handleContactPress}
-                hitSlop={8}
-              >
-                <HStack space={1} alignItems="center">
-                  <AppText variant="body" color="primary" weight="medium">
-                    Contact
-                  </AppText>
-                  <Ionicons name="arrow-forward" size={14} color={Colors.primary[500]} />
-                </HStack>
-              </Pressable>
-            </HStack>
-          </VStack>
-        </Box>
-      )}
+        {/* Additional Info and Actions */}
+        <View style={styles.footerRow}>
+          <AppText variant="small" color="disabled">
+            {getPropertyAge(property.datePosted)}
+          </AppText>
+          
+          <TouchableOpacity 
+            onPress={handleContactPress}
+            hitSlop={8}
+            style={styles.contactButton}
+          >
+            <AppText variant="body" color="primary" weight="medium">
+              Contact
+            </AppText>
+            <Ionicons name="arrow-forward" size={14} color={Colors.primary[500]} />
+          </TouchableOpacity>
+        </View>
+      </View>
     </Pressable>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: 'white',
+    borderRadius: BorderRadius.xl,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#F3F4F6', // gray.100
+  },
+  pressed: {
+    opacity: 0.9,
+    transform: [{ scale: 0.98 }],
+  },
+  imageContainer: {
+    position: 'relative',
+    width: '100%',
+    height: 200,
+  },
+  image: {
+    width: '100%',
+    height: '100%',
+  },
+  badgesContainer: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    flexDirection: 'row',
+    gap: 8,
+  },
+  badge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: BorderRadius.md,
+  },
+  badgeText: {
+    color: 'white',
+  },
+  actionsContainer: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    flexDirection: 'row',
+    gap: 4,
+  },
+  iconButton: {
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  detailsContainer: {
+    padding: 16,
+    gap: 12,
+  },
+  headerInfo: {
+    gap: 4,
+  },
+  featuresRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  featureGroup: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  featureItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  locationText: {
+    flex: 1,
+  },
+  footerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  contactButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+});
 
 export default DetailedView;

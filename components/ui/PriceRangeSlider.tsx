@@ -1,6 +1,8 @@
-import { Box, HStack, Slider, VStack } from 'native-base';
+import Slider from '@react-native-community/slider';
 import React from 'react';
+import { StyleSheet, View } from 'react-native';
 
+import { Colors } from '@/constants/Colors';
 import AppText from '../base/AppText';
 
 interface PriceRangeSliderProps {
@@ -31,55 +33,121 @@ const PriceRangeSlider: React.FC<PriceRangeSliderProps> = ({
   step = 100000
 }) => {
 
-  const handleValueChange = (values: number[]) => {
-    onPriceChange(values[0], values[1]);
+  const handleMinChange = (val: number) => {
+    // Ensure min doesn't exceed max
+    const newMin = Math.min(val, maxPrice);
+    onPriceChange(newMin, maxPrice);
+  };
+
+  const handleMaxChange = (val: number) => {
+    // Ensure max doesn't fall below min
+    const newMax = Math.max(val, minPrice);
+    onPriceChange(minPrice, newMax);
   };
 
   return (
-    <VStack space={4}>
-      <HStack justifyContent="space-between" alignItems="center">
-        <Box bg="primary.50" px={3} py={2} borderRadius="md">
-          <AppText variant="small" weight="medium" color="primary">
+    <View style={styles.container}>
+      {/* Price Labels */}
+      <View style={styles.labelsRow}>
+        <View style={styles.labelBadge}>
+          <AppText variant="small" weight="medium" style={{ color: Colors.primary[500] }}>
             {formatPricePKR(minPrice)}
           </AppText>
-        </Box>
+        </View>
         
         <AppText variant="small" color="secondary">
           to
         </AppText>
         
-        <Box bg="primary.50" px={3} py={2} borderRadius="md">
-          <AppText variant="small" weight="medium" color="primary">
+        <View style={styles.labelBadge}>
+          <AppText variant="small" weight="medium" style={{ color: Colors.primary[500] }}>
             {formatPricePKR(maxPrice)}
           </AppText>
-        </Box>
-      </HStack>
+        </View>
+      </View>
 
-      <Slider
-        minValue={minValue}
-        maxValue={maxValue}
-        step={step}
-        value={minPrice}
-        onChange={(value: number) => handleValueChange([value, maxPrice])}
-        colorScheme="primary"
-      >
-        <Slider.Track>
-          <Slider.FilledTrack />
-        </Slider.Track>
-        <Slider.Thumb zIndex={0} />
-        <Slider.Thumb zIndex={1} />
-      </Slider>
+      {/* Sliders Container */}
+      <View style={styles.slidersContainer}>
+        {/* Min Price Slider */}
+        <View style={styles.sliderWrapper}>
+            <AppText variant="small" color="secondary" style={styles.sliderLabel}>Min</AppText>
+            <Slider
+            style={styles.slider}
+            minimumValue={minValue}
+            maximumValue={maxValue}
+            step={step}
+            value={minPrice}
+            onValueChange={handleMinChange}
+            minimumTrackTintColor={Colors.primary[500]}
+            maximumTrackTintColor={Colors.gray ? Colors.gray[300] : '#d1d5db'}
+            thumbTintColor={Colors.primary[500]}
+            />
+        </View>
 
-      <HStack justifyContent="space-between">
+        {/* Max Price Slider */}
+        <View style={styles.sliderWrapper}>
+            <AppText variant="small" color="secondary" style={styles.sliderLabel}>Max</AppText>
+            <Slider
+            style={styles.slider}
+            minimumValue={minValue}
+            maximumValue={maxValue}
+            step={step}
+            value={maxPrice}
+            onValueChange={handleMaxChange}
+            minimumTrackTintColor={Colors.primary[500]}
+            maximumTrackTintColor={Colors.gray ? Colors.gray[300] : '#d1d5db'}
+            thumbTintColor={Colors.primary[500]}
+            />
+        </View>
+      </View>
+
+      {/* Range Limits */}
+      <View style={styles.rangeLimits}>
         <AppText variant="small" color="secondary">
           {formatPricePKR(minValue)}
         </AppText>
         <AppText variant="small" color="secondary">
           {formatPricePKR(maxValue)}
         </AppText>
-      </HStack>
-    </VStack>
+      </View>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    gap: 16,
+  },
+  labelsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  labelBadge: {
+    backgroundColor: Colors.primary[50],
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  slidersContainer: {
+      gap: 12,
+  },
+  sliderWrapper: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+  },
+  sliderLabel: {
+      width: 30,
+  },
+  slider: {
+    flex: 1,
+    height: 40,
+  },
+  rangeLimits: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+});
 
 export default PriceRangeSlider;

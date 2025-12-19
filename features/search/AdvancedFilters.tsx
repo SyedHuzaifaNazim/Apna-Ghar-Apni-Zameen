@@ -1,11 +1,10 @@
 import React from 'react';
-
 import FilterModal from '../../components/ui/FilterModal';
 
 export interface AdvancedFilterState {
   listingType: string;
   propertyCategory: string;
-  city: string;
+  cities: string[]; // Changed from 'city' to 'cities' (string[]) to match FilterOptions
   minPrice: number;
   maxPrice: number;
   bedrooms: number;
@@ -32,7 +31,7 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
       onApplyFilters={(formFilters) => onApply({
         listingType: formFilters.listingType ?? '',
         propertyCategory: formFilters.propertyCategory ?? '',
-        city: formFilters.city ?? '',
+        cities: formFilters.cities ?? [], // Updated to use cities array
         minPrice: formFilters.minPrice ?? 0,
         maxPrice: formFilters.maxPrice ?? 0,
         bedrooms: formFilters.bedrooms ?? 0,

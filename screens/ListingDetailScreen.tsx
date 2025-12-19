@@ -1,29 +1,31 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation, useRoute } from '@react-navigation/native';
-import {
-  Badge,
-  Box,
-  Button,
-  Divider,
-  HStack,
-  IconButton,
-  Image,
-  ScrollView,
-  Text,
-  VStack
-} from 'native-base';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
+import {
+  Dimensions,
+  Image,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View
+} from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 
 // Hooks and Context
-import { MOCK_PROPERTIES } from '../api/apiMock';
-import { Colors } from '../constants/Colors';
-import { useFavorites } from '../context/FavoritesContext';
+import { MOCK_PROPERTIES } from '@/api/apiMock';
+import AppButton from '@/components/base/AppButton';
+import AppText from '@/components/base/AppText';
+import { Colors } from '@/constants/Colors';
+import { useFavorites } from '@/context/FavoritesContext';
+
+const { width } = Dimensions.get('window');
 
 const ListingDetailScreen = () => {
-  const navigation = useNavigation();
-  const route = useRoute();
-  const { propertyId } = route.params as { propertyId: number };
+  const router = useRouter();
+  const params = useLocalSearchParams();
+  const propertyId = params.id ? Number(params.id) : 0;
+  
   const { isFavorite, toggleFavorite } = useFavorites();
 
   const property = useMemo(() => {
@@ -32,15 +34,17 @@ const ListingDetailScreen = () => {
 
   if (!property) {
     return (
-      <Box flex={1} bg="white" safeArea justifyContent="center" alignItems="center">
-        <Ionicons name="warning-outline" size={64} color={Colors.error[500]} />
-        <Text fontSize="lg" fontWeight="semibold" mt={4}>
-          Property not found
-        </Text>
-        <Button onPress={() => navigation.goBack()} mt={4} backgroundColor="primary.500">
-          Go Back
-        </Button>
-      </Box>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.errorContainer}>
+          <Ionicons name="warning-outline" size={64} color={Colors.error[500]} />
+          <AppText variant="h3" weight="semibold" style={styles.errorText}>
+            Property not found
+          </AppText>
+          <AppButton onPress={() => router.back()} style={styles.backButton}>
+            Go Back
+          </AppButton>
+        </View>
+      </SafeAreaView>
     );
   }
 
@@ -54,126 +58,124 @@ const ListingDetailScreen = () => {
   };
 
   return (
-    <Box flex={1} bg="white" safeArea>
-      {/* Header */}
-      <Box position="relative">
-        <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}>
-          {property.images.map((image, index) => (
-            <Image
-              key={index}
-              source={{ uri: image }}
-              alt={`Property image ${index + 1}`}
-              width={400}
-              height={300}
-              resizeMode="cover"
-            />
-          ))}
-        </ScrollView>
-        
-        {/* Back Button */}
-        <IconButton
-          position="absolute"
-          top={4}
-          left={4}
-          backgroundColor="white"
-          borderRadius="full"
-          icon={<Ionicons name="arrow-back" size={20} />}
-          onPress={() => navigation.goBack()}
-        />
-        
-        {/* Favorite Button */}
-        <IconButton
-          position="absolute"
-          top={4}
-          right={4}
-          backgroundColor="white"
-          borderRadius="full"
-          icon={
+    <View style={styles.container}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        {/* Header / Image Carousel */}
+        <View style={styles.imageContainer}>
+          <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}>
+            {property.images.map((image, index) => (
+              <Image
+                key={index}
+                source={{ uri: image }}
+                style={styles.propertyImage}
+                resizeMode="cover"
+              />
+            ))}
+          </ScrollView>
+          
+          {/* Back Button */}
+          <TouchableOpacity
+            style={[styles.iconButton, styles.backButtonPos]}
+            onPress={() => router.back()}
+          >
+            <Ionicons name="arrow-back" size={24} color={Colors.text.primary} />
+          </TouchableOpacity>
+          
+          {/* Favorite Button */}
+          <TouchableOpacity
+            style={[styles.iconButton, styles.favButtonPos]}
+            onPress={() => toggleFavorite(property.id)}
+          >
             <Ionicons 
               name={isFavorite(property.id) ? "heart" : "heart-outline"} 
-              size={20} 
+              size={24} 
               color={isFavorite(property.id) ? Colors.status.featured : Colors.text.primary} 
             />
-          }
-          onPress={() => toggleFavorite(property.id)}
-        />
-        
-        {/* Badges */}
-        <HStack position="absolute" bottom={4} left={4} space={2}>
-          <Badge colorScheme={property.listingType === 'For Sale' ? 'success' : 'warning'} variant="solid">
-            {property.listingType}
-          </Badge>
-          {property.isFeatured && (
-            <Badge colorScheme="secondary" variant="solid">
-              Featured
-            </Badge>
-          )}
-        </HStack>
-      </Box>
+          </TouchableOpacity>
+          
+          {/* Badges */}
+          <View style={styles.badgeContainer}>
+            <View style={[
+              styles.badge, 
+              { backgroundColor: property.listingType === 'For Sale' ? Colors.success[500] : Colors.warning[500] }
+            ]}>
+              <AppText variant="small" weight="bold" color="inverse">
+                {property.listingType}
+              </AppText>
+            </View>
+            
+            {property.isFeatured && (
+              <View style={[styles.badge, { backgroundColor: Colors.secondary[500] }]}>
+                <AppText variant="small" weight="bold" color="inverse">
+                  Featured
+                </AppText>
+              </View>
+            )}
+          </View>
+        </View>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <VStack space={4} p={4}>
+        <View style={styles.contentContainer}>
           {/* Title and Price */}
-          <VStack space={2}>
-            <Text fontSize="2xl" fontWeight="bold" color="text.primary">
+          <View style={styles.section}>
+            <AppText variant="h2" weight="bold" color="primary">
               {property.title}
-            </Text>
-            <Text fontSize="3xl" fontWeight="bold" color="primary.500">
+            </AppText>
+            <AppText variant="h1" weight="bold" color="primary" style={{ color: Colors.primary[500] }}>
               {formatPrice(property.price)} {property.currency}
-            </Text>
-          </VStack>
+            </AppText>
+          </View>
 
           {/* Key Details */}
-          <HStack justifyContent="space-around" bg="gray.50" p={3} borderRadius="lg">
-            <VStack alignItems="center" space={1}>
+          <View style={styles.detailsCard}>
+            <View style={styles.detailItem}>
               <Ionicons name="bed-outline" size={24} color={Colors.primary[500]} />
-              <Text fontSize="sm" color="text.secondary">Bedrooms</Text>
-              <Text fontSize="lg" fontWeight="bold">{property.bedrooms}</Text>
-            </VStack>
-            <VStack alignItems="center" space={1}>
+              <AppText variant="small" color="secondary">Bedrooms</AppText>
+              <AppText variant="body" weight="bold">{property.bedrooms}</AppText>
+            </View>
+            <View style={styles.detailItem}>
               <Ionicons name="resize-outline" size={24} color={Colors.primary[500]} />
-              <Text fontSize="sm" color="text.secondary">Area</Text>
-              <Text fontSize="lg" fontWeight="bold">{property.areaSize} sq ft</Text>
-            </VStack>
-            <VStack alignItems="center" space={1}>
+              <AppText variant="small" color="secondary">Area</AppText>
+              <AppText variant="body" weight="bold">{property.areaSize} sq ft</AppText>
+            </View>
+            <View style={styles.detailItem}>
               <Ionicons name="business-outline" size={24} color={Colors.primary[500]} />
-              <Text fontSize="sm" color="text.secondary">Type</Text>
-              <Text fontSize="lg" fontWeight="bold">{property.propertyCategory}</Text>
-            </VStack>
-          </HStack>
+              <AppText variant="small" color="secondary">Type</AppText>
+              <AppText variant="body" weight="bold">{property.propertyCategory}</AppText>
+            </View>
+          </View>
 
-          <Divider />
+          <View style={styles.divider} />
 
           {/* Description */}
-          <VStack space={2}>
-            <Text fontSize="lg" fontWeight="semibold">Description</Text>
-            <Text fontSize="md" color="text.secondary" lineHeight={24}>
+          <View style={styles.section}>
+            <AppText variant="h3" weight="semibold">Description</AppText>
+            <AppText variant="body" color="secondary" style={styles.descriptionText}>
               {property.description}
-            </Text>
-          </VStack>
+            </AppText>
+          </View>
 
-          <Divider />
+          <View style={styles.divider} />
 
           {/* Address */}
-          <VStack space={2}>
-            <Text fontSize="lg" fontWeight="semibold">Address</Text>
-            <HStack alignItems="flex-start" space={2}>
+          <View style={styles.section}>
+            <AppText variant="h3" weight="semibold">Address</AppText>
+            <View style={styles.addressRow}>
               <Ionicons name="location-outline" size={20} color={Colors.text.secondary} />
-              <VStack flex={1}>
-                <Text fontSize="md" color="text.primary">{property.address.line1}</Text>
-                <Text fontSize="md" color="text.secondary">{property.address.city}</Text>
-              </VStack>
-            </HStack>
-          </VStack>
+              <View style={{ flex: 1 }}>
+                <AppText variant="body" color="primary">{property.address.line1}</AppText>
+                <AppText variant="body" color="secondary">{property.address.city}</AppText>
+              </View>
+            </View>
+          </View>
 
-          <Divider />
+          <View style={styles.divider} />
 
           {/* Map */}
-          <VStack space={2}>
-            <Text fontSize="lg" fontWeight="semibold">Location</Text>
-            <Box height={200} borderRadius="lg" overflow="hidden">
+          <View style={styles.section}>
+            <AppText variant="h3" weight="semibold" style={{ marginBottom: 8 }}>Location</AppText>
+            <View style={styles.mapContainer}>
               <MapView
-                style={{ flex: 1 }}
+                style={styles.map}
                 provider={PROVIDER_GOOGLE}
                 initialRegion={{
                   latitude: property.address.latitude,
@@ -192,45 +194,155 @@ const ListingDetailScreen = () => {
                   title={property.title}
                 />
               </MapView>
-            </Box>
-          </VStack>
+            </View>
+          </View>
 
-          <Divider />
+          <View style={styles.divider} />
 
           {/* Contact Actions */}
-          <VStack space={3} pb={8}>
-            <Text fontSize="lg" fontWeight="semibold" textAlign="center">
+          <View style={[styles.section, { paddingBottom: 32 }]}>
+            <AppText variant="h3" weight="semibold" align="center" style={{ marginBottom: 16 }}>
               Interested in this property?
-            </Text>
-            <HStack space={3}>
-              <Button 
-                flex={1} 
+            </AppText>
+            <View style={styles.actionButtonsRow}>
+              <AppButton 
                 variant="outline" 
-                leftIcon={<Ionicons name="call-outline" size={20} />}
-                borderColor="primary.500"
+                style={styles.flexButton}
+                leftIcon={<Ionicons name="call-outline" size={20} color={Colors.primary[500]} />}
+                onPress={() => {}}
               >
                 Call Agent
-              </Button>
-              <Button 
-                flex={1} 
+              </AppButton>
+              <AppButton 
                 variant="outline"
-                leftIcon={<Ionicons name="chatbubble-outline" size={20} />}
-                borderColor="primary.500"
+                style={styles.flexButton}
+                leftIcon={<Ionicons name="chatbubble-outline" size={20} color={Colors.primary[500]} />}
+                onPress={() => {}}
               >
                 Message
-              </Button>
-            </HStack>
-            <Button 
-              backgroundColor="primary.500"
+              </AppButton>
+            </View>
+            <AppButton 
+              style={{ marginTop: 12 }}
               leftIcon={<Ionicons name="calendar-outline" size={20} color="white" />}
+              onPress={() => {}}
             >
               Schedule Viewing
-            </Button>
-          </VStack>
-        </VStack>
+            </AppButton>
+          </View>
+        </View>
       </ScrollView>
-    </Box>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: 'white',
+  },
+  scrollContent: {
+    paddingBottom: 20,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    marginTop: 16,
+  },
+  backButton: {
+    marginTop: 16,
+    width: 200,
+  },
+  imageContainer: {
+    position: 'relative',
+    height: 300,
+    width: '100%',
+  },
+  propertyImage: {
+    width: width,
+    height: 300,
+  },
+  iconButton: {
+    position: 'absolute',
+    top: 48, // Adjust for status bar
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  backButtonPos: {
+    left: 16,
+  },
+  favButtonPos: {
+    right: 16,
+  },
+  badgeContainer: {
+    position: 'absolute',
+    bottom: 16,
+    left: 16,
+    flexDirection: 'row',
+    gap: 8,
+  },
+  badge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  contentContainer: {
+    padding: 16,
+  },
+  section: {
+    marginBottom: 16,
+    gap: 8,
+  },
+  detailsCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    backgroundColor: Colors.gray[50],
+    padding: 16,
+    borderRadius: 12,
+    marginVertical: 8,
+  },
+  detailItem: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: Colors.gray[200],
+    marginVertical: 16,
+  },
+  descriptionText: {
+    lineHeight: 24,
+  },
+  addressRow: {
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'flex-start',
+  },
+  mapContainer: {
+    height: 200,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  map: {
+    flex: 1,
+  },
+  actionButtonsRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  flexButton: {
+    flex: 1,
+  },
+});
 
 export default ListingDetailScreen;
