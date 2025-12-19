@@ -1,104 +1,167 @@
-import { HStack } from 'native-base';
+import { Colors } from '@/constants/Colors';
 import React from 'react';
 import {
   ActivityIndicator,
+  Text,
+  TextStyle,
   TouchableOpacity,
-  TouchableOpacityProps
+  TouchableOpacityProps,
+  ViewStyle,
 } from 'react-native';
-import { Colors } from '../../constants/Colors';
-import { BorderRadius } from '../../constants/Layout';
-import AppText from './AppText';
 
 interface AppButtonProps extends TouchableOpacityProps {
+  children: React.ReactNode;
+  onPress: () => void;
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost';
   size?: 'sm' | 'md' | 'lg';
-  loading?: boolean;
-  disabled?: boolean;
+  isLoading?: boolean;
+  isDisabled?: boolean;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
-  children: string;
+  style?: ViewStyle | ViewStyle[];
+  textStyle?: TextStyle;
+  width?: number | string;
 }
 
 const AppButton: React.FC<AppButtonProps> = ({
+  children,
+  onPress,
   variant = 'primary',
   size = 'md',
-  loading = false,
-  disabled = false,
+  isLoading = false,
+  isDisabled = false,
   leftIcon,
   rightIcon,
-  children,
   style,
+  textStyle,
+  width,
   ...props
 }) => {
-  const getButtonStyle = () => {
-    const baseStyle = {
-      borderRadius: BorderRadius.lg,
-      alignItems: 'center' as const,
-      justifyContent: 'center' as const,
-      flexDirection: 'row' as const,
-      opacity: disabled ? 0.6 : 1,
+  
+  // Base container styles
+  const getContainerStyle = () => {
+    let baseStyle: ViewStyle = {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: 12,
+      opacity: isDisabled ? 0.6 : 1,
     };
 
-    const sizeStyle = {
-      sm: { paddingHorizontal: 16, paddingVertical: 8, height: 36 },
-      md: { paddingHorizontal: 24, paddingVertical: 12, height: 48 },
-      lg: { paddingHorizontal: 32, paddingVertical: 16, height: 56 },
-    }[size];
+    // Width handling
+    // if (width) {
+      // baseStyle.width = width;
+    // }
 
-    const variantStyle = {
-      primary: {
-        backgroundColor: Colors.primary,
-      },
-      secondary: {
-        backgroundColor: Colors.secondary,
-      },
-      outline: {
-        backgroundColor: 'transparent',
-        borderWidth: 2,
-        borderColor: Colors.primary,
-      },
-      ghost: {
-        backgroundColor: 'transparent',
-      },
-    }[variant];
-
-    return [baseStyle, sizeStyle, variantStyle, style];
-  };
-
-  const getTextColor = () => {
-    if (variant === 'outline' || variant === 'ghost') {
-      return 'primary' as const as 'primary' | 'secondary' | 'disabled' | 'error' | 'success';
+    // Size handling
+    switch (size) {
+      case 'sm':
+        baseStyle.paddingVertical = 8;
+        baseStyle.paddingHorizontal = 12;
+        break;
+      case 'lg':
+        baseStyle.paddingVertical = 16;
+        baseStyle.paddingHorizontal = 24;
+        break;
+      case 'md':
+      default:
+        baseStyle.paddingVertical = 12;
+        baseStyle.paddingHorizontal = 16;
     }
-    return 'inverse';
+
+    // Variant handling
+    switch (variant) {
+      case 'secondary':
+        baseStyle.backgroundColor = Colors.background.secondary; // Ensure this color exists or use a fallback
+        baseStyle.borderWidth = 1;
+        baseStyle.borderColor = Colors.border.light;
+        break;
+      case 'outline':
+        baseStyle.backgroundColor = 'transparent';
+        baseStyle.borderWidth = 1.5;
+        baseStyle.borderColor = Colors.primary[500];
+        break;
+      case 'ghost':
+        baseStyle.backgroundColor = 'transparent';
+        break;
+      case 'primary':
+      default:
+        baseStyle.backgroundColor = Colors.primary[500];
+    }
+
+    return baseStyle;
   };
 
-  const getTextSize = () => {
-    return size === 'sm' ? 'small' : size === 'md' ? 'body' : 'h3';
+  // Text styles
+  const getTextStyle = () => {
+    let baseTextStyle: TextStyle = {
+      fontWeight: '600',
+      textAlign: 'center',
+    };
+
+    // Size handling for text
+    switch (size) {
+      case 'sm':
+        baseTextStyle.fontSize = 12;
+        break;
+      case 'lg':
+        baseTextStyle.fontSize = 18;
+        break;
+      case 'md':
+      default:
+        baseTextStyle.fontSize = 16;
+    }
+
+    // Variant handling for text color
+    switch (variant) {
+      case 'outline':
+      case 'ghost':
+        baseTextStyle.color = Colors.primary[500];
+        break;
+      case 'secondary':
+        baseTextStyle.color = Colors.text.primary;
+        break;
+      case 'primary':
+      default:
+        baseTextStyle.color = '#FFFFFF'; // White text for primary
+    }
+
+    return baseTextStyle;
   };
 
   return (
     <TouchableOpacity
-      style={getButtonStyle()}
-      disabled={disabled || loading}
+      onPress={onPress}
+      disabled={isDisabled || isLoading}
+      activeOpacity={0.7}
+      style={[getContainerStyle(), style]}
       {...props}
     >
-      {loading ? (
+      {isLoading ? (
         <ActivityIndicator 
           size="small" 
-          color={variant === 'primary' || variant === 'secondary' ? 'white' : Colors.primary[500]} 
+          color={variant === 'outline' || variant === 'ghost' ? Colors.primary[500] : 'white'} 
         />
       ) : (
-        <HStack space={2} alignItems="center">
-          {leftIcon && leftIcon}
-          <AppText 
-            variant={getTextSize()} 
-            color={getTextColor() as 'primary' | 'secondary' | 'disabled' | 'error' | 'success' | undefined}
-            weight="semibold"
-          >
+        <>
+          {leftIcon && (
+            <React.Fragment>
+              {leftIcon}
+              <Text style={{ width: 8 }} /> 
+            </React.Fragment>
+          )}
+          
+          <Text style={[getTextStyle(), textStyle]}>
             {children}
-          </AppText>
-          {rightIcon && rightIcon}
-        </HStack>
+          </Text>
+
+          {rightIcon && (
+            <React.Fragment>
+              <Text style={{ width: 8 }} />
+              {rightIcon}
+            </React.Fragment>
+          )}
+        </>
       )}
     </TouchableOpacity>
   );

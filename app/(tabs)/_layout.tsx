@@ -1,29 +1,28 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Tabs } from 'expo-router';
-import React from 'react'; // Removed unused Animated and useRef imports
-import { StyleSheet, View } from 'react-native'; // Removed unused Animated and TouchableOpacity imports
+import React from 'react';
+import { StyleSheet, View } from 'react-native';
 
 import { Colors } from '@/constants/Colors';
 
 export default function TabLayout() {
-  // Removed unused scaleAnim
 
   return (
     <Tabs
       screenOptions={{
         headerShown: false, // Tabs content manages its own header
         tabBarActiveTintColor: Colors.primary[500], // Use brand green for active state
-        tabBarInactiveTintColor: Colors.gray[600], // Use dark gray for inactive state (visible on white background)
+        tabBarInactiveTintColor: Colors.gray[600], // Use dark gray for inactive state
         tabBarShowLabel: false,
         tabBarStyle: {
           backgroundColor: Colors.background.primary, // White background for the bar
           borderTopWidth: 0,
-          height: 70, // Slightly taller for modern look
+          height: 80, // Slightly taller for modern look
           paddingBottom: 0,
           paddingTop: 0,
           position: 'absolute',
-          // Subtle shadow for a clean, floating effect (Modern Android/iOS style)
+          // Subtle shadow for a clean, floating effect
           elevation: 5,
           shadowColor: Colors.shadow.medium,
           shadowOffset: {
@@ -45,7 +44,6 @@ export default function TabLayout() {
               <Ionicons 
                 name={focused ? "home" : "home-outline"} 
                 size={26} 
-                // Focused icon uses Primary Green, Inactive uses dark gray
                 color={focused ? Colors.primary[500] : Colors.gray[600]} 
               />
               {focused && <View style={styles.activeDot} />}
@@ -61,7 +59,7 @@ export default function TabLayout() {
           tabBarIcon: ({ focused }) => (
             <View style={styles.tabItem}>
               <Ionicons 
-                name={focused ? "map" : "map-outline"} // Changed compass to map, which is more relevant for real estate exploration
+                name={focused ? "map" : "map-outline"} 
                 size={26} 
                 color={focused ? Colors.primary[500] : Colors.gray[600]} 
               />
@@ -74,16 +72,15 @@ export default function TabLayout() {
       <Tabs.Screen
         name="search"
         options={{
-          title: 'Search', // Still call it Search, but make it prominent
+          title: 'Search',
           tabBarIcon: ({ focused }) => (
-            // The prominent, floating Search Button (Zameen style focus)
             <View 
               style={[
                 styles.centerTabWrapper,
               ]}
             >
               <LinearGradient
-                colors={[Colors.primary[500], Colors.primary[600]]} // Bold Green gradient
+                colors={[Colors.primary[500], Colors.primary[600]]} 
                 style={styles.centerTabGradient}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
@@ -91,13 +88,12 @@ export default function TabLayout() {
                 <Ionicons 
                   name="search" 
                   size={26} 
-                  color={Colors.background.card} // White icon
+                  color={Colors.background.card} 
                 />
               </LinearGradient>
             </View>
           ),
-          // Set to unmount on blur so it resets when the user navigates away
-          unmountOnBlur: true,
+          // REMOVED: unmountOnBlur: true to fix TypeScript error
         }}
       />
       
@@ -148,33 +144,29 @@ const styles = StyleSheet.create({
   activeDot: {
     position: 'absolute',
     bottom: 8,
-    width: 6, // Slightly larger dot for visibility
+    width: 6,
     height: 6,
     borderRadius: 3,
     backgroundColor: Colors.primary[500],
   },
   centerTabWrapper: {
-    // Positioning the button to float above the tab bar
-    marginTop: -25, // Move button up by reducing negative margin
-    // Shadow for elevation
+    marginTop: -25, 
     shadowColor: Colors.primary[500],
     shadowOffset: {
       width: 0,
-      height: 6, // Higher shadow for a floating look
+      height: 6, 
     },
     shadowOpacity: 0.3,
     shadowRadius: 10,
-    elevation: 10,
-    backgroundColor: 'transparent', // Crucial for shadow effect
+    elevation: 100,
+    backgroundColor: 'transparent',
   },
-  // Removed centerTabActive
   centerTabGradient: {
-    width: 55, // Slightly smaller button
+    width: 55, 
     height: 55,
     borderRadius: 27.5,
     alignItems: 'center',
     justifyContent: 'center',
-    // Inner shadow for gradient button polish
     shadowColor: Colors.shadow.dark,
     shadowOffset: {
       width: 0,

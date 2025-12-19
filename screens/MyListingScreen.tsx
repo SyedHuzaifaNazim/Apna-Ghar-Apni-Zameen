@@ -52,6 +52,7 @@ const MyListingsScreen: React.FC = () => {
                     />
                     <View style={styles.cardActions}>
                         <AppButton 
+                            onPress={() => {/* TODO: implement edit */}}
                             variant="outline"
                             style={[styles.actionButton, { borderColor: Colors.primary[500] }]}
                             textStyle={{ color: Colors.primary[500] }}
@@ -59,6 +60,7 @@ const MyListingsScreen: React.FC = () => {
                             Edit
                         </AppButton>
                         <AppButton 
+                            onPress={() => {/* TODO: implement delete */}}
                             variant="outline"
                             style={[styles.actionButton, { borderColor: Colors.error[500] }]}
                             textStyle={{ color: Colors.error[500] }}

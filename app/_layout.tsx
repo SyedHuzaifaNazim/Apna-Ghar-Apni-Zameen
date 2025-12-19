@@ -4,7 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import React, { createContext, useContext, useRef, useState } from 'react';
 import { Animated, BackHandler, Easing, Modal, StyleSheet, TouchableWithoutFeedback, useColorScheme, View } from 'react-native';
 import 'react-native-reanimated';
-import { SafeAreaProvider } from 'react-native-safe-area-context'; // <--- NEW IMPORT
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import SideDrawer from '@/components/ui/SideDrawer';
 import Colors from '@/constants/Colors';
@@ -178,7 +178,7 @@ export default function RootLayout() {
                 headerTitleStyle: {
                   fontWeight: '600', 
                 },
-                headerBackTitleVisible: false,
+                headerBackTitle: '', // FIXED: Use empty string to hide back title
               }}
             >
               

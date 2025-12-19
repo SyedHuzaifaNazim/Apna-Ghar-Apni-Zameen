@@ -1,12 +1,4 @@
 // screens/HomeScreen.tsx
-import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
-import { FlashList } from '@shopify/flash-list';
-import { useRouter } from 'expo-router';
-import { debounce } from 'lodash';
-import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { ImageBackground, SafeAreaView, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
-
 import { Property } from '@/api/apiMock';
 import AppButton from '@/components/base/AppButton';
 import AppText from '@/components/base/AppText';
@@ -20,6 +12,13 @@ import { useFavorites } from '@/context/FavoritesContext';
 import { useFetchProperties } from '@/hooks/useFetchProperties';
 import { useFilterProperties } from '@/hooks/useFilterProperties';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
+import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
+import { FlashList } from '@shopify/flash-list';
+import { useRouter } from 'expo-router';
+import { debounce } from 'lodash';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { Image, ImageBackground, SafeAreaView, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import { useDrawer } from '../app/_layout';
 
 // --- Component Types ---
@@ -62,7 +61,7 @@ const CustomIconButton: React.FC<CustomIconButtonProps> = ({ icon, onPress, styl
 const CustomInput: React.FC<CustomInputProps> = ({ value, onChangeText, onClear, placeholder, iconName }) => (
     <View style={styles.searchInputWrapper}>
         <View style={styles.searchInputContainer}>
-            <Ionicons  size={22} color={Colors.gray[500]} style={styles.searchInputIcon} />
+            <Ionicons name="search" size={22} color={Colors.gray[500]} style={styles.searchInputIcon} />
             <TextInput
                 placeholder={placeholder}
                 placeholderTextColor={Colors.gray[500]}
@@ -168,9 +167,9 @@ const HomeScreen: React.FC = () => {
     router.push(`/listing/${propertyId}`);
   }, [router]);
 
-  const handleMapPress = useCallback(() => {
-    router.push('/map');
-  }, [router]);
+  // const handleMapPress = useCallback(() => {
+  //   router.push('/map');
+  // }, [router]);
 
   const handleOpenAdvancedFilters = useCallback(() => {
     setShowFilters(true);
@@ -297,12 +296,16 @@ const HomeScreen: React.FC = () => {
                     <TouchableOpacity onPress={openDrawer} activeOpacity={0.8} style={styles.hamburgerButton}>
                         <Ionicons name="menu" size={30} color="white" />
                     </TouchableOpacity>
-                    
                     <AppText variant="h1" weight="bold" color="white" style={styles.headerTitle}>
-                      Apna Ghar Apni Zameen
+                    <Image
+                      source={require('@/assets/images/transparent-logo1.png')}
+                      resizeMode="contain"
+                      style={styles.logoImage}
+                    />
+                      {/* Apna Ghar Apni Zameen */}
+                      
                     </AppText>
-                    
-                    <TouchableOpacity onPress={handleOpenAdvancedFilters} activeOpacity={0.8}>
+                      <TouchableOpacity onPress={handleOpenAdvancedFilters} activeOpacity={0.8}>
                       <View style={styles.filterIconWrapper}>
                         <Ionicons name="options-outline" size={24} color="white" />
                         {filterCount > 0 && ( 
@@ -313,13 +316,19 @@ const HomeScreen: React.FC = () => {
                           </View>
                         )}
                       </View>
+                      
                     </TouchableOpacity>
+                    
                   </View>
-
-                  <View style={styles.headerSearchSection}>
-                    <AppText variant="h3" color="white">
-                      Find your next dream property
+                  
+                    <AppText variant="h3" color='#d1cfcf'>
+                      Find your next dream property!
                     </AppText>
+
+                    <AppText variant="body" color="secondary" style={styles.spacer}>
+                      Find your next dream property!
+                    </AppText>
+                  <View style={styles.headerSearchSection}>
                     {/* Search Input (Styled round) */}
                     <CustomInput
                       value={searchQuery}
@@ -395,10 +404,10 @@ const HomeScreen: React.FC = () => {
       />
 
       {/* Floating Map Button */}
-      <CustomFab
+      {/* <CustomFab
         icon={<Ionicons name="map" size={26} color="white" />}
         onPress={handleMapPress}
-      />
+      /> */}
 
       {/* Filter Modal */}
       <FilterModal
@@ -511,9 +520,10 @@ const styles = StyleSheet.create({
   headerSearchSection: {
     marginTop: 16,
     marginBottom: 0,
+    color: Colors.text.primary,
   },
   searchInputWrapper: {
-    marginTop: 8,
+    marginTop: 5,
   },
   searchInputContainer: {
     flexDirection: 'row',
@@ -526,7 +536,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3, 
     shadowRadius: 10,
     elevation: 8, 
-    height: 52, 
+    height: 40, 
   },
   searchInputIcon: {
     marginLeft: 16,
@@ -545,7 +555,7 @@ const styles = StyleSheet.create({
   },
   // --- Quick Filter Positioning (Pulls up under search bar) ---
   quickFilterBarWrapper: {
-    marginTop: -80, // Aggressively pull the filter box up over the banner
+    marginTop: -40, // Aggressively pull the filter box up over the banner
     zIndex: 1,
     paddingHorizontal: 16,
     marginBottom: 16, 
@@ -638,6 +648,16 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 5,
     elevation: 6,
+  },
+  spacer: {
+    height: 35,
+  },
+  logoImage: {
+    width: 400,
+    height: 100,
+    marginRight: 8,
+    // Ensure the image isn't hidden behind the absolute positioned hamburger
+    zIndex: 10, 
   },
 });
 

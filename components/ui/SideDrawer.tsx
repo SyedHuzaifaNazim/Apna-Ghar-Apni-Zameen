@@ -1,6 +1,6 @@
 // components/ui/SideDrawer.tsx
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { Href, useRouter } from 'expo-router'; // Added Href for type casting
 import React from 'react';
 import { Alert, Dimensions, SafeAreaView, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
@@ -18,7 +18,7 @@ interface SideDrawerProps {
 const SIDEBAR_LINKS = [
     { title: "Home", icon: "home-outline", route: "/(tabs)/index" },
     { title: "Industrial Hub", icon: "business-outline", route: "/industrial-hub" },
-    { title: "Map View", icon: "map-outline", route: "/map" },
+    // { title: "Map View", icon: "map-outline", route: "/map" },
     { title: "My Favorites", icon: "heart-outline", route: "/favorites", requiresAuth: true },
     { title: "My Listings", icon: "home-outline", route: "/my-listings", requiresAuth: true },
 ];
@@ -37,18 +37,19 @@ const SideDrawer: React.FC<SideDrawerProps> = ({ onClose, isAuthenticated = fals
   const handleLogout = () => {
       onClose();
       // Implement actual authentication call
-      router.replace('/login');
+      router.replace('/login' as Href);
       Alert.alert("Logged Out", "You have been logged out successfully.");
   };
 
   const handleNavigation = (route: string, requiresAuth: boolean = false) => {
       onClose();
       if (requiresAuth && !isAuthenticated) {
-          router.push('/login');
+          router.push('/login' as Href);
           // Note: In a real app, you'd navigate to the login screen and then return here after sign-in
           Alert.alert("Sign In Required", "Please sign in to access this feature.");
       } else {
-          router.push(route);
+          // Fix: Cast the generic string route to Href type
+          router.push(route as Href);
       }
   };
 

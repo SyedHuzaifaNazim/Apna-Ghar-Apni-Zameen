@@ -90,7 +90,7 @@ const EditProfileScreen: React.FC = () => {
         {/* Save Button */}
         <AppButton 
           onPress={handleSave}
-          loading={loading}
+          isLoading={loading}
           style={styles.saveButton}
         >
           Save Changes
