@@ -18,7 +18,7 @@ interface SideDrawerProps {
 const SIDEBAR_LINKS = [
     { title: "Home", icon: "home-outline", route: "/(tabs)/index" },
     { title: "Industrial Hub", icon: "business-outline", route: "/industrial-hub" },
-    // { title: "Map View", icon: "map-outline", route: "/map" },
+    { title: "Map View", icon: "map-outline", route: "/map" },
     { title: "My Favorites", icon: "heart-outline", route: "/favorites", requiresAuth: true },
     { title: "My Listings", icon: "home-outline", route: "/my-listings", requiresAuth: true },
 ];

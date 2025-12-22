@@ -167,9 +167,9 @@ const HomeScreen: React.FC = () => {
     router.push(`/listing/${propertyId}`);
   }, [router]);
 
-  // const handleMapPress = useCallback(() => {
-  //   router.push('/map');
-  // }, [router]);
+  const handleMapPress = useCallback(() => {
+    router.push('/map');
+  }, [router]);
 
   const handleOpenAdvancedFilters = useCallback(() => {
     setShowFilters(true);
@@ -404,10 +404,10 @@ const HomeScreen: React.FC = () => {
       />
 
       {/* Floating Map Button */}
-      {/* <CustomFab
+       <CustomFab
         icon={<Ionicons name="map" size={26} color="white" />}
         onPress={handleMapPress}
-      /> */}
+      /> 
 
       {/* Filter Modal */}
       <FilterModal
