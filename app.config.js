@@ -31,8 +31,9 @@ module.exports = {
         "CAMERA",
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION"
-      ]
+      ],
       // ENSURE NO "metaData" BLOCK IS PRESENT HERE!
+      "UserCleartextTraffic": true
     },
     "web": {
       "output": "static",

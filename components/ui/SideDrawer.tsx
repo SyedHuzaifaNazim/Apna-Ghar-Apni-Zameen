@@ -1,18 +1,18 @@
 // components/ui/SideDrawer.tsx
 import { Ionicons } from '@expo/vector-icons';
-import { Href, useRouter } from 'expo-router'; // Added Href for type casting
+import { Href, useRouter } from 'expo-router';
 import React from 'react';
 import { Alert, Dimensions, SafeAreaView, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
 import AppButton from '@/components/base/AppButton';
 import AppText from '@/components/base/AppText';
 import { Colors } from '@/constants/Colors';
+import { useAuth } from '@/context/AuthContext'; // <--- 1. Import Context
 
 const { height: screenHeight } = Dimensions.get('window');
 
 interface SideDrawerProps {
   onClose: () => void;
-  isAuthenticated?: boolean;
 }
 
 const SIDEBAR_LINKS = [
@@ -29,26 +29,25 @@ const LEGAL_LINKS = [
     { title: "Help & Support", icon: "help-circle-outline", route: "/help" },
 ];
 
-
-const SideDrawer: React.FC<SideDrawerProps> = ({ onClose, isAuthenticated = false }) => {
+const SideDrawer: React.FC<SideDrawerProps> = ({ onClose }) => {
   const router = useRouter();
+  const { user, signOut } = useAuth(); // <--- 2. Get real user state
   
-  // Mock Logout
-  const handleLogout = () => {
+  const isAuthenticated = !!user; // Check if user exists
+
+  const handleLogout = async () => {
       onClose();
-      // Implement actual authentication call
-      router.replace('/login' as Href);
+      await signOut(); // <--- 3. Call real sign out
+      router.replace('/signin' as Href);
       Alert.alert("Logged Out", "You have been logged out successfully.");
   };
 
   const handleNavigation = (route: string, requiresAuth: boolean = false) => {
       onClose();
       if (requiresAuth && !isAuthenticated) {
-          router.push('/login' as Href);
-          // Note: In a real app, you'd navigate to the login screen and then return here after sign-in
+          router.push('/signin' as Href); // <--- 4. Correct route to 'signin'
           Alert.alert("Sign In Required", "Please sign in to access this feature.");
       } else {
-          // Fix: Cast the generic string route to Href type
           router.push(route as Href);
       }
   };
@@ -69,12 +68,17 @@ const SideDrawer: React.FC<SideDrawerProps> = ({ onClose, isAuthenticated = fals
                 {isAuthenticated ? (
                     <View style={styles.authInfo}>
                         <Ionicons name="person-circle" size={60} color={Colors.primary[500]} />
-                        <AppText variant="body" weight="semibold">Syed Huzaifa Nazim</AppText>
-                        <AppText variant="small" color="secondary">syed.huzaifa@apnaghar.com</AppText>
+                        {/* 5. Display Real User Data */}
+                        <AppText variant="body" weight="semibold">
+                            {user?.name || "User"}
+                        </AppText>
+                        <AppText variant="small" color="secondary">
+                            {user?.email || ""}
+                        </AppText>
                     </View>
                 ) : (
                     <AppButton
-                        onPress={() => handleNavigation('/login')}
+                        onPress={() => handleNavigation('/signin')} // <--- Correct route
                         style={styles.authButton}
                         leftIcon={<Ionicons name="log-in" size={18} color="white" />}
                     >

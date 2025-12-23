@@ -1,40 +1,37 @@
+require('dotenv').config(); 
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-require('dotenv').config();
 const bodyParser = require('body-parser');
-// const bcrypt = require('bcryptjs'); // Recommended for hashing passwords later
-const URI = process.env.MongoDB_URI_PROD;
+
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
+
+// 1. Get the URI from .env
+const URI = process.env.MongoDB_URI_PROD; 
 
 if (!URI) {
   console.error("❌ Error: MongoDB URI is missing in .env file");
   process.exit(1);
 }
 
+// 2. Connect to MongoDB (Cleaned up version)
 mongoose.connect(URI)
   .then(() => console.log("✅ MongoDB Connected"))
   .catch(err => console.log("❌ Connection Error:", err));
 
-// 1. Connect to MongoDB (Replace with your connection string)
-mongoose.connect(URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-}).then(() => console.log("MongoDB Connected")).catch(err => console.log(err));
-
-// 2. Define User Schema
+// 3. Define User Schema
 const UserSchema = new mongoose.Schema({
   name: String,
   email: { type: String, unique: true },
-  password: String, // In production, hash this!
+  password: String, 
   phone: String,
 });
 
 const User = mongoose.model('User', UserSchema);
 
-// 3. API Routes
+// 4. API Routes
 
 // Sign Up
 app.post('/signup', async (req, res) => {
@@ -51,12 +48,15 @@ app.post('/signup', async (req, res) => {
 // Sign In
 app.post('/signin', async (req, res) => {
   const { email, password } = req.body;
-  const user = await User.findOne({ email, password }); // In prod, compare hashed password
-  
-  if (user) {
-    res.json({ status: 'ok', user });
-  } else {
-    res.status(401).json({ status: 'error', user: false, message: "Invalid credentials" });
+  try {
+    const user = await User.findOne({ email, password });
+    if (user) {
+      res.json({ status: 'ok', user });
+    } else {
+      res.status(401).json({ status: 'error', user: false, message: "Invalid credentials" });
+    }
+  } catch (err) {
+    res.status(500).json({ status: 'error', error: err.message });
   }
 });
 
