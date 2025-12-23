@@ -1,248 +1,101 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { Href, useRouter } from 'expo-router'; // <--- Import Href to fix the path error
 import React from 'react';
-import {
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useAuth } from '../context/AuthContext';
 
-import AppText from '@/components/base/AppText';
-import { Colors } from '@/constants/Colors';
-
-// --- Helper Components ---
-
-interface ProfileLinkProps {
-  icon: string;
-  title: string;
-  description: string;
-  route: string;
-  color?: string;
-  isDanger?: boolean;
-  onPress?: () => void;
-}
-
-const ProfileLink: React.FC<ProfileLinkProps> = ({
-  icon,
-  title,
-  description,
-  route,
-  color = Colors.primary[500],
-  isDanger = false,
-  onPress,
-}) => {
+export default function ProfileScreen() {
   const router = useRouter();
   
-  const handlePress = () => {
-    if (onPress) {
-      onPress();
-    } else if (route) {
-      router.push(route as any);
-    }
-  };
+  // FIX 1: Use 'signOut' instead of 'logout' to match your Context
+  const { user, signOut } = useAuth(); 
 
-  return (
-    <TouchableOpacity 
-      style={styles.linkContainer}
-      onPress={handlePress}
-      activeOpacity={0.7}
-    >
-      <View style={[styles.iconWrapper, { backgroundColor: isDanger ? Colors.error[50] : Colors.primary[50] }]}>
-        <Ionicons name={icon as any} size={24} color={isDanger ? Colors.error[500] : color} />
-      </View>
-      <View style={styles.textContainer}>
-        <AppText variant="body" weight="semibold" style={isDanger ? styles.dangerText : styles.defaultText}>
-          {title}
-        </AppText>
-        <AppText variant="small" color="secondary">
-          {description}
-        </AppText>
-      </View>
-      <Ionicons name="chevron-forward" size={20} color={Colors.gray[400]} />
-    </TouchableOpacity>
-  );
-};
+  // 1. STATE: LOGGED OUT (Show Sign Up / Sign In)
+  if (!user) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+            <Text style={styles.headerTitle}>Profile</Text>
+        </View>
+        <View style={styles.authContainer}>
+          <Ionicons name="person-circle-outline" size={100} color="#ccc" />
+          <Text style={styles.guestText}>Join us to access your personal dashboard.</Text>
+          
+          {/* FIX 2: Add 'as Href' to fix the TypeScript error */}
+          <TouchableOpacity 
+            style={[styles.button, styles.signInButton]} 
+            onPress={() => router.push('/signin' as Href)} 
+          >
+            <Text style={styles.signInText}>Sign In</Text>
+          </TouchableOpacity>
 
-
-const ProfileScreen: React.FC = () => {
-  const router = useRouter();
-  
-  // Mock User Data
-  const user = {
-    name: 'Syed Huzaifa Nazim',
-    email: 'syed.huzaifa@apnaghar.com',
-    profilePic: 'https://images.unsplash.com/photo-1535713875002-d1d0cfce7232?w=800',
-    isLoggedIn: true,
-  };
-
-  const handleLogout = () => {
-    // Implement actual logout logic here (e.g., clear tokens, call API)
-    // After logout, redirect to login page
-    router.replace('/login');
-  };
-
-  return (
-    <SafeAreaView style={styles.flex1}>
-      <ScrollView style={styles.flex1} contentContainerStyle={styles.scrollContent}>
-        {/* Profile Header */}
-        <View style={styles.profileHeader}>
-          <View style={styles.avatar}>
-            {/* Placeholder for Image component */}
-            <Ionicons name="person" size={50} color="white" /> 
-          </View>
-          <AppText variant="h2" weight="bold" style={styles.nameText}>
-            {user.name}
-          </AppText>
-          <AppText variant="body" color="secondary">
-            {user.email}
-          </AppText>
-          <TouchableOpacity onPress={() => router.push('/edit-profile')}>
-             <AppText variant="body" color="primary" style={styles.editButton}>
-                Edit Profile
-             </AppText>
+          <TouchableOpacity 
+            style={[styles.button, styles.signUpButton]} 
+            onPress={() => router.push('/signup' as Href)} 
+          >
+            <Text style={styles.signUpText}>Sign Up</Text>
           </TouchableOpacity>
         </View>
+      </View>
+    );
+  }
 
-        {/* Account Management Section */}
-        <View style={styles.section}>
-          <AppText variant="h3" weight="bold" style={styles.sectionTitle}>
-            Account
-          </AppText>
-          <View style={styles.linksContainer}>
-            <ProfileLink
-              icon="heart-outline"
-              title="My Favorites"
-              description="View your saved properties"
-              route="/favorites"
-            />
-            <ProfileLink
-              icon="home-outline"
-              title="My Listings"
-              description="Properties you have posted (Agent/Owner)"
-              route="/my-listings"
-              color={Colors.secondary[500]}
-            />
-            <ProfileLink
-              icon="notifications-outline"
-              title="Notifications"
-              description="Check alerts and messages"
-              route="/notifications"
-            />
-          </View>
+  // 2. STATE: LOGGED IN (Show User Data)
+  return (
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>My Profile</Text>
+      </View>
+
+      <View style={styles.profileCard}>
+        <View style={styles.avatarContainer}>
+             {/* Show first letter of name if avatar is missing */}
+             <Text style={styles.avatarText}>
+                {user.name ? user.name.charAt(0).toUpperCase() : '?'}
+             </Text>
         </View>
+        <Text style={styles.userName}>{user.name}</Text>
+        <Text style={styles.userEmail}>{user.email}</Text>
+        <Text style={styles.userRole}>{user.role.toUpperCase()}</Text>
         
-        {/* Settings & Support Section */}
-        <View style={styles.section}>
-          <AppText variant="h3" weight="bold" style={styles.sectionTitle}>
-            Settings & Support
-          </AppText>
-          <View style={styles.linksContainer}>
-            <ProfileLink
-              icon="settings-outline"
-              title="Settings"
-              description="Manage app preferences and privacy"
-              route="/settings"
-            />
-            <ProfileLink
-              icon="help-circle-outline"
-              title="Help & Support"
-              description="FAQ and contact customer service"
-              route="/help"
-            />
-          </View>
+        <View style={styles.infoRow}>
+            <Ionicons name="call-outline" size={20} color="#666"/>
+            <Text style={styles.infoText}>{user.phone || "No phone added"}</Text>
         </View>
-        
-        {/* Logout Section */}
-        <View style={styles.section}>
-          <ProfileLink
-            icon="log-out-outline"
-            title="Log Out"
-            description="Sign out of your account"
-            route="" // Handled directly via onPress
-            isDanger={true}
-            onPress={handleLogout}
-          />
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+      </View>
+
+      {/* FIX 1: Use signOut here as well */}
+      <TouchableOpacity style={styles.logoutButton} onPress={() => signOut()}>
+        <Text style={styles.logoutText}>Log Out</Text>
+      </TouchableOpacity>
+    </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
-  flex1: {
-    flex: 1,
-    backgroundColor: Colors.background.secondary,
-  },
-  scrollContent: {
-    paddingVertical: 100,
-    paddingHorizontal: 16,
-    gap: 24,
-  },
-  // Header
-  profileHeader: {
-    alignItems: 'center',
-    paddingBottom: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border.light,
-  },
-  avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: Colors.primary[500],
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  nameText: {
-    fontSize: 24,
-  },
-  editButton: {
-    marginTop: 8,
-    textDecorationLine: 'underline',
-  },
-  // Sections
-  section: {
-    gap: 12,
-  },
-  sectionTitle: {
-    marginLeft: 8,
-  },
-  linksContainer: {
-    backgroundColor: 'white',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: Colors.border.light,
-    overflow: 'hidden',
-  },
-  linkContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border.light,
-    backgroundColor: 'white',
-  },
-  iconWrapper: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  textContainer: {
-    flex: 1,
-    marginRight: 16,
-  },
-  defaultText: {
-      color: Colors.text.primary,
-  },
-  dangerText: {
-    color: Colors.error[500],
-  },
-});
+  container: { flex: 1, backgroundColor: '#f4f4f4' },
+  header: { paddingTop: 60, paddingBottom: 20, paddingHorizontal: 20, backgroundColor: '#fff' },
+  headerTitle: { fontSize: 24, fontWeight: 'bold' },
+  
+  // Auth State Styles
+  authContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 30 },
+  guestText: { fontSize: 16, color: '#666', textAlign: 'center', marginVertical: 20 },
+  button: { width: '100%', padding: 15, borderRadius: 12, alignItems: 'center', marginVertical: 8 },
+  signInButton: { backgroundColor: '#333' },
+  signInText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+  signUpButton: { backgroundColor: '#fff', borderWidth: 2, borderColor: '#333' },
+  signUpText: { color: '#333', fontWeight: 'bold', fontSize: 16 },
 
-export default ProfileScreen;
+  // Logged In Styles
+  profileCard: { backgroundColor: '#fff', margin: 20, padding: 30, borderRadius: 20, alignItems: 'center', shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 10 },
+  avatarContainer: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#FFD700', justifyContent: 'center', alignItems: 'center', marginBottom: 15 },
+  avatarText: { fontSize: 32, fontWeight: 'bold', color: '#333' },
+  userName: { fontSize: 22, fontWeight: 'bold', color: '#333' },
+  userEmail: { fontSize: 16, color: '#666', marginBottom: 5 },
+  userRole: { fontSize: 12, color: '#999', marginBottom: 15, letterSpacing: 1 },
+  infoRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  infoText: { color: '#444' },
+  
+  logoutButton: { marginHorizontal: 20, padding: 15, backgroundColor: '#ff4757', borderRadius: 12, alignItems: 'center' },
+  logoutText: { color: '#fff', fontWeight: 'bold' }
+});

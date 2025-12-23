@@ -1,20 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
-import { Colors } from '../../constants/Colors';
+import { Property } from '@/api/apiMock';
+import { Colors } from '@/constants/Colors';
 import AppText from '../base/AppText';
 
 interface MapMarkerProps {
-  property: {
-    id: number;
-    title: string;
-    price: number;
-    listingType: 'For Sale' | 'For Rent';
-    isFeatured?: boolean;
-  };
+  property: Property;
   isSelected?: boolean;
-  onPress?: () => void;
 }
 
 const formatPricePKR = (price: number) => {
@@ -30,26 +24,33 @@ const formatPricePKR = (price: number) => {
 const MapMarker: React.FC<MapMarkerProps> = ({
   property,
   isSelected = false,
-  onPress
 }) => {
   const getMarkerColor = () => {
-    if (property.listingType === 'For Sale') return Colors.success?.[500] || 'green';
-    if (property.listingType === 'For Rent') return Colors.warning?.[500] || 'orange';
-    return Colors.primary[500];
+    switch (property.listingType) {
+      case 'For Sale':
+        return Colors.success?.[500] || '#10B981';
+      case 'For Rent':
+      case 'Short Term Rent':
+        return Colors.warning?.[500] || '#F59E0B';
+      case 'Auction':
+        return Colors.error?.[500] || '#EF4444';
+      default:
+        return Colors.primary[500];
+    }
   };
 
   const markerColor = getMarkerColor();
 
   if (isSelected) {
     return (
-      <Pressable onPress={onPress} style={styles.selectedContainer}>
+      <View style={styles.selectedContainer}>
         <View style={[styles.selectedCard, { borderColor: markerColor }]}>
           <View style={styles.contentStack}>
-            <AppText variant="body" weight="semibold" numberOfLines={2}>
+            <AppText variant="body" weight="semibold" numberOfLines={1}>
               {property.title}
             </AppText>
             
-            <AppText variant="h3" style={{ color: Colors.primary[500] }}>
+            <AppText variant="h4" weight="bold" style={{ color: Colors.primary[500] }}>
               {formatPricePKR(property.price)}
             </AppText>
             
@@ -57,7 +58,7 @@ const MapMarker: React.FC<MapMarkerProps> = ({
               <View 
                 style={[
                   styles.badge, 
-                  { backgroundColor: property.listingType === 'For Sale' ? Colors.success?.[500] || 'green' : Colors.warning?.[500] || 'orange' }
+                  { backgroundColor: markerColor }
                 ]}
               >
                 <AppText variant="small" weight="bold" style={styles.badgeText}>
@@ -75,12 +76,14 @@ const MapMarker: React.FC<MapMarkerProps> = ({
             </View>
           </View>
         </View>
-      </Pressable>
+        {/* Triangle Arrow */}
+        <View style={[styles.arrow, { borderTopColor: markerColor }]} />
+      </View>
     );
   }
 
   return (
-    <Pressable onPress={onPress} style={styles.markerWrapper}>
+    <View style={styles.markerWrapper}>
       <View style={[styles.markerCircle, { backgroundColor: markerColor }]}>
         <Ionicons name="home" size={16} color="white" />
         
@@ -97,7 +100,7 @@ const MapMarker: React.FC<MapMarkerProps> = ({
           {formatPricePKR(property.price)}
         </AppText>
       </View>
-    </Pressable>
+    </View>
   );
 };
 
@@ -105,19 +108,32 @@ const styles = StyleSheet.create({
   selectedContainer: {
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 10,
   },
   selectedCard: {
     backgroundColor: 'white',
-    borderRadius: 8,
-    padding: 12,
-    minWidth: 200,
+    borderRadius: 12,
+    padding: 10,
+    minWidth: 180,
     borderWidth: 2,
-    // Shadows
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.25,
     shadowRadius: 8,
-    elevation: 4,
+    elevation: 6,
+  },
+  arrow: {
+    width: 0,
+    height: 0,
+    backgroundColor: 'transparent',
+    borderStyle: 'solid',
+    borderLeftWidth: 10,
+    borderRightWidth: 10,
+    borderBottomWidth: 0,
+    borderTopWidth: 10,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    transform: [{ translateY: -2 }],
   },
   contentStack: {
     gap: 4,
@@ -125,12 +141,12 @@ const styles = StyleSheet.create({
   badgeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginTop: 4,
+    gap: 6,
+    marginTop: 2,
   },
   badge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
     borderRadius: 4,
   },
   badgeText: {
@@ -141,18 +157,17 @@ const styles = StyleSheet.create({
   markerWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
-    width: 60, // Ensure touch target
+    width: 60,
     height: 60,
   },
   markerCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 3,
+    borderWidth: 2,
     borderColor: 'white',
-    // Shadows
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
@@ -162,11 +177,11 @@ const styles = StyleSheet.create({
   },
   starBadge: {
     position: 'absolute',
-    top: -2,
-    right: -2,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
+    top: -4,
+    right: -4,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
     backgroundColor: Colors.secondary[500],
     justifyContent: 'center',
     alignItems: 'center',
@@ -175,23 +190,25 @@ const styles = StyleSheet.create({
   },
   priceBadge: {
     position: 'absolute',
-    bottom: 0, // Position below the circle
+    bottom: 2,
     backgroundColor: 'white',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
-    minWidth: 50,
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderRadius: 4,
+    minWidth: 40,
     alignItems: 'center',
-    // Shadow
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 1,
     elevation: 1,
     zIndex: 3,
+    borderWidth: 0.5,
+    borderColor: '#eee',
   },
   priceText: {
-    fontSize: 10,
+    fontSize: 9,
+    color: Colors.text.primary,
   },
 });
 

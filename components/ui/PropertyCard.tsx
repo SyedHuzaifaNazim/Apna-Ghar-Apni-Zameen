@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { memo } from 'react';
 import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
-import { AreaUnit, Property } from '../../api/apiMock'; // Imported AreaUnit
+import { AreaUnit, Property } from '../../api/apiMock';
 import { Colors } from '../../constants/Colors';
 import { useFavorites } from '../../context/FavoritesContext';
 import AppText from '../base/AppText';
@@ -78,22 +78,20 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, onPress, variant 
             </View>
           )}
           
-          {/* Favorite Button */}
-          {!onPress && (
-            <TouchableOpacity
-              style={styles.favoriteButton}
-              onPress={(e) => {
-                e.stopPropagation(); // Prevent card press when tapping favorite
-                toggleFavorite(property.id);
-              }}
-            >
-              <Ionicons 
-                name={isFavorite(property.id) ? "heart" : "heart-outline"} 
-                size={22}
-                color={isFavorite(property.id) ? Colors.error[500] : Colors.gray[700]}
-              />
-            </TouchableOpacity>
-          )}
+          {/* Favorite Button - REMOVED !onPress condition */}
+          <TouchableOpacity
+            style={styles.favoriteButton}
+            onPress={(e) => {
+              e.stopPropagation(); // Prevent card press when tapping favorite
+              toggleFavorite(property.id);
+            }}
+          >
+            <Ionicons 
+              name={isFavorite(property.id) ? "heart" : "heart-outline"} 
+              size={22}
+              color={isFavorite(property.id) ? Colors.error[500] : Colors.gray[700]}
+            />
+          </TouchableOpacity>
         </View>
         
         <View style={styles.content}>
@@ -204,9 +202,9 @@ const styles = StyleSheet.create({
   },
   favoriteButton: {
     position: 'absolute',
-    top: 10,
+    bottom: 10, // Moved to bottom-right of image for better visibility
     right: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     width: 40,
     height: 40,
     borderRadius: 20,
