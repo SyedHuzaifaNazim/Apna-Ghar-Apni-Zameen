@@ -1,32 +1,32 @@
-import { useRouter } from 'expo-router'; // <--- Use this
+import { Href, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 
 export default function SignInScreen() {
   const router = useRouter();
-  const { login } = useAuth();
+  const { signIn } = useAuth(); // Use the Context function
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleSignIn = async () => {
+    if (!email || !password) {
+      Alert.alert("Error", "Please fill in all fields");
+      return;
+    }
+
+    setLoading(true);
     try {
-      const response = await fetch('http://localhost:5000/signin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-      
-      const data = await response.json();
-      
-      if (data.status === 'ok') {
-        login(data.user); 
-        router.back(); // <--- Go back to Profile after login
-      } else {
-        Alert.alert("Failed", "Invalid email or password");
-      }
-    } catch (error) {
-        Alert.alert("Error", "Server connection failed");
+      // This calls the logic in AuthContext (which handles the API URL)
+      await signIn(email, password);
+      // If successful, navigate back
+      router.back(); 
+    } catch (error: any) {
+      // Error is already alerted in AuthContext, but we can log it here
+      console.log("Login failed in screen");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -38,19 +38,25 @@ export default function SignInScreen() {
         style={styles.input} 
         autoCapitalize="none"
         onChangeText={setEmail}
+        value={email}
       />
       <TextInput 
         placeholder="Password" 
         style={styles.input} 
         secureTextEntry
         onChangeText={setPassword}
+        value={password}
       />
       
-      <TouchableOpacity style={styles.button} onPress={handleSignIn}>
-        <Text style={styles.buttonText}>Sign In</Text>
+      <TouchableOpacity 
+        style={[styles.button, loading && styles.buttonDisabled]} 
+        onPress={handleSignIn}
+        disabled={loading}
+      >
+        <Text style={styles.buttonText}>{loading ? "Signing In..." : "Sign In"}</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => router.push('/signup')}>
+      <TouchableOpacity onPress={() => router.push('/signup' as Href)}>
          <Text style={styles.linkText}>Don't have an account? Sign Up</Text>
       </TouchableOpacity>
     </View>
@@ -62,6 +68,7 @@ const styles = StyleSheet.create({
     title: { fontSize: 28, fontWeight: 'bold', marginBottom: 30, color: '#333', textAlign: 'center' },
     input: { backgroundColor: '#fff', padding: 15, borderRadius: 10, marginBottom: 15, borderWidth: 1, borderColor: '#ddd' },
     button: { backgroundColor: '#28a745', padding: 15, borderRadius: 10, alignItems: 'center', marginBottom: 20 },
+    buttonDisabled: { backgroundColor: '#94d3a2' },
     buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
     linkText: { color: '#007bff', textAlign: 'center' },
 });
