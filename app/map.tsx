@@ -1,22 +1,21 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { SafeAreaView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
-// import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
-import MapView, { PROVIDER_GOOGLE, Region } from '@/components/ui/MapView';
+import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps'; // Use standard import to access mapRef methods
 
 import { Property } from '@/api/apiMock';
-import AppButton from '@/components/base/AppButton';
-import AppText from '@/components/base/AppText';
+import MapMarker from '@/components/ui/MapMarker';
+import PropertyCard from '@/components/ui/PropertyCard';
 import { Colors } from '@/constants/Colors';
 import { useFetchProperties } from '@/hooks/useFetchProperties';
 
 const MapScreen = () => {
   const { properties } = useFetchProperties();
   const router = useRouter();
+  const mapRef = useRef<MapView>(null); // Ref to control the map
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
-  const Marker = (props: any) => null;
 
   // Filter properties based on search
   const filteredProperties = useMemo(() => {
@@ -26,11 +25,12 @@ const MapScreen = () => {
     return properties.filter(property => 
       property.title.toLowerCase().includes(query) ||
       property.address.city.toLowerCase().includes(query) ||
-      property.address.line1.toLowerCase().includes(query)
+      property.address.line1.toLowerCase().includes(query) ||
+      property.address.area.toLowerCase().includes(query)
     );
   }, [properties, searchQuery]);
 
-  // Calculate initial region based on properties
+  // Calculate initial region (Default View)
   const initialRegion: Region = useMemo(() => {
     const defaultKarachi = {
       latitude: 24.8607,
@@ -39,9 +39,7 @@ const MapScreen = () => {
       longitudeDelta: 0.2,
     };
 
-    if (properties.length === 0) {
-      return defaultKarachi;
-    }
+    if (properties.length === 0) return defaultKarachi;
 
     const latitudes = properties.map(p => p.address.latitude);
     const longitudes = properties.map(p => p.address.longitude);
@@ -51,41 +49,32 @@ const MapScreen = () => {
     const minLng = Math.min(...longitudes);
     const maxLng = Math.max(...longitudes);
 
-    const latDelta = Math.max((maxLat - minLat) * 1.5, 0.05);
-    const lngDelta = Math.max((maxLng - minLng) * 1.5, 0.05);
-    
     return {
       latitude: (minLat + maxLat) / 2,
       longitude: (minLng + maxLng) / 2,
-      latitudeDelta: latDelta,
-      longitudeDelta: lngDelta,
+      latitudeDelta: Math.max((maxLat - minLat) * 1.5, 0.05),
+      longitudeDelta: Math.max((maxLng - minLng) * 1.5, 0.05),
     };
   }, [properties]);
 
+  // EFFECT: Auto-zoom to search results
+  useEffect(() => {
+    if (filteredProperties.length > 0 && mapRef.current) {
+      const coordinates = filteredProperties.map(p => ({
+        latitude: p.address.latitude,
+        longitude: p.address.longitude,
+      }));
+
+      // Animate map to fit all filtered markers
+      mapRef.current.fitToCoordinates(coordinates, {
+        edgePadding: { top: 100, right: 50, bottom: 200, left: 50 },
+        animated: true,
+      });
+    }
+  }, [filteredProperties]);
+
   const handleMarkerPress = (property: Property) => {
     setSelectedProperty(property);
-  };
-
-  const handleViewDetails = () => {
-    if (selectedProperty) {
-      router.push(`/listing/${selectedProperty.id}`);
-      setSelectedProperty(null);
-    }
-  };
-
-  const formatPrice = (price: number): string => {
-    if (price >= 10000000) {
-      return `Rs ${(price / 10000000).toFixed(1)} Cr`;
-    } else if (price >= 100000) {
-      return `Rs ${(price / 100000).toFixed(1)} Lac`;
-    }
-    return `Rs ${price.toLocaleString()}`;
-  };
-
-  const getMarkerColor = (property: Property) => {
-    if (property.listingType === 'For Sale') return Colors.status.forSale;
-    if (property.listingType === 'For Rent') return Colors.status.forRent;
-    return Colors.primary[500];
   };
 
   return (
@@ -101,7 +90,7 @@ const MapScreen = () => {
               style={styles.inputIcon}
             />
             <TextInput
-              placeholder="Search city, area, or property name..."
+              placeholder="Search city, area, or property..."
               value={searchQuery}
               onChangeText={setSearchQuery}
               style={styles.input}
@@ -110,7 +99,7 @@ const MapScreen = () => {
           </View>
           <TouchableOpacity
             style={styles.filterButton}
-            onPress={() => { router.push('/modal'); }} // Use modal for filter
+            onPress={() => { router.push('/modal'); }}
             activeOpacity={0.8}
           >
             <Ionicons name="options-outline" size={24} color="white" />
@@ -121,11 +110,13 @@ const MapScreen = () => {
       {/* Map */}
       <View style={styles.flex1}>
         <MapView
+          ref={mapRef}
           style={styles.flex1}
           provider={PROVIDER_GOOGLE}
           initialRegion={initialRegion}
           showsUserLocation={true}
           showsMyLocationButton={true}
+          onPress={() => setSelectedProperty(null)} // Click map to close card
         >
           {filteredProperties.map(property => (
             <Marker
@@ -134,73 +125,37 @@ const MapScreen = () => {
                 latitude: property.address.latitude,
                 longitude: property.address.longitude,
               }}
-              pinColor={getMarkerColor(property) as string | undefined}
-              onPress={() => handleMarkerPress(property)}
-            />
+              onPress={(e) => {
+                e.stopPropagation(); // Stop map click event
+                handleMarkerPress(property);
+              }}
+            >
+              <MapMarker 
+                property={property} 
+                isSelected={selectedProperty?.id === property.id}
+              />
+            </Marker>
           ))}
         </MapView>
       </View>
 
-      {/* Property Info Card (Modern Floating Card) */}
+      {/* Property Info Modal */}
       {selectedProperty && (
-        <View 
-          style={styles.propertyCard} 
-        >
-          <View style={styles.propertyCardVStack}>
-            <View style={styles.cardHeader}>
-              <View style={styles.cardTitleVStack}>
-                <AppText style={styles.cardTitle} numberOfLines={2}>
-                  {selectedProperty.title}
-                </AppText>
-                <AppText style={styles.cardSubtitle} numberOfLines={1}>
-                  {selectedProperty.address.area}, {selectedProperty.address.city}
-                </AppText>
-              </View>
-              <TouchableOpacity
-                onPress={() => setSelectedProperty(null)}
-                style={{ padding: 4 }}
-              >
-                <Ionicons name="close" size={24} color={Colors.gray[500]} />
-              </TouchableOpacity>
-            </View>
-            
-            <View style={styles.cardPriceRow}>
-              <AppText style={styles.cardPrice}>
-                {formatPrice(selectedProperty.price)}
-              </AppText>
-              <AppText style={styles.cardArea}>
-                {selectedProperty.areaSize.toLocaleString()} {selectedProperty.areaUnit}
-              </AppText>
-            </View>
-            
-            <View style={styles.cardDetailsRow}>
-              <View style={styles.cardDetailItem}>
-                <Ionicons name="bed-outline" size={16} color={Colors.primary[500]} />
-                <AppText style={styles.cardDetailText}>
-                  {selectedProperty.bedrooms} Beds
-                </AppText>
-              </View>
-              <View style={styles.cardDetailItem}>
-                <Ionicons name="water-outline" size={16} color={Colors.primary[500]} />
-                <AppText style={styles.cardDetailText}>
-                  {selectedProperty.bathrooms} Baths
-                </AppText>
-              </View>
-              <View style={styles.cardDetailItem}>
-                <Ionicons name="business-outline" size={16} color={Colors.primary[500]} />
-                <AppText style={styles.cardDetailText} numberOfLines={1}>
-                  {selectedProperty.propertyCategory}
-                </AppText>
-              </View>
-            </View>
-            
-            <AppButton 
-              onPress={handleViewDetails}
-              style={styles.cardButton}
+        <View style={styles.cardContainer}>
+          <View style={styles.closeButtonContainer}>
+            <TouchableOpacity
+              onPress={() => setSelectedProperty(null)}
+              style={styles.closeButton}
+              activeOpacity={0.9}
             >
-              View Details
-            </AppButton>
+              <Ionicons name="close" size={20} color={Colors.gray[600]} />
+            </TouchableOpacity>
           </View>
+          
+          <PropertyCard 
+            property={selectedProperty} 
+            variant="default"
+          />
         </View>
       )}
     </SafeAreaView>
@@ -212,14 +167,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   searchBar: {
+    position: 'absolute',
+    top: 50,
+    left: 0,
+    right: 0,
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: 'white',
-    shadowColor: Colors.shadow.dark,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    paddingBottom: 10,
+    zIndex: 10,
   },
   searchBarHStack: {
     flexDirection: 'row',
@@ -230,11 +184,14 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.background.secondary,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: Colors.border.light,
-    height: 48,
+    backgroundColor: 'white',
+    borderRadius: 12,
+    height: 50,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
   },
   inputIcon: {
     marginLeft: 12,
@@ -248,81 +205,44 @@ const styles = StyleSheet.create({
   },
   filterButton: {
     backgroundColor: Colors.primary[500],
-    borderRadius: 8,
-    width: 48,
-    height: 48,
+    borderRadius: 12,
+    width: 50,
+    height: 50,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
   },
-  // Property Card
-  propertyCard: {
+  // Popup Container
+  cardContainer: {
     position: 'absolute', 
-    bottom: 16, 
-    left: 16, 
-    right: 16, 
-    backgroundColor: 'white', 
-    borderRadius: 16, 
-    shadowColor: Colors.shadow.dark,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 8,
-    padding: 16,
+    bottom: 30, 
+    left: 0, 
+    right: 0, 
+    zIndex: 100,
   },
-  propertyCardVStack: {
-    gap: 12,
+  closeButtonContainer: {
+    alignItems: 'flex-end',
+    paddingHorizontal: 20,
+    marginBottom: -15, // Overlap effect
+    zIndex: 101,
   },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  cardTitleVStack: {
-    flex: 1,
-    gap: 4,
-  },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: Colors.text.primary,
-  },
-  cardSubtitle: {
-    fontSize: 14,
-    color: Colors.text.secondary,
-  },
-  cardPriceRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  closeButton: {
+    backgroundColor: 'white',
+    borderRadius: 20,
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
     alignItems: 'center',
-  },
-  cardPrice: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: Colors.primary[600],
-  },
-  cardArea: {
-    fontSize: 14,
-    color: Colors.text.secondary,
-  },
-  cardDetailsRow: {
-    flexDirection: 'row',
-    gap: 16,
-  },
-  cardDetailItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  cardDetailText: {
-    fontSize: 14,
-    color: Colors.text.primary,
-  },
-  cardButton: {
-    marginTop: 8,
-    backgroundColor: Colors.primary[500],
-    borderRadius: 8,
-    paddingVertical: 12,
-  },
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 5,
+  }
 });
 
 export default MapScreen;

@@ -1,3 +1,8 @@
+import SideDrawer from '@/components/ui/SideDrawer';
+import Colors from '@/constants/Colors';
+import { AuthProvider } from '@/context/AuthContext';
+import { FavoritesProvider } from '@/context/FavoritesContext';
+import { NetworkProvider } from '@/context/NetworkContext';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -5,11 +10,6 @@ import React, { createContext, useContext, useRef, useState } from 'react';
 import { Animated, BackHandler, Easing, Modal, StyleSheet, TouchableWithoutFeedback, useColorScheme, View } from 'react-native';
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-
-import SideDrawer from '@/components/ui/SideDrawer';
-import Colors from '@/constants/Colors';
-import { FavoritesProvider } from '@/context/FavoritesContext';
-import { NetworkProvider } from '@/context/NetworkContext';
 
 // --- Drawer Context ---
 const DrawerContext = createContext<{
@@ -166,6 +166,7 @@ export default function RootLayout() {
       <NetworkProvider>
         <FavoritesProvider>
           <ThemeProvider value={theme}>
+            <AuthProvider>
             <Stack 
               screenOptions={{
                 headerShown: false, 
@@ -206,6 +207,7 @@ export default function RootLayout() {
               <Stack.Screen name="modal" options={{ presentation: 'modal', headerShown: true, title: 'Filters & Options', headerTitleAlign: 'center', headerTintColor: Colors.primary[500] }} />
               <Stack.Screen name="listing/[id]" options={{ animation: 'slide_from_right', headerShown: true, title: '', headerTransparent: true, headerTintColor: Colors.text.inverse }} />
             </Stack>
+            </AuthProvider>
             <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
           </ThemeProvider>
         </FavoritesProvider>
