@@ -60,6 +60,33 @@ app.post('/signin', async (req, res) => {
   }
 });
 
-app.listen(5000, () => {
-  console.log("Server running on port 5000");
+app.put('/update-profile', async (req, res) => {
+  const { email, name, phone } = req.body;
+  
+  try {
+    // Find user by email and update their details
+    // { new: true } returns the updated document instead of the old one
+    const updatedUser = await User.findOneAndUpdate(
+      { email: email }, 
+      { name, phone }, 
+      { new: true }
+    );
+
+    if (updatedUser) {
+      res.json({ status: 'ok', user: updatedUser });
+    } else {
+      res.status(404).json({ status: 'error', message: "User not found" });
+    }
+  } catch (error) {
+    res.status(500).json({ status: 'error', error: error.message });
+  }
 });
+
+if (process.env.NODE_ENV !== 'production') {
+    const port = process.env.PORT || 8000;
+    app.listen(port, () => {
+        console.log(`Server is running on port ${port}`);
+    });
+}
+
+module.exports = app;

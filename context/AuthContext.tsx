@@ -148,14 +148,44 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   // 5. UPDATE PROFILE
-  const updateProfile = async (updates: Partial<User>) => {
+const updateProfile = async (updates: Partial<User>) => {
     if (!user) return;
     setIsLoading(true);
-    // TODO: Add backend endpoint for updates later
-    const updatedUser = { ...user, ...updates };
-    setUser(updatedUser);
-    await AsyncStorage.setItem('user_session', JSON.stringify(updatedUser));
-    setIsLoading(false);
+
+    try {
+      // 1. Send update to Backend
+      const response = await fetch(`${API_URL}/update-profile`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: user.email, // We use email to identify the user
+          name: updates.name,
+          phone: updates.phone,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.status === 'ok') {
+        // 2. Update Local State & Storage with the new data from server
+        const updatedUserPayload: User = {
+          ...user,
+          name: data.user.name,
+          phone: data.user.phone,
+        };
+
+        setUser(updatedUserPayload);
+        await AsyncStorage.setItem('user_session', JSON.stringify(updatedUserPayload));
+        Alert.alert("Success", "Profile updated successfully!");
+      } else {
+        throw new Error(data.message || 'Update failed');
+      }
+    } catch (error: any) {
+      console.error('Profile update error:', error);
+      Alert.alert('Error', error.message || "Could not update profile");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const value: AuthContextProps = {

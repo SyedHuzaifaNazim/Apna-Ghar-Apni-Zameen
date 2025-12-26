@@ -5,9 +5,8 @@ import { FavoritesProvider } from '@/context/FavoritesContext';
 import { NetworkProvider } from '@/context/NetworkContext';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
 import React, { createContext, useContext, useRef, useState } from 'react';
-import { Animated, BackHandler, Easing, Modal, StyleSheet, TouchableWithoutFeedback, useColorScheme, View } from 'react-native';
+import { Animated, Easing, Modal, StyleSheet, TouchableWithoutFeedback, useColorScheme, View } from 'react-native';
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -55,17 +54,15 @@ const DrawerProvider = ({ children }: { children: React.ReactNode }) => {
     );
 };
 
-// Defined properly before usage
+// Fixed DrawerRenderer
 const DrawerRenderer = ({ isDrawerOpen, slideAnim, closeDrawer }: { isDrawerOpen: boolean, slideAnim: Animated.Value, closeDrawer: () => void }) => {
-    // Mock isAuthenticated: Replace with actual hook access (e.g., const { isAuthenticated } = useAuth();)
-    const isAuthenticated = true; 
     const drawerWidth = 300; 
 
     const animatedStyle = {
         transform: [{
             translateX: slideAnim.interpolate({
                 inputRange: [0, 1],
-                outputRange: [-drawerWidth, 0], // Slide from off-screen left
+                outputRange: [-drawerWidth, 0], 
             }),
         }],
     };
@@ -75,7 +72,6 @@ const DrawerRenderer = ({ isDrawerOpen, slideAnim, closeDrawer }: { isDrawerOpen
             inputRange: [0, 1],
             outputRange: [0, 1],
         }),
-        // Ensure the overlay fades out quickly but the visibility stays until the animation is complete
         pointerEvents: isDrawerOpen ? 'auto' : 'none',
     } as any;
 
@@ -88,14 +84,13 @@ const DrawerRenderer = ({ isDrawerOpen, slideAnim, closeDrawer }: { isDrawerOpen
             animationType="none" 
             onRequestClose={closeDrawer}
         >
-            {/* Overlay Area (Closes drawer on press) */}
             <Animated.View style={[drawerStyles.modalOverlay, overlayStyle]}>
                 <TouchableWithoutFeedback onPress={closeDrawer}>
                     <View style={drawerStyles.touchableOverlay}>
                         <TouchableWithoutFeedback> 
-                            {/* Drawer Content Container */}
                             <Animated.View style={[drawerStyles.drawerContainer, { width: drawerWidth }, animatedStyle]}>
-                                <SideDrawer onClose={closeDrawer} isAuthenticated={isAuthenticated} />
+                                {/* SideDrawer now manages its own auth state via Context */}
+                                <SideDrawer onClose={closeDrawer} />
                             </Animated.View>
                         </TouchableWithoutFeedback>
                     </View>
@@ -121,9 +116,8 @@ const drawerStyles = StyleSheet.create({
     backgroundColor: 'white',
   }
 });
-// --- END Drawer Context and Renderer ---
 
-// Define custom themes...
+// --- Theme Configurations ---
 const CustomDefaultTheme = {
   ...DefaultTheme,
   colors: {
@@ -150,8 +144,6 @@ const CustomDarkTheme = {
   },
 };
 
-if (BackHandler && typeof (BackHandler as any).removeEventListener === 'undefined') { /* ... */ }
-
 export const unstable_settings = {
   anchor: '(tabs)',
 };
@@ -162,57 +154,45 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider> 
-      <DrawerProvider>
-      <NetworkProvider>
-        <FavoritesProvider>
-          <ThemeProvider value={theme}>
-            <AuthProvider>
-            <Stack 
-              screenOptions={{
-                headerShown: false, 
-                animation: 'slide_from_right', 
-                gestureEnabled: true, 
-                headerStyle: {
-                  backgroundColor: theme.colors.card,
-                },
-                headerTintColor: theme.colors.text,
-                headerTitleStyle: {
-                  fontWeight: '600', 
-                },
-                headerBackTitle: '', // FIXED: Use empty string to hide back title
-              }}
-            >
-              
-              {/* Auth Screens */}
-              <Stack.Screen name="login" options={{ animation: 'fade', presentation: 'modal', headerShown: true, title: 'Sign In' }} />
-              <Stack.Screen name="register" options={{ animation: 'slide_from_right', headerShown: true, title: 'Create Account' }} />
-              <Stack.Screen name="forgot-password" options={{ animation: 'slide_from_right', headerShown: true, title: 'Forgot Password' }} />
-              
-              {/* Main App with Tabs */}
-              <Stack.Screen name="(tabs)" />
-              
-              {/* Profile/Navigation Links */}
-              <Stack.Screen name="favorites" options={{ headerShown: true, title: 'My Favorites' }} />
-              <Stack.Screen name="search" options={{ headerShown: true, title: 'Search' }} />
-              <Stack.Screen name="map" options={{ headerShown: true, title: 'Map View' }} />
-              <Stack.Screen name="profile" options={{ headerShown: true, title: 'User Profile' }} />
-              <Stack.Screen name="notifications" options={{ headerShown: true, title: 'Notifications' }} />
-              <Stack.Screen name="settings" options={{ headerShown: true, title: 'Settings' }} />
-              <Stack.Screen name="edit-profile" options={{ headerShown: true, title: 'Edit Profile' }} />
-              <Stack.Screen name="my-listings" options={{ headerShown: true, title: 'My Listings' }} />
-              <Stack.Screen name="help" options={{ headerShown: true, title: 'Help & Support' }} />
-              <Stack.Screen name="industrial-hub" options={{ headerShown: true, title: 'Industrial Hub' }} /> 
-              
-              {/* Modals and Detail Screen */}
-              <Stack.Screen name="modal" options={{ presentation: 'modal', headerShown: true, title: 'Filters & Options', headerTitleAlign: 'center', headerTintColor: Colors.primary[500] }} />
-              <Stack.Screen name="listing/[id]" options={{ animation: 'slide_from_right', headerShown: true, title: '', headerTransparent: true, headerTintColor: Colors.text.inverse }} />
-            </Stack>
-            </AuthProvider>
-            <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-          </ThemeProvider>
-        </FavoritesProvider>
-      </NetworkProvider>
-      </DrawerProvider>
+      {/* ⚠️ CRITICAL FIX: AuthProvider MUST be at the top level */}
+      <AuthProvider>
+        <NetworkProvider>
+          <FavoritesProvider>
+            <ThemeProvider value={theme}>
+              <DrawerProvider> 
+                <Stack 
+                  screenOptions={{
+                    headerShown: false, 
+                    animation: 'slide_from_right', 
+                    gestureEnabled: true, 
+                    headerStyle: { backgroundColor: theme.colors.card },
+                    headerTintColor: theme.colors.text,
+                    headerTitleStyle: { fontWeight: '600' },
+                    headerBackTitle: '', 
+                  }}
+                >
+                  <Stack.Screen name="login" options={{ animation: 'fade', presentation: 'modal', headerShown: true, title: 'Sign In' }} />
+                  <Stack.Screen name="register" options={{ animation: 'slide_from_right', headerShown: true, title: 'Create Account' }} />
+                  <Stack.Screen name="forgot-password" options={{ animation: 'slide_from_right', headerShown: true, title: 'Forgot Password' }} />
+                  <Stack.Screen name="(tabs)" />
+                  <Stack.Screen name="favorites" options={{ headerShown: true, title: 'My Favorites' }} />
+                  <Stack.Screen name="search" options={{ headerShown: true, title: 'Search' }} />
+                  <Stack.Screen name="map" options={{ headerShown: true, title: 'Map View' }} />
+                  <Stack.Screen name="profile" options={{ headerShown: true, title: 'User Profile' }} />
+                  <Stack.Screen name="notifications" options={{ headerShown: true, title: 'Notifications' }} />
+                  <Stack.Screen name="settings" options={{ headerShown: true, title: 'Settings' }} />
+                  <Stack.Screen name="edit-profile" options={{ headerShown: true, title: 'Edit Profile' }} />
+                  <Stack.Screen name="my-listings" options={{ headerShown: true, title: 'My Listings' }} />
+                  <Stack.Screen name="help" options={{ headerShown: true, title: 'Help & Support' }} />
+                  <Stack.Screen name="industrial-hub" options={{ headerShown: true, title: 'Industrial Hub' }} /> 
+                  <Stack.Screen name="modal" options={{ presentation: 'modal', headerShown: true, title: 'Filters & Options', headerTitleAlign: 'center', headerTintColor: Colors.primary[500] }} />
+                  <Stack.Screen name="listing/[id]" options={{ animation: 'slide_from_right', headerShown: true, title: '', headerTransparent: true, headerTintColor: Colors.text.inverse }} />
+                </Stack>
+              </DrawerProvider>
+            </ThemeProvider>
+          </FavoritesProvider>
+        </NetworkProvider>
+      </AuthProvider>
     </SafeAreaProvider>
   );
 }
