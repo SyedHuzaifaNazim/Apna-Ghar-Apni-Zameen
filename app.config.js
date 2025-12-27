@@ -42,7 +42,7 @@ module.exports = {
     // Keep your original, non-AR related plugins
     "plugins": [
       "expo-router",
-      "./withAROptional",
+      // "./withAROptional",
       [
         "expo-splash-screen",
         {
