@@ -1,3 +1,4 @@
+import { ApiConfig } from '@/constants/Config';
 import AsyncStorage from '@react-native-async-storage/async-storage'; // <--- INSTALL THIS IF NEEDED
 import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 import { Alert } from 'react-native';
@@ -9,7 +10,7 @@ import { Alert } from 'react-native';
 // PHYSICAL DEVICE: Use your computer's IP, e.g., 'http://192.168.1.5:5000'
 // IOS SIMULATOR: Use 'http://localhost:5000'
 // const API_URL = Platform.OS === 'android' ? 'http://10.0.2.2:5000' : 'http://localhost:5000';
-const API_URL = 'http://192.168.1.46:5000';
+const API_URL = ApiConfig.baseUrl;
 
 // ------------------------------------------------------------------
 // INTERFACES
