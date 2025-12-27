@@ -44,8 +44,8 @@ const MapViewWeb: React.FC<WebMapProps> = ({ initialRegion, children }) => {
       */}
       <View style={[styles.webPlaceholder, styles.placeholder]}>
         <Ionicons name="map-outline" size={48} color={Colors.gray[400]} />
-        <AppText style={styles.title}>Interactive Map</AppText>
-        <AppText style={styles.subtitle}>
+        <AppText style={styles.title} children={undefined}>Interactive Map</AppText>
+        <AppText style={styles.subtitle} children={undefined}>
           Interactive web maps require a separate API key configuration.
         </AppText>
         
@@ -54,7 +54,7 @@ const MapViewWeb: React.FC<WebMapProps> = ({ initialRegion, children }) => {
           onPress={handleOpenExternalMap}
           activeOpacity={0.7}
         >
-          <AppText style={styles.buttonText}>View on Google Maps</AppText>
+          <AppText style={styles.buttonText} children={undefined}>View on Google Maps</AppText>
           <Ionicons name="arrow-forward" size={16} color="white" />
         </TouchableOpacity>
       </View>

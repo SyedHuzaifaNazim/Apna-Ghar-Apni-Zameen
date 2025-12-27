@@ -103,27 +103,27 @@ const FilterModal: React.FC<FilterModalProps> = ({ isVisible, onClose, onApplyFi
 
   // --- Selection Handlers (Existing) ---
   const handleAmenityToggle = (amenityValue: string) => {
-      setSelectedAmenities(prev => 
+      setSelectedAmenities((prev: string[]) => 
           prev.includes(amenityValue)
-              ? prev.filter(a => a !== amenityValue)
+              ? prev.filter((a: string) => a !== amenityValue)
               : [...prev, amenityValue]
       );
   };
   
   const handleBedroomSelect = (bedroomCount: number) => {
-      setSelectedBedrooms(prev => prev === bedroomCount ? 0 : bedroomCount);
+      setSelectedBedrooms((prev: number) => prev === bedroomCount ? 0 : bedroomCount);
   };
   
   const handleTypeSelect = (typeValue: string) => {
-      setSelectedType(prev => prev === typeValue ? '' : typeValue);
+      setSelectedType((prev: string) => prev === typeValue ? '' : typeValue);
   };
   
   // --- ADDED: Location Handlers ---
   const handleCityToggle = (city: string) => {
-      setSelectedCities(prev => {
+      setSelectedCities((prev: string[]) => {
           let nextCities: string[];
           if (prev.includes(city)) {
-              nextCities = prev.filter(c => c !== city);
+              nextCities = prev.filter((c: string) => c !== city);
           } else {
               nextCities = [...prev, city];
           }
@@ -135,9 +135,9 @@ const FilterModal: React.FC<FilterModalProps> = ({ isVisible, onClose, onApplyFi
   };
   
   const handleAreaToggle = (area: string) => {
-      setSelectedAreas(prev => 
+      setSelectedAreas((prev: string[]) => 
           prev.includes(area)
-              ? prev.filter(a => a !== area)
+              ? prev.filter((a: string) => a !== area)
               : [...prev, area]
       );
   };
@@ -147,7 +147,7 @@ const FilterModal: React.FC<FilterModalProps> = ({ isVisible, onClose, onApplyFi
       if (selectedCities.length === 0) return [];
       
       let areas: string[] = [];
-      selectedCities.forEach(city => {
+      selectedCities.forEach((city: string | number) => {
           if (CITY_AREA_DATA[city]) {
               areas = areas.concat(CITY_AREA_DATA[city]);
           }
@@ -209,10 +209,9 @@ const FilterModal: React.FC<FilterModalProps> = ({ isVisible, onClose, onApplyFi
           onPress={() => onPress(value)}
       >
           <AppText 
-              variant="small" 
-              weight="medium" 
-              style={isActive ? styles.pillTextActive : styles.pillText}
-          >
+        variant="small"
+        weight="medium"
+        style={isActive ? styles.pillTextActive : styles.pillText}          >
               {label}
           </AppText>
       </TouchableOpacity>
@@ -261,7 +260,7 @@ const FilterModal: React.FC<FilterModalProps> = ({ isVisible, onClose, onApplyFi
                             Select Area ({availableAreas.length} Areas in selected cities)
                         </AppText>
                         <View style={styles.selectionGrid}>
-                            {availableAreas.map(area => 
+                            {availableAreas.map((area: string) => 
                                 renderPillButton(
                                     area,
                                     area,
@@ -371,10 +370,9 @@ const FilterModal: React.FC<FilterModalProps> = ({ isVisible, onClose, onApplyFi
                                     color={isActive ? 'white' : Colors.primary[500]}
                                 />
                                 <AppText 
-                                    variant="small" 
-                                    weight="medium" 
-                                    style={isActive ? styles.pillTextActive : styles.pillTextAmenity}
-                                >
+                              variant="small"
+                              weight="medium"
+                              style={isActive ? styles.pillTextActive : styles.pillTextAmenity}                                >
                                     {amenity.label}
                                 </AppText>
                             </TouchableOpacity>
@@ -391,14 +389,12 @@ const FilterModal: React.FC<FilterModalProps> = ({ isVisible, onClose, onApplyFi
             variant="outline"
             onPress={handleReset}
             style={styles.resetButton}
-            textStyle={styles.resetButtonText}
-          >
+            textStyle={styles.resetButtonText}          >
             Reset Filters
           </AppButton>
           <AppButton 
             onPress={handleApply}
-            style={styles.applyButton}
-          >
+            style={styles.applyButton}          >
             Apply Filters
           </AppButton>
         </View>
