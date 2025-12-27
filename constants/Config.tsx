@@ -34,7 +34,7 @@ export const AppConfig = {
 // API Configuration
 export const ApiConfig = {
   // Base URLs
-  baseUrl: process.env.EXPO_PUBLIC_API_URL || 'https://api.apnagharapnizameen.com/wp-json/wp/v2/posts?per_page=10',
+  baseUrl: process.env.EXPO_PUBLIC_API_URL || 'https://apna-ghar-apni-zameen.vercel.app',
   cdnUrl: process.env.EXPO_PUBLIC_CDN_URL || 'https://cdn.apnagharapnizameen.com',
 
   // Endpoints
