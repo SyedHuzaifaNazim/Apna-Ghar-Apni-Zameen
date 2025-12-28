@@ -1,4 +1,5 @@
 import { Platform } from 'react-native';
+import Config from 'react-native-config';
 
 // App Configuration
 export const AppConfig = {
@@ -34,12 +35,12 @@ export const AppConfig = {
 // API Configuration
 export const ApiConfig = {
   // Base URLs
-  baseUrl: process.env.EXPO_PUBLIC_API_URL || 'https://apna-ghar-backend.vercel.app',
+  baseUrl: process.env.EXPO_PUBLIC_API_URL || 'https://apna-ghar-apni-zameen.vercel.app' ,
   
   // Specific Posts API (from your .env.local)
-  postsApi: process.env.EXPO_PUBLIC_POSTS_API || 'https://apna-ghar-backend.vercel.app/properties',
+  postsApi: process.env.EXPO_PUBLIC_POSTS_API || 'https://apnagharapnizameen.com/wp-json/mo/v1/posts' ,
   
-  cdnUrl: process.env.EXPO_PUBLIC_CDN_URL || 'https://cdn.apnagharapnizameen.com',
+  cdnUrl: process.env.EXPO_PUBLIC_CDN_URL ,
 
   // Endpoints
   endpoints: {
