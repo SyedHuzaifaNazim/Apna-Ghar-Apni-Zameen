@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useMemo } from 'react';
+import React from 'react';
 import {
   Dimensions,
   Image,
@@ -13,11 +13,12 @@ import {
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 
 // Hooks and Context
-import { MOCK_PROPERTIES } from '@/api/apiMock';
 import AppButton from '@/components/base/AppButton';
 import AppText from '@/components/base/AppText';
+import LoadingSpinner from '@/components/base/LoadingSpinner'; // <--- Added
 import { Colors } from '@/constants/Colors';
 import { useFavorites } from '@/context/FavoritesContext';
+import { useFetchProperty } from '@/hooks/useFetchProperties'; // <--- USE REAL HOOK
 
 const { width } = Dimensions.get('window');
 
@@ -27,18 +28,28 @@ const ListingDetailScreen = () => {
   const propertyId = params.id ? Number(params.id) : 0;
   
   const { isFavorite, toggleFavorite } = useFavorites();
+  
+  // Use the hook to fetch the specific property from POSTS_API
+  const { property, loading, error } = useFetchProperty(propertyId);
 
-  const property = useMemo(() => {
-    return MOCK_PROPERTIES.find(p => p.id === propertyId);
-  }, [propertyId]);
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.center]}>
+        <LoadingSpinner text="Loading property details..." />
+      </View>
+    );
+  }
 
-  if (!property) {
+  if (error || !property) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.errorContainer}>
           <Ionicons name="warning-outline" size={64} color={Colors.error[500]} />
           <AppText variant="h3" weight="semibold" style={styles.errorText}>
             Property not found
+          </AppText>
+          <AppText variant="body" color="secondary" style={{marginBottom: 16}}>
+            {error}
           </AppText>
           <AppButton onPress={() => router.back()} style={styles.backButton}>
             Go Back
@@ -240,6 +251,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'white',
+  },
+  center: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   scrollContent: {
     paddingBottom: 20,

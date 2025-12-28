@@ -1,5 +1,4 @@
 // screens/HomeScreen.tsx
-import { Property } from '@/api/apiMock';
 import AppButton from '@/components/base/AppButton';
 import AppText from '@/components/base/AppText';
 import LoadingSpinner from '@/components/base/LoadingSpinner';
@@ -12,6 +11,7 @@ import { useFavorites } from '@/context/FavoritesContext';
 import { useFetchProperties } from '@/hooks/useFetchProperties';
 import { useFilterProperties } from '@/hooks/useFilterProperties';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
+import { Property } from '@/types/property'; // <--- UPDATED IMPORT
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { FlashList } from '@shopify/flash-list';
@@ -20,6 +20,8 @@ import { debounce } from 'lodash';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Image, ImageBackground, SafeAreaView, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 import { useDrawer } from '../app/_layout';
+
+// ... (Rest of the file remains exactly the same as provided, just change the import at the top)
 
 // --- Component Types ---
 interface CustomFabProps {

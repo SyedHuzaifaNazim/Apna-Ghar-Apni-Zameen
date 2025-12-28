@@ -3,12 +3,13 @@ import { useNavigation } from '@react-navigation/native';
 import React from 'react';
 import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
-import { MOCK_PROPERTIES, Property } from '../../../api/apiMock';
-import AppText from '../../../components/base/AppText';
-import PropertyCard from '../../../components/ui/PropertyCard';
-import { Colors } from '../../../constants/Colors';
-import { BorderRadius } from '../../../constants/Layout';
-import { analyticsService } from '../../../services/analyticsService';
+import AppText from '@/components/base/AppText';
+import PropertyCard from '@/components/ui/PropertyCard';
+import { Colors } from '@/constants/Colors';
+import { BorderRadius } from '@/constants/Layout';
+import { useFetchProperties } from '@/hooks/useFetchProperties'; // <--- USE REAL HOOK
+import { analyticsService } from '@/services/analyticsService';
+import { Property } from '@/types/property'; // <--- UPDATED IMPORT
 
 interface SimilarListingsProps {
   currentProperty: Property;
@@ -21,9 +22,15 @@ const SimilarListings: React.FC<SimilarListingsProps> = ({
 }) => {
   const navigation = useNavigation<any>();
 
-  // Filter similar properties based on criteria
-  const getSimilarProperties = (): Property[] => {
-    return MOCK_PROPERTIES
+  // Use real data hook to find similar properties
+  // Note: ideally the API would have a specific endpoint or we pass specific filters
+  // Here we assume fetching properties with same category and city approximates "similar"
+  // If your useFetchProperties supports filtering via arguments, use that.
+  // Assuming useFetchProperties returns 'properties' which might be all properties for now
+  // or you could add a specialized hook for similar properties.
+  const { properties } = useFetchProperties({ enabled: true }); 
+
+  const similarProperties = properties
       .filter(property => 
         property.id !== currentProperty.id && 
         (property.propertyCategory === currentProperty.propertyCategory ||
@@ -31,9 +38,7 @@ const SimilarListings: React.FC<SimilarListingsProps> = ({
          Math.abs(property.price - currentProperty.price) / currentProperty.price < 0.3)
       )
       .slice(0, count);
-  };
 
-  const similarProperties = getSimilarProperties();
 
   const handlePropertyPress = (property: Property) => {
     analyticsService.track('similar_property_click', {

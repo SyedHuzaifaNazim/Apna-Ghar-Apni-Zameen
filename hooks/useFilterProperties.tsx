@@ -1,5 +1,5 @@
+import { Property } from '@/types/property'; // <--- UPDATED IMPORT
 import { useCallback, useMemo, useState } from 'react';
-import { Property } from '../api/apiMock';
 import { analyticsService } from '../services/analyticsService';
 import { useDebounce } from './useDebounce';
 
@@ -18,6 +18,8 @@ export interface FilterOptions {
   sortBy?: 'price_asc' | 'price_desc' | 'date_desc' | 'area_desc' | 'relevance';
   keywords?: string;
 }
+
+// ... (Rest of file remains identical)
 
 interface UseFilterPropertiesReturn {
   filteredProperties: Property[];

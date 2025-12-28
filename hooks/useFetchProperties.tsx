@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Alert } from 'react-native'; // Replaced useToast with Alert for stability
-import { MOCK_PROPERTIES, Property } from '../api/apiMock';
+import { Alert } from 'react-native';
+import { ApiConfig } from '../constants/Config'; // Import ApiConfig
 import { analyticsService } from '../services/analyticsService';
 import { storageService } from '../services/storageService';
+import { Property } from '../types/property'; // Import types from new location
 import { useNetworkStatus } from './useNetworkStatus';
 
 interface UseFetchPropertiesReturn {
@@ -32,7 +33,6 @@ export const useFetchProperties = (options: FetchPropertiesOptions = {}): UseFet
     refetchOnFocus = true,
   } = options;
 
-  // Removed useToast() as it causes crashes without NativeBaseProvider
   const { isOnline } = useNetworkStatus();
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
@@ -59,6 +59,7 @@ export const useFetchProperties = (options: FetchPropertiesOptions = {}): UseFet
 
       const cacheKey = buildCacheKey(targetPage);
 
+      // Offline handling
       if (!isOnline) {
         const cachedData = await storageService.getCache<Property[]>(cacheKey);
 
@@ -76,12 +77,12 @@ export const useFetchProperties = (options: FetchPropertiesOptions = {}): UseFet
         return;
       }
 
+      // Check cache first if not explicitly refreshing
       if (!isRefresh && !isLoadMore) {
         const cachedData = await storageService.getCache<Property[]>(cacheKey);
         if (cachedData) {
           setProperties(cachedData);
           setIsOfflineData(true);
-
           // Still fetch fresh data in background
           fetchFreshData();
           setLoading(false);
@@ -90,26 +91,44 @@ export const useFetchProperties = (options: FetchPropertiesOptions = {}): UseFet
       }
       setIsOfflineData(false);
 
-      // Simulate API call with mock data
-      await new Promise(resolve => setTimeout(resolve, 600));
+      // ---------------------------------------------------------
+      // REAL API CALL
+      // ---------------------------------------------------------
+      // Ensure POSTS_API is defined in your .env or Config
+      const apiUrl = `${ApiConfig.postsApi}?page=${targetPage}&limit=${pageSize}`;
+      
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: ApiConfig.headers.common,
+      });
 
-      // Using mock data for now
-      const sliceEnd = targetPage * pageSize;
-      const mockProperties: Property[] = MOCK_PROPERTIES.slice(0, sliceEnd);
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.status} ${response.statusText}`);
+      }
 
-      setProperties(mockProperties);
+      const data = await response.json();
+      
+      // Handle different API response structures
+      // Assuming API returns { data: Property[], hasMore: boolean } or just Property[]
+      const fetchedProperties: Property[] = Array.isArray(data) ? data : (data.data || []);
+      const serverHasMore = data.hasMore !== undefined ? data.hasMore : fetchedProperties.length >= pageSize;
 
-      // Update pagination state
-      setHasMore(sliceEnd < MOCK_PROPERTIES.length);
+      if (isLoadMore) {
+        setProperties(prev => [...prev, ...fetchedProperties]);
+      } else {
+        setProperties(fetchedProperties);
+      }
+
+      setHasMore(serverHasMore);
 
       // Cache the results
-      await storageService.setCache(cacheKey, mockProperties, cacheTimeout);
+      await storageService.setCache(cacheKey, fetchedProperties, cacheTimeout);
 
       // Track analytics
       await analyticsService.track('properties_fetched', {
         page: targetPage,
         pageSize,
-        count: mockProperties.length,
+        count: fetchedProperties.length,
         source: isRefresh ? 'refresh' : isLoadMore ? 'load_more' : 'initial',
       });
       setLastUpdated(Date.now());
@@ -125,7 +144,6 @@ export const useFetchProperties = (options: FetchPropertiesOptions = {}): UseFet
       });
 
       if (!isLoadMore && isOnline) {
-        // Replaced toast.show with Alert.alert
         Alert.alert('Error', errorMessage);
       }
     } finally {
@@ -136,18 +154,19 @@ export const useFetchProperties = (options: FetchPropertiesOptions = {}): UseFet
 
   const fetchFreshData = useCallback(async () => {
     try {
-      // Simulate fresh API call
-      await new Promise(resolve => setTimeout(resolve, 300));
+      const apiUrl = `${ApiConfig.postsApi}?page=1&limit=${pageSize}`;
+      const response = await fetch(apiUrl, { headers: ApiConfig.headers.common });
       
-      const freshProperties: Property[] = MOCK_PROPERTIES;
-      setProperties(freshProperties);
-      
-      // Update cache with fresh data
-      await storageService.setCache(buildCacheKey(1), freshProperties, cacheTimeout);
+      if (response.ok) {
+        const data = await response.json();
+        const freshProperties: Property[] = Array.isArray(data) ? data : (data.data || []);
+        setProperties(freshProperties);
+        await storageService.setCache(buildCacheKey(1), freshProperties, cacheTimeout);
+      }
     } catch (error) {
       console.error('Background refresh failed:', error);
     }
-  }, [cacheTimeout, buildCacheKey]);
+  }, [cacheTimeout, buildCacheKey, pageSize]);
 
   const refetch = useCallback(async () => {
     setPage(1);
@@ -168,29 +187,20 @@ export const useFetchProperties = (options: FetchPropertiesOptions = {}): UseFet
     await fetchProperties(false, true, nextPage);
   }, [loading, hasMore, fetchProperties, page]);
 
-  // Initial fetch
   useEffect(() => {
     if (enabled) {
       fetchProperties(false, false, 1);
     }
   }, [enabled, fetchProperties]);
 
-  // Handle app focus refetch
   useEffect(() => {
     if (!refetchOnFocus) return;
-
     const handleAppFocus = () => {
       if (enabled) {
         fetchFreshData();
       }
     };
-
-    // In a real app, you would use AppState or focus events
-    // AppState.addEventListener('change', handleAppStateChange);
-    
-    return () => {
-      // AppState.removeEventListener('change', handleAppStateChange);
-    };
+    return () => {};
   }, [enabled, refetchOnFocus, fetchFreshData]);
 
   return {
@@ -208,7 +218,6 @@ export const useFetchProperties = (options: FetchPropertiesOptions = {}): UseFet
 
 // Hook for fetching a single property
 export const useFetchProperty = (propertyId: number | null) => {
-  // Removed useToast()
   const [property, setProperty] = useState<Property | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -224,31 +233,31 @@ export const useFetchProperty = (propertyId: number | null) => {
       setLoading(true);
       setError(null);
 
-      // Check cache first
       const cacheKey = `property_${propertyId}`;
       const cachedProperty = await storageService.getCache<Property>(cacheKey);
       
       if (cachedProperty) {
         setProperty(cachedProperty);
         setLoading(false);
-        
         // Fetch fresh data in background
         fetchFreshProperty(propertyId);
         return;
       }
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 400));
+      // REAL API CALL
+      const apiUrl = `${ApiConfig.postsApi}/${propertyId}`;
+      const response = await fetch(apiUrl, { headers: ApiConfig.headers.common });
 
-      const propertyData: Property | undefined = MOCK_PROPERTIES.find(p => p.id === propertyId);
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.status}`);
+      }
+
+      const propertyData: Property = await response.json();
 
       if (propertyData) {
         setProperty(propertyData);
+        await storageService.setCache(cacheKey, propertyData, 10 * 60 * 1000); 
         
-        // Cache the property
-        await storageService.setCache(cacheKey, propertyData, 10 * 60 * 1000); // 10 minutes
-        
-        // Track view
         await analyticsService.track('property_viewed', {
           property_id: propertyId,
           property_type: propertyData.propertyCategory,
@@ -267,7 +276,6 @@ export const useFetchProperty = (propertyId: number | null) => {
         property_id: propertyId,
       });
 
-      // Replaced toast with Alert
       Alert.alert('Error', errorMessage);
     } finally {
       setLoading(false);
@@ -276,11 +284,11 @@ export const useFetchProperty = (propertyId: number | null) => {
 
   const fetchFreshProperty = useCallback(async (id: number) => {
     try {
-      // Simulate fresh API call
-      await new Promise(resolve => setTimeout(resolve, 500));
+      const apiUrl = `${ApiConfig.postsApi}/${id}`;
+      const response = await fetch(apiUrl, { headers: ApiConfig.headers.common });
       
-      const freshProperty: Property | undefined = MOCK_PROPERTIES.find(p => p.id === id);
-      if (freshProperty) {
+      if (response.ok) {
+        const freshProperty: Property = await response.json();
         setProperty(freshProperty);
         await storageService.setCache(`property_${id}`, freshProperty, 10 * 60 * 1000);
       }

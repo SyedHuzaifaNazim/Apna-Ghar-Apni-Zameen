@@ -1,16 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
+import React, { forwardRef, useImperativeHandle } from 'react';
 import { Linking, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Colors } from '../../constants/Colors';
 import AppText from '../base/AppText';
 
-interface WebMapProps {
-  initialRegion?: {
-    latitude: number;
-    longitude: number;
-  };
-  children?: React.ReactNode;
-}
+// 1. Export types and constants compatible with react-native-maps
 export interface Region {
   latitude: number;
   longitude: number;
@@ -18,34 +12,54 @@ export interface Region {
   longitudeDelta: number;
 }
 
-// 2. Cover 'PROVIDER_GOOGLE' - Just a constant string
 export const PROVIDER_GOOGLE = 'google';
+
+// 2. Export a dummy Marker component (renders nothing on web)
+export const Marker = (props: any) => null;
+
+interface WebMapProps {
+  initialRegion?: {
+    latitude: number;
+    longitude: number;
+  };
+  children?: React.ReactNode;
+  style?: any;
+  provider?: any;
+  showsUserLocation?: boolean;
+  showsMyLocationButton?: boolean;
+  onPress?: () => void;
+  ref?: any;
+}
+
 /**
  * Production-optimized MapView for Web.
- * Since react-native-maps doesn't support web internals, 
- * this component provides a performant fallback that integrates with 
- * native browser mapping capabilities.
+ * Uses forwardRef to prevent crashes when parent tries to access map methods.
  */
-const MapViewWeb: React.FC<WebMapProps> = ({ initialRegion, children }) => {
+const MapViewWeb = forwardRef((props: WebMapProps, ref) => {
   
+  // 3. Mock the methods that app/map.tsx calls (like fitToCoordinates)
+  useImperativeHandle(ref, () => ({
+    fitToCoordinates: () => {
+      // No-op on web
+      console.log('Map fitToCoordinates called on web');
+    },
+    animateToRegion: () => {
+      console.log('Map animateToRegion called on web');
+    },
+  }));
+
   const handleOpenExternalMap = () => {
-    if (!initialRegion) return;
-    
-    // Generates a cross-platform universal map link
-    const url = `https://www.google.com/maps/search/?api=1&query=${initialRegion.latitude},${initialRegion.longitude}`;
+    if (!props.initialRegion) return;
+    const url = `https://www.google.com/maps/search/?api=1&query=${props.initialRegion.latitude},${props.initialRegion.longitude}`;
     Linking.openURL(url).catch((err) => console.error("Couldn't load page", err));
   };
 
   return (
-    <View style={styles.container}>
-      {/* On web, we render a placeholder with a call-to-action.
-        This prevents 'react-native-maps' from being imported and 
-        breaking the 'npx expo export' process.
-      */}
+    <View style={[styles.container, props.style]}>
       <View style={[styles.webPlaceholder, styles.placeholder]}>
         <Ionicons name="map-outline" size={48} color={Colors.gray[400]} />
-        <AppText style={styles.title} children={undefined}>Interactive Map</AppText>
-        <AppText style={styles.subtitle} children={undefined}>
+        <AppText variant="h3" weight="bold" style={styles.title}>Interactive Map</AppText>
+        <AppText variant="body" color="secondary" style={styles.subtitle}>
           Interactive web maps require a separate API key configuration.
         </AppText>
         
@@ -54,20 +68,13 @@ const MapViewWeb: React.FC<WebMapProps> = ({ initialRegion, children }) => {
           onPress={handleOpenExternalMap}
           activeOpacity={0.7}
         >
-          <AppText style={styles.buttonText} children={undefined}>View on Google Maps</AppText>
+          <AppText style={styles.buttonText}>View on Google Maps</AppText>
           <Ionicons name="arrow-forward" size={16} color="white" />
         </TouchableOpacity>
       </View>
-
-      {/* We hide the markers (children) on web to prevent 
-        logic errors related to Marker position updates.
-      */}
-      <View style={styles.hidden}>
-        {children}
-      </View>
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {
@@ -84,14 +91,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   title: {
-    fontSize: 18,
-    fontWeight: 'bold',
     marginTop: 16,
-    color: Colors.text?.primary || '#000',
   },
   subtitle: {
-    fontSize: 14,
-    color: Colors.text?.secondary || '#666',
     textAlign: 'center',
     marginTop: 8,
     marginBottom: 24,
@@ -110,9 +112,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 16,
   },
-  hidden: {
-    display: 'none',
-  },
   webPlaceholder: {
     backgroundColor: Colors.background?.secondary || '#eee',
     justifyContent: 'center',
@@ -120,10 +119,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border?.light || '#ccc',
   },
-  text: {
-    color: Colors.text?.secondary || '#666',
-    fontWeight: '600',
-  }
 });
 
 export default MapViewWeb;
