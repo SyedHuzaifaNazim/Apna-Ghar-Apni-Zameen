@@ -6,41 +6,22 @@ const bodyParser = require('body-parser');
 
 const app = express();
 
-// 1. IMPROVED CORS (Allows your app's custom headers)
+// 1. Allow Custom Headers
 app.use(cors({
-  origin: '*', // Allow all origins (Change to your specific domain in production)
+  origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Platform', 'X-App-Version', 'X-Device-ID']
 }));
 
 app.use(bodyParser.json());
 
-// 2. DB Connection
+// 2. Connect DB
 const URI = process.env.MongoDB_URI_PROD; 
-let cachedDb = null;
+if (!URI) console.error("❌ MongoDB URI missing");
 
-if (!URI) {
-  console.error("❌ Error: MongoDB URI is missing in .env file");
-}
-
-// Robust connection for Vercel/Serverless
-async function connectToDatabase() {
-  if (cachedDb) return cachedDb;
-  const client = await mongoose.connect(URI, { serverSelectionTimeoutMS: 5000 });
-  cachedDb = client;
-  return client;
-}
-
-// Middleware to ensure DB is connected
-app.use(async (req, res, next) => {
-  try {
-    if (URI) await connectToDatabase();
-    next();
-  } catch (error) {
-    console.error("DB Connection Failed:", error);
-    res.status(500).json({ error: "Database connection failed" });
-  }
-});
+mongoose.connect(URI || '')
+  .then(() => console.log("✅ MongoDB Connected"))
+  .catch(err => console.log("❌ Connection Error:", err));
 
 // 3. Define Schemas
 const UserSchema = new mongoose.Schema({
@@ -51,12 +32,12 @@ const UserSchema = new mongoose.Schema({
 });
 const User = mongoose.model('User', UserSchema);
 
-// Define Property Schema (Matches your frontend types)
+// PROPERTY SCHEMA (You were missing this!)
 const PropertySchema = new mongoose.Schema({
   title: String,
   price: Number,
   currency: { type: String, default: 'PKR' },
-  listingType: String, // 'For Sale' | 'For Rent'
+  listingType: String,
   propertyCategory: String,
   address: {
     city: String,
@@ -70,15 +51,13 @@ const PropertySchema = new mongoose.Schema({
   areaUnit: String,
   images: [String],
   isFeatured: Boolean,
+  description: String,
   datePosted: { type: Date, default: Date.now }
-  // Add other fields as needed based on your frontend Property type
-}, { strict: false }); // strict: false allows saving fields not defined here
+}, { strict: false });
 
 const Property = mongoose.model('Property', PropertySchema);
 
-// 4. API Routes
-
-// --- Auth Routes ---
+// 4. Routes
 app.post('/signup', async (req, res) => {
   const { name, email, password, phone } = req.body;
   try {
@@ -104,70 +83,38 @@ app.post('/signin', async (req, res) => {
   }
 });
 
-app.put('/update-profile', async (req, res) => {
-  const { email, name, phone } = req.body;
-  try {
-    const updatedUser = await User.findOneAndUpdate(
-      { email: email }, 
-      { name, phone }, 
-      { new: true }
-    );
-    if (updatedUser) {
-      res.json({ status: 'ok', user: updatedUser });
-    } else {
-      res.status(404).json({ status: 'error', message: "User not found" });
-    }
-  } catch (error) {
-    res.status(500).json({ status: 'error', error: error.message });
-  }
-});
-
-// --- NEW: Property Routes (Fixes your 404s) ---
-
-// Get All Properties (with pagination)
+// PROPERTY ROUTES (You were missing these!)
 app.get('/properties', async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
-    const skip = (page - 1) * limit;
-
+    
     const properties = await Property.find()
-      .skip(skip)
       .limit(limit)
-      .sort({ datePosted: -1 }); // Newest first
-
+      .skip((page - 1) * limit)
+      .sort({ datePosted: -1 });
+      
     res.json(properties);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// Get Single Property
 app.get('/properties/:id', async (req, res) => {
   try {
-    // Note: If using MongoDB native _id, use findById(req.params.id)
-    // If using a numeric 'id' field, use findOne({ id: req.params.id })
-    // Assuming standard Mongo _id for now, or match your data structure
-    const property = await Property.findOne({ _id: req.params.id }).catch(() => null) 
-                     || await Property.findOne({ id: req.params.id }); 
-
-    if (property) {
-      res.json(property);
-    } else {
-      res.status(404).json({ error: "Property not found" });
-    }
+    const property = await Property.findOne({ 
+      $or: [{ _id: mongoose.Types.ObjectId.isValid(req.params.id) ? req.params.id : null }, { id: req.params.id }]
+    });
+    if (property) res.json(property);
+    else res.status(404).json({ error: "Not found" });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// Local Development Server
-if (require.main === module) {
-    const port = process.env.PORT || 5000;
-    app.listen(port, () => {
-        console.log(`Server is running on port ${port}`);
-    });
+if (process.env.NODE_ENV !== 'production') {
+    const port = process.env.PORT || 8000;
+    app.listen(port, () => console.log(`Server running on ${port}`));
 }
 
-// Export for Vercel
 module.exports = app;
