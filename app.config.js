@@ -20,9 +20,10 @@ module.exports = {
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/logo_agaz.jpg",
-        "backgroundImage": "./assets/images/logo_agaz.png",
-        "monochromeImage": "./assets/images/logo_agaz.png"
+        // "foregroundImage": "./assets/images/logo_agaz.jpg",
+        // "backgroundImage": "./assets/images/logo_agaz.png",
+        // "monochromeImage": "./assets/images/logo_agaz.png",
+        "video": "./assets/images/logo_agaz.mp4"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": true,
