@@ -34,7 +34,11 @@ export const AppConfig = {
 // API Configuration
 export const ApiConfig = {
   // Base URLs
-  baseUrl: process.env.EXPO_PUBLIC_API_URL || 'https://apna-ghar-apni-zameen.vercel.app',
+  baseUrl: process.env.EXPO_PUBLIC_API_URL || 'https://apna-ghar-backend.vercel.app',
+  
+  // Specific Posts API (from your .env.local)
+  postsApi: process.env.EXPO_PUBLIC_POSTS_API || 'https://apna-ghar-backend.vercel.app/properties',
+  
   cdnUrl: process.env.EXPO_PUBLIC_CDN_URL || 'https://cdn.apnagharapnizameen.com',
 
   // Endpoints

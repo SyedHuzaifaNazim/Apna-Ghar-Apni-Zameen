@@ -2,18 +2,23 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { SafeAreaView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps'; // Use standard import to access mapRef methods
 
-import { Property } from '@/api/apiMock';
+// --- THE FIX IS HERE ---
+// OLD (Deleted): import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
+// NEW (Added):
+import MapView, { Marker, PROVIDER_GOOGLE, Region } from '@/components/ui/MapView';
+// -----------------------
+
 import MapMarker from '@/components/ui/MapMarker';
 import PropertyCard from '@/components/ui/PropertyCard';
 import { Colors } from '@/constants/Colors';
 import { useFetchProperties } from '@/hooks/useFetchProperties';
+import { Property } from '@/types/property'; // Updated to use your new Types file
 
 const MapScreen = () => {
   const { properties } = useFetchProperties();
   const router = useRouter();
-  const mapRef = useRef<MapView>(null); // Ref to control the map
+  const mapRef = useRef<any>(null); // Use 'any' to handle the Web wrapper ref difference
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
 
@@ -59,7 +64,7 @@ const MapScreen = () => {
 
   // EFFECT: Auto-zoom to search results
   useEffect(() => {
-    if (filteredProperties.length > 0 && mapRef.current) {
+    if (filteredProperties.length > 0 && mapRef.current && mapRef.current.fitToCoordinates) {
       const coordinates = filteredProperties.map(p => ({
         latitude: p.address.latitude,
         longitude: p.address.longitude,
@@ -125,7 +130,7 @@ const MapScreen = () => {
                 latitude: property.address.latitude,
                 longitude: property.address.longitude,
               }}
-              onPress={(e) => {
+              onPress={(e: any) => {
                 e.stopPropagation(); // Stop map click event
                 handleMarkerPress(property);
               }}

@@ -2,7 +2,7 @@ import React from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 
 import { Colors } from '@/constants/Colors';
-import { Property } from '../../api/apiMock';
+import { Property } from '@/types/property'; // <--- UPDATED IMPORT
 import AppButton from '../../components/base/AppButton';
 import AppText from '../../components/base/AppText';
 
