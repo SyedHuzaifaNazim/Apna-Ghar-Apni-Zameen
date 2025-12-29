@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 
 import AppText from '@/components/base/AppText';
 import { Colors } from '@/constants/Colors';
+import React from 'react';
 
 export default function ModalScreen() {
   return (
