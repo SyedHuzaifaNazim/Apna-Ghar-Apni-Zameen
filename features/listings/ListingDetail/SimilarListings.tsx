@@ -3,13 +3,13 @@ import { useNavigation } from '@react-navigation/native';
 import React from 'react';
 import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
+import { Property } from '@/api/apiMock'; // <--- UPDATED IMPORT
 import AppText from '@/components/base/AppText';
 import PropertyCard from '@/components/ui/PropertyCard';
 import { Colors } from '@/constants/Colors';
 import { BorderRadius } from '@/constants/Layout';
 import { useFetchProperties } from '@/hooks/useFetchProperties'; // <--- USE REAL HOOK
 import { analyticsService } from '@/services/analyticsService';
-import { Property } from '@/types/property'; // <--- UPDATED IMPORT
 
 interface SimilarListingsProps {
   currentProperty: Property;

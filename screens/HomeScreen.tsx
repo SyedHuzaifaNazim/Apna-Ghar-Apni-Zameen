@@ -1,4 +1,5 @@
 // screens/HomeScreen.tsx
+import { Property } from '@/api/apiMock'; // <--- UPDATED IMPORT
 import AppButton from '@/components/base/AppButton';
 import AppText from '@/components/base/AppText';
 import LoadingSpinner from '@/components/base/LoadingSpinner';
@@ -11,7 +12,6 @@ import { useFavorites } from '@/context/FavoritesContext';
 import { useFetchProperties } from '@/hooks/useFetchProperties';
 import { useFilterProperties } from '@/hooks/useFilterProperties';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
-import { Property } from '@/types/property'; // <--- UPDATED IMPORT
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { FlashList } from '@shopify/flash-list';

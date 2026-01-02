@@ -1,4 +1,4 @@
-import { Property } from '@/types/property'; // <--- UPDATED IMPORT
+import { Property } from '@/api/apiMock'; // <--- UPDATED IMPORT
 import { useCallback, useMemo, useState } from 'react';
 import { analyticsService } from '../services/analyticsService';
 import { useDebounce } from './useDebounce';

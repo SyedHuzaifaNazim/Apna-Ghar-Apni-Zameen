@@ -1,8 +1,7 @@
+import { Property } from '@/api/apiMock';
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { Image, Pressable, StyleSheet, TouchableOpacity, View } from 'react-native';
-
-import { Property } from '@/types/property';
 import AppText from '../../../components/base/AppText';
 import { Colors } from '../../../constants/Colors';
 import { BorderRadius } from '../../../constants/Layout';
