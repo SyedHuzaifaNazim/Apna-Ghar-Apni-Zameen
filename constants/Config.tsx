@@ -1,5 +1,4 @@
 import { Platform } from 'react-native';
-import Config from 'react-native-config';
 
 // App Configuration
 export const AppConfig = {
@@ -34,14 +33,13 @@ export const AppConfig = {
 
 // API Configuration
 export const ApiConfig = {
-  // Base URLs
-  baseUrl: process.env.EXPO_PUBLIC_API_URL || 'https://apna-ghar-apni-zameen.vercel.app' ,
+  // Base URLs (FIXED: Added 'as string' to stop TypeScript errors)
+baseUrl: (process.env.EXPO_PUBLIC_API_URL ?? 'https://apna-ghar-apni-zameen.vercel.app') as string,
   
-  // Specific Posts API (from your .env.local)
-  postsApi: process.env.EXPO_PUBLIC_POSTS_API || 'https://apnagharapnizameen.com/wp-json/mo/v1/posts' ,
+  // FIXED: Removed "?per_page=10" so the hook can append parameters correctly
+  postsApi: (process.env.EXPO_PUBLIC_POSTS_API ?? 'https://apnagharapnizameen.com/wp-json/mo/v1/posts') as string,
   
-  cdnUrl: process.env.EXPO_PUBLIC_CDN_URL ,
-
+  cdnUrl: (process.env.EXPO_PUBLIC_CDN_URL ?? 'https://cdn.apnagharapnizameen.com') as string,
   // Endpoints
   endpoints: {
     // Auth endpoints

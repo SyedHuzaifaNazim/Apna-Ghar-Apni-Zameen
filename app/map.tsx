@@ -9,11 +9,11 @@ import { SafeAreaView, StyleSheet, TextInput, TouchableOpacity, View } from 'rea
 import MapView, { Marker, PROVIDER_GOOGLE, Region } from '@/components/ui/MapView';
 // -----------------------
 
+import { Property } from '@/api/apiMock'; // Updated to use your new Types file
 import MapMarker from '@/components/ui/MapMarker';
 import PropertyCard from '@/components/ui/PropertyCard';
 import { Colors } from '@/constants/Colors';
 import { useFetchProperties } from '@/hooks/useFetchProperties';
-import { Property } from '@/types/property'; // Updated to use your new Types file
 
 const MapScreen = () => {
   const { properties } = useFetchProperties();

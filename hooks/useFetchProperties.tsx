@@ -1,10 +1,75 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Alert } from 'react-native';
-import { ApiConfig } from '../constants/Config'; // Import ApiConfig
-import { analyticsService } from '../services/analyticsService';
+import { Property } from '../api/apiMock';
+import { ApiConfig } from '../constants/Config';
 import { storageService } from '../services/storageService';
-import { Property } from '../types/property'; // Import types from new location
 import { useNetworkStatus } from './useNetworkStatus';
+
+// --- MAPPER FUNCTION ---
+const mapWordPressProperty = (wpItem: any): Property => {
+  // Helper to safely get nested values (ACF fields)
+  const acf = wpItem.acf || {};
+  
+  return {
+    id: wpItem.id,
+    title: wpItem.title?.rendered || 'Untitled Property',
+    // Fallback to 0 if price is missing or not a number
+    price: Number(acf.price) || 0,
+    currency: acf.currency || 'PKR',
+    listingType: acf.type === 'rent' ? 'For Rent' : 'For Sale', // Map backend value to Frontend Type
+    propertyCategory: acf.category || 'Residential House',
+    
+    address: {
+      city: acf.city || 'Unknown City',
+      area: acf.area || '',
+      line1: acf.address || '',
+      postalCode: acf.postal_code || '',
+      latitude: Number(acf.latitude) || 0,
+      longitude: Number(acf.longitude) || 0,
+    },
+
+    bedrooms: Number(acf.bedrooms) || 0,
+    bathrooms: Number(acf.bathrooms) || 0,
+    floorLevel: Number(acf.floor_level) || null,
+    furnishing: acf.furnishing || 'Unfurnished',
+
+    yearBuilt: Number(acf.year_built) || new Date().getFullYear(),
+    propertyCondition: acf.condition || 'Well-Maintained',
+
+    amenities: Array.isArray(acf.amenities) ? acf.amenities : [],
+    features: Array.isArray(acf.features) ? acf.features : [],
+    tags: [], // WP might not have tags in this specific format
+
+    nearbyLandmarks: [], // Populate if available
+
+    ownerType: acf.owner_type || 'Agent',
+    ownerDetails: {
+      name: acf.contact_name || 'Agent',
+      phone: acf.contact_phone || '',
+      email: acf.contact_email || '',
+    },
+
+    contactVisibility: 'Public',
+
+    // Handle images safely
+    images: Array.isArray(acf.gallery) 
+      ? acf.gallery 
+      : [wpItem.jetpack_featured_media_url || 'https://via.placeholder.com/400x300'], 
+
+    waterSupply: 'Available',
+    electricityBackup: 'None',
+    parkingSpaces: Number(acf.parking) || 0,
+
+    description: wpItem.content?.rendered?.replace(/<[^>]+>/g, '') || '', // Strip HTML tags
+    datePosted: wpItem.date || new Date().toISOString(),
+    isFeatured: Boolean(acf.is_featured),
+    views: 0,
+    areaSize: Number(acf.area_size) || 0,
+    areaUnit: acf.area_unit || 'sqft',
+  };
+};
+
+// --- HOOK ---
 
 interface UseFetchPropertiesReturn {
   properties: Property[];
@@ -28,8 +93,8 @@ interface FetchPropertiesOptions {
 export const useFetchProperties = (options: FetchPropertiesOptions = {}): UseFetchPropertiesReturn => {
   const {
     enabled = true,
-    pageSize = 20,
-    cacheTimeout = 5 * 60 * 1000, // 5 minutes
+    pageSize = 10, // WordPress default is usually 10
+    cacheTimeout = 5 * 60 * 1000,
     refetchOnFocus = true,
   } = options;
 
@@ -44,58 +109,34 @@ export const useFetchProperties = (options: FetchPropertiesOptions = {}): UseFet
   const [isOfflineData, setIsOfflineData] = useState(false);
 
   const buildCacheKey = useCallback(
-    (pageNum: number) => `properties_page_${pageNum}_size_${pageSize}`,
-    [pageSize]
+    (pageNum: number) => `properties_wp_page_${pageNum}`,
+    []
   );
 
   const fetchProperties = useCallback(async (isRefresh = false, isLoadMore = false, targetPage = page) => {
     if (!enabled) return;
 
     try {
-      if (!isLoadMore) {
-        setLoading(true);
-      }
+      if (!isLoadMore) setLoading(true);
       setError(null);
 
-      const cacheKey = buildCacheKey(targetPage);
-
-      // Offline handling
+      // --- OFFLINE CHECK ---
       if (!isOnline) {
-        const cachedData = await storageService.getCache<Property[]>(cacheKey);
-
+        const cachedData = await storageService.getCache<Property[]>(buildCacheKey(targetPage));
         if (cachedData) {
           setProperties(cachedData);
-          setHasMore(false);
           setIsOfflineData(true);
-          setError(null);
         } else {
-          setError('Offline and no cached data available');
+          setError('No internet connection');
         }
-
         setLoading(false);
         setIsRefreshing(false);
         return;
       }
 
-      // Check cache first if not explicitly refreshing
-      if (!isRefresh && !isLoadMore) {
-        const cachedData = await storageService.getCache<Property[]>(cacheKey);
-        if (cachedData) {
-          setProperties(cachedData);
-          setIsOfflineData(true);
-          // Still fetch fresh data in background
-          fetchFreshData();
-          setLoading(false);
-          return;
-        }
-      }
-      setIsOfflineData(false);
-
-      // ---------------------------------------------------------
-      // REAL API CALL
-      // ---------------------------------------------------------
-      // Ensure POSTS_API is defined in your .env or Config
-      const apiUrl = `${ApiConfig.postsApi}?page=${targetPage}&limit=${pageSize}`;
+      // --- REAL API CALL ---
+      // NOTE: ApiConfig.postsApi should NOT have query params like '?per_page=10'
+      const apiUrl = `${ApiConfig.postsApi}?page=${targetPage}&per_page=${pageSize}`;
       
       const response = await fetch(apiUrl, {
         method: 'GET',
@@ -103,70 +144,38 @@ export const useFetchProperties = (options: FetchPropertiesOptions = {}): UseFet
       });
 
       if (!response.ok) {
-        throw new Error(`API Error: ${response.status} ${response.statusText}`);
+        throw new Error(`API Error: ${response.status}`);
       }
 
-      const data = await response.json();
+      const rawData = await response.json();
       
-      // Handle different API response structures
-      // Assuming API returns { data: Property[], hasMore: boolean } or just Property[]
-      const fetchedProperties: Property[] = Array.isArray(data) ? data : (data.data || []);
-      const serverHasMore = data.hasMore !== undefined ? data.hasMore : fetchedProperties.length >= pageSize;
+      // WordPress returns an array of posts directly
+      const rawPosts = Array.isArray(rawData) ? rawData : [];
+      
+      // MAP THE DATA
+      const mappedProperties = rawPosts.map(mapWordPressProperty);
 
       if (isLoadMore) {
-        setProperties(prev => [...prev, ...fetchedProperties]);
+        setProperties(prev => [...prev, ...mappedProperties]);
       } else {
-        setProperties(fetchedProperties);
+        setProperties(mappedProperties);
       }
 
-      setHasMore(serverHasMore);
+      // Determine if there are more pages (Simplistic check for WP)
+      setHasMore(rawPosts.length === pageSize);
 
-      // Cache the results
-      await storageService.setCache(cacheKey, fetchedProperties, cacheTimeout);
-
-      // Track analytics
-      await analyticsService.track('properties_fetched', {
-        page: targetPage,
-        pageSize,
-        count: fetchedProperties.length,
-        source: isRefresh ? 'refresh' : isLoadMore ? 'load_more' : 'initial',
-      });
+      await storageService.setCache(buildCacheKey(targetPage), mappedProperties, cacheTimeout);
       setLastUpdated(Date.now());
 
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch properties';
-      setError(errorMessage);
-      
-      await analyticsService.trackError(err as Error, {
-        context: 'fetch_properties',
-        page: targetPage,
-        pageSize,
-      });
-
-      if (!isLoadMore && isOnline) {
-        Alert.alert('Error', errorMessage);
-      }
+      const msg = err instanceof Error ? err.message : 'Fetch failed';
+      setError(msg);
+      if (!isLoadMore) Alert.alert('Error', msg);
     } finally {
       setLoading(false);
       setIsRefreshing(false);
     }
-  }, [enabled, page, pageSize, cacheTimeout, buildCacheKey, isOnline]);
-
-  const fetchFreshData = useCallback(async () => {
-    try {
-      const apiUrl = `${ApiConfig.postsApi}?page=1&limit=${pageSize}`;
-      const response = await fetch(apiUrl, { headers: ApiConfig.headers.common });
-      
-      if (response.ok) {
-        const data = await response.json();
-        const freshProperties: Property[] = Array.isArray(data) ? data : (data.data || []);
-        setProperties(freshProperties);
-        await storageService.setCache(buildCacheKey(1), freshProperties, cacheTimeout);
-      }
-    } catch (error) {
-      console.error('Background refresh failed:', error);
-    }
-  }, [cacheTimeout, buildCacheKey, pageSize]);
+  }, [enabled, page, pageSize, cacheTimeout, isOnline]);
 
   const refetch = useCallback(async () => {
     setPage(1);
@@ -181,27 +190,14 @@ export const useFetchProperties = (options: FetchPropertiesOptions = {}): UseFet
 
   const loadMore = useCallback(async () => {
     if (loading || !hasMore) return;
-    
     const nextPage = page + 1;
     setPage(nextPage);
     await fetchProperties(false, true, nextPage);
   }, [loading, hasMore, fetchProperties, page]);
 
   useEffect(() => {
-    if (enabled) {
-      fetchProperties(false, false, 1);
-    }
+    if (enabled) fetchProperties(false, false, 1);
   }, [enabled, fetchProperties]);
-
-  useEffect(() => {
-    if (!refetchOnFocus) return;
-    const handleAppFocus = () => {
-      if (enabled) {
-        fetchFreshData();
-      }
-    };
-    return () => {};
-  }, [enabled, refetchOnFocus, fetchFreshData]);
 
   return {
     properties,
@@ -216,101 +212,35 @@ export const useFetchProperties = (options: FetchPropertiesOptions = {}): UseFet
   };
 };
 
-// Hook for fetching a single property
 export const useFetchProperty = (propertyId: number | null) => {
   const [property, setProperty] = useState<Property | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchProperty = useCallback(async () => {
-    if (!propertyId) {
-      setProperty(null);
-      setLoading(false);
-      return;
-    }
-
+    if (!propertyId) return;
+    setLoading(true);
     try {
-      setLoading(true);
-      setError(null);
-
-      const cacheKey = `property_${propertyId}`;
-      const cachedProperty = await storageService.getCache<Property>(cacheKey);
-      
-      if (cachedProperty) {
-        setProperty(cachedProperty);
-        setLoading(false);
-        // Fetch fresh data in background
-        fetchFreshProperty(propertyId);
-        return;
-      }
-
-      // REAL API CALL
-      const apiUrl = `${ApiConfig.postsApi}/${propertyId}`;
-      const response = await fetch(apiUrl, { headers: ApiConfig.headers.common });
-
-      if (!response.ok) {
-        throw new Error(`API Error: ${response.status}`);
-      }
-
-      const propertyData: Property = await response.json();
-
-      if (propertyData) {
-        setProperty(propertyData);
-        await storageService.setCache(cacheKey, propertyData, 10 * 60 * 1000); 
+        // Fetch specific post from WP
+        const response = await fetch(`${ApiConfig.postsApi}/${propertyId}`);
+        if (!response.ok) throw new Error('Failed to fetch property');
         
-        await analyticsService.track('property_viewed', {
-          property_id: propertyId,
-          property_type: propertyData.propertyCategory,
-          price: propertyData.price,
-        });
-      } else {
-        throw new Error('Property not found');
-      }
-
+        const rawData = await response.json();
+        // Map the single item
+        const mapped = mapWordPressProperty(rawData);
+        setProperty(mapped);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch property';
-      setError(errorMessage);
-      
-      await analyticsService.trackError(err as Error, {
-        context: 'fetch_property',
-        property_id: propertyId,
-      });
-
-      Alert.alert('Error', errorMessage);
+        setError(err instanceof Error ? err.message : 'Error');
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
   }, [propertyId]);
 
-  const fetchFreshProperty = useCallback(async (id: number) => {
-    try {
-      const apiUrl = `${ApiConfig.postsApi}/${id}`;
-      const response = await fetch(apiUrl, { headers: ApiConfig.headers.common });
-      
-      if (response.ok) {
-        const freshProperty: Property = await response.json();
-        setProperty(freshProperty);
-        await storageService.setCache(`property_${id}`, freshProperty, 10 * 60 * 1000);
-      }
-    } catch (error) {
-      console.error('Background property refresh failed:', error);
-    }
-  }, []);
-
-  const refetch = useCallback(() => {
-    fetchProperty();
-  }, [fetchProperty]);
-
   useEffect(() => {
-    fetchProperty();
+      fetchProperty();
   }, [fetchProperty]);
 
-  return {
-    property,
-    loading,
-    error,
-    refetch,
-  };
+  return { property, loading, error, refetch: fetchProperty };
 };
 
 export default useFetchProperties;

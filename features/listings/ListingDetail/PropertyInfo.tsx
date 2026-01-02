@@ -2,10 +2,10 @@ import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, View, ViewStyle } from 'react-native';
 
+import { Property } from '@/api/apiMock';
 import AppText from '@/components/base/AppText';
 import { Colors } from '@/constants/Colors';
 import { BorderRadius } from '@/constants/Layout';
-import { Property } from '@/types/property';
 
 interface PropertyInfoProps {
   property: Property;
