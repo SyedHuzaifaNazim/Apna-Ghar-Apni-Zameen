@@ -1,9 +1,13 @@
-require('dotenv').config(); 
-const express = require('express');
-const axios = require('axios');
-const mongoose = require('mongoose');
-const cors = require('cors');
-const bodyParser = require('body-parser');
+import axios from "axios"
+import bcrypt from "bcryptjs"
+import bodyParser from "body-parser"
+import cors from "cors"
+import dotenv from "dotenv"
+import express from "express"
+import jwt from "jsonwebtoken"
+import mongoose from "mongoose"
+
+dotenv.config()
 
 const app = express();
 
@@ -30,6 +34,7 @@ const UserSchema = new mongoose.Schema({
   email: { type: String, unique: true },
   password: String, 
   phone: String,
+  role: String,
 });
 const User = mongoose.model('User', UserSchema);
 
@@ -60,37 +65,256 @@ const Property = mongoose.model('Property', PropertySchema);
 
 // 4. Routes
 app.post('/signup', async (req, res) => {
-  const { name, email, password, phone } = req.body;
   try {
-    const newUser = new User({ name, email, password, phone });
-    await newUser.save();
-    res.json({ status: 'ok', message: 'User created' });
+    const { name, email, password, phone } = req.body
+
+    const missingFields = []
+    if (!name) missingFields.push("name")
+    if (!email) missingFields.push("email")
+    if (!password) missingFields.push("password")
+    if (!phone) missingFields.push("phone")
+
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        status: "error",
+        error: `Missing fields: ${missingFields.join(", ")}`
+      })
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        status: "error",
+        error: "Invalid email format"
+      })
+    }
+
+    if (password.length < 8) {
+      return res.status(400).json({
+        status: "error",
+        error: "Password must be at least 8 characters"
+      })
+    }
+
+    const existingUser = await User.findOne({ email })
+    if (existingUser) {
+      return res.status(400).json({
+        status: "error",
+        error: "Email already exists"
+      })
+    }
+
+      const existingName = await User.findOne({ name })
+    if (existingName) {
+      return res.status(400).json({
+        status: "error",
+        error: "Username already exists"
+      })
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10)
+
+    const newUser = new User({
+      name,
+      email,
+      password: hashedPassword,
+      phone,
+      role: "Buyer"
+    })
+    await newUser.save()
+
+    res.json({
+      status: "ok",
+      message: "User registered successfully"
+    })
+
   } catch (error) {
-    res.status(400).json({ status: 'error', error: 'Email likely already exists' });
+    res.status(500).json({
+      status: "error",
+      error: error.message
+    })
   }
-});
+})
 
 app.post('/signin', async (req, res) => {
-  const { email, password } = req.body;
   try {
-    const user = await User.findOne({ email, password });
-    if (user) {
-      res.json({ status: 'ok', user });
-    } else {
-      res.status(401).json({ status: 'error', user: false, message: "Invalid credentials" });
-    }
-  } catch (err) {
-    res.status(500).json({ status: 'error', error: err.message });
-  }
-});
+    const { email, password } = req.body
 
-// PROPERTY ROUTES (You were missing these!)
+    const missingFields = []
+    if (!email) missingFields.push("email")
+    if (!password) missingFields.push("password")
+
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        status: "error",
+        error: `Missing fields: ${missingFields.join(", ")}`
+      })
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        status: "error",
+        error: "Invalid email format"
+      })
+    }
+
+    if (password.length < 8) {
+      return res.status(400).json({
+        status: "error",
+        error: "Password must be at least 8 characters"
+      })
+    }
+
+    const user = await User.findOne({ email })
+    if (!user) {
+      return res.status(401).json({
+        status: "error",
+        user: false,
+        message: "Invalid credentials"
+      })
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password)
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        status: "error",
+        user: false,
+        message: "Invalid credentials",
+      })
+    }
+
+    const token = jwt.sign(
+      {
+        id: user._id,
+        email: user.email,
+        role: user.role
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "30d" } 
+    )
+
+    res.json({
+      status: "ok",
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role
+      },
+      token
+    })
+
+  } catch (err) {
+    res.status(500).json({
+      status: "error",
+      error: err.message
+    })
+  }
+})
+
+app.get('/user/:id', async (req, res) => {
+  try {
+    const { id } = req.params
+
+    if (!id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({
+        status: "error",
+        error: "Invalid user ID format"
+      })
+    }
+
+    const user = await User.findById(id).select("-password") // password hide
+
+    if (!user) {
+      return res.status(404).json({
+        status: "error",
+        error: "User not found"
+      })
+    }
+
+    res.json({
+      status: "ok",
+      user
+    })
+
+  } catch (err) {
+    res.status(500).json({
+      status: "error",
+      error: err.message
+    })
+  }
+})
+
+app.put("/user/role/:id", async (req, res) => {
+  try {
+    const { id } = req.params
+    const { status } = req.body
+
+    if (!id.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({
+        status: "error",
+        error: "Invalid user ID"
+      })
+    }
+
+    if (!status) {
+      return res.status(400).json({
+        status: "error",
+        error: "Status is required"
+      })
+    }
+
+    if (!["Buyer", "Seller"].includes(status)) {
+      return res.status(400).json({
+        status: "error",
+        error: "Status must be Buyer or Seller"
+      })
+    }
+
+    const user = await User.findById(id)
+    if (!user) {
+      return res.status(404).json({
+        status: "error",
+        error: "User not found"
+      })
+    }
+
+    user.role = status
+    await user.save()
+
+    res.json({
+      status: "ok",
+      message: "Role updated successfully",
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    })
+
+  } catch (err) {
+    res.status(500).json({
+      status: "error",
+      error: err.message
+    })
+  }
+})
+
 app.get('/properties', async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1
+   
     const limit = parseInt(req.query.limit) || 20
 
-    const response = await axios.get("https://apnagharapnizameen.com/wp-json/mo/v1/posts")
+    const response = await axios.get("https://apnagharapnizameen.com/wp-json/wp/v2/properties", {
+      params: {
+        per_page: limit,
+        page
+      }
+    })
     const allData = response.data
 
     const total = allData.length
@@ -125,7 +349,9 @@ app.get('/properties/:id', async (req, res) => {
 
 if (process.env.NODE_ENV !== 'production') {
     const port = process.env.PORT || 8000;
-    app.listen(port, () => console.log(`Server running on ${port}`));
+    app.listen(port, () => {
+        console.log(`Server is running on port ${port}`);
+    });
 }
 
-module.exports = app;
+export default app;
