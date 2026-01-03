@@ -33,80 +33,65 @@ export const AppConfig = {
 
 // API Configuration
 export const ApiConfig = {
-  // Base URLs (FIXED: Added 'as string' to stop TypeScript errors)
-baseUrl: (process.env.EXPO_PUBLIC_API_URL ?? 'https://apna-ghar-apni-zameen.vercel.app') as string,
+  // Base URLs
+  // This points to your WordPress REST API root
+  baseUrl: (process.env.EXPO_PUBLIC_API_URL ?? 'https://apnagharapnizameen.com/wp-json') as string,
   
-  // FIXED: Removed "?per_page=10" so the hook can append parameters correctly
-  postsApi: (process.env.EXPO_PUBLIC_POSTS_API ?? 'https://apnagharapnizameen.com/wp-json/mo/v1/posts') as string,
+  // CDN for static assets (if different from WP uploads)
+  cdnUrl: (process.env.EXPO_PUBLIC_CDN_URL ?? 'https://apnagharapnizameen.com/wp-content/uploads') as string,
   
-  cdnUrl: (process.env.EXPO_PUBLIC_CDN_URL ?? 'https://cdn.apnagharapnizameen.com') as string,
-  // Endpoints
+  // Endpoints - Mapped to WordPress Structure
   endpoints: {
-    // Auth endpoints
+    // Auth endpoints (Standard JWT Auth for WordPress)
     auth: {
-      login: '/auth/login',
-      register: '/auth/register',
-      logout: '/auth/logout',
-      refresh: '/auth/refresh',
-      forgotPassword: '/auth/forgot-password',
-      resetPassword: '/auth/reset-password',
-      verifyEmail: '/auth/verify-email',
-      profile: '/auth/profile',
+      login: '/jwt-auth/v1/token',        // Requires JWT Auth plugin
+      validate: '/jwt-auth/v1/token/validate',
+      register: '/wp/v2/users/register',  // Requires custom endpoint or specific plugin
+      resetPassword: '/wp/v2/users/lostpassword',
+      profile: '/wp/v2/users/me',
     },
 
-    // Property endpoints
+    // Property endpoints (Assumes 'properties' Custom Post Type)
     properties: {
-      list: '/properties',
-      featured: '/properties/featured',
-      search: '/properties/search',
-      detail: '/properties/:id',
-      create: '/properties',
-      update: '/properties/:id',
-      delete: '/properties/:id',
-      similar: '/properties/:id/similar',
-      nearby: '/properties/nearby',
-      categories: '/properties/categories',
-      filters: '/properties/filters',
+      list: '/wp/v2/properties',
+      detail: '/wp/v2/properties/:id',
+      // WordPress handles search via query params on the list endpoint (?search=...)
+      search: '/wp/v2/properties', 
+      // Categories in WP are usually 'property_type' or 'property_status' taxonomies
+      categories: '/wp/v2/property_type', 
+      statuses: '/wp/v2/property_status',
+      locations: '/wp/v2/property_city',
+      
+      // Features/Amenities taxonomy
+      features: '/wp/v2/property_feature',
+      
+      // Media/Images for properties
+      media: '/wp/v2/media',
     },
 
     // User endpoints
     user: {
-      favorites: '/user/favorites',
-      addFavorite: '/user/favorites/:id',
-      removeFavorite: '/user/favorites/:id',
-      preferences: '/user/preferences',
-      searchHistory: '/user/search-history',
-      viewedProperties: '/user/viewed-properties',
-      notifications: '/user/notifications',
+      me: '/wp/v2/users/me',
+      update: '/wp/v2/users/me', // POST to update
+      favorites: '/wp/v2/favorites', // Requires 'Favorites' plugin REST API
     },
 
-    // Agent endpoints
+    // Agent endpoints (Agents are usually Users with 'agent' role)
     agents: {
-      list: '/agents',
-      detail: '/agents/:id',
-      contact: '/agents/:id/contact',
-      reviews: '/agents/:id/reviews',
+      list: '/wp/v2/users?roles=agent',
+      detail: '/wp/v2/users/:id',
     },
 
-    // Viewing endpoints
-    viewings: {
-      schedule: '/viewings/schedule',
-      list: '/viewings',
-      cancel: '/viewings/:id',
-      reschedule: '/viewings/:id/reschedule',
+    // General Content
+    posts: {
+      list: '/wp/v2/posts',
+      detail: '/wp/v2/posts/:id',
+      pages: '/wp/v2/pages',
     },
 
-    // Upload endpoints
-    upload: {
-      image: '/upload/image',
-      document: '/upload/document',
-      avatar: '/upload/avatar',
-    },
-
-    // Analytics endpoints
-    analytics: {
-      track: '/analytics/track',
-      events: '/analytics/events',
+    // Contact/Forms (e.g., Contact Form 7 REST integration)
+    contact: {
+      send: '/contact-form-7/v1/contact-forms/:id/feedback',
     },
   },
 
@@ -116,6 +101,7 @@ baseUrl: (process.env.EXPO_PUBLIC_API_URL ?? 'https://apna-ghar-apni-zameen.verc
     retryAttempts: 3,
     retryDelay: 1000,
     cacheTimeout: 5 * 60 * 1000, // 5 minutes
+    perPage: 10, // Default WordPress items per page
   },
 
   // Headers
@@ -123,9 +109,7 @@ baseUrl: (process.env.EXPO_PUBLIC_API_URL ?? 'https://apna-ghar-apni-zameen.verc
     common: {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
-      'X-Platform': Platform.OS,
       'X-App-Version': AppConfig.app.version,
-      'X-Device-ID': 'device-id', // This would be set dynamically
     },
   },
 } as const;
@@ -451,14 +435,20 @@ export const getApiEndpoint = (endpoint: string, params: Record<string, string> 
 };
 
 export const getImageUrl = (path: string, size: string = 'medium'): string => {
+  // If path is already a full URL (common in WP), return it
+  if (path.startsWith('http')) return path;
+
+  // Otherwise construct it
   const sizes = {
-    small: 'w=300',
-    medium: 'w=600',
-    large: 'w=1200',
+    small: '-300x300', // Standard WP small suffix
+    medium: '-768x768', // Standard WP medium suffix
+    large: '-1024x1024', // Standard WP large suffix
     original: '',
   };
-  const sizeParam = sizes[size as keyof typeof sizes];
-  return `${ApiConfig.cdnUrl}${path}${sizeParam ? `?${sizeParam}` : ''}`;
+  
+  // Logic to inject WP size suffix before extension would go here
+  // For now, returning the CDN Path
+  return `${ApiConfig.cdnUrl}/${path}`;
 };
 
 export const formatCurrency = (amount: number): string => {

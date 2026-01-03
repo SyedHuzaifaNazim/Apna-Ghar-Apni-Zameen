@@ -65,7 +65,7 @@
   },
   "devDependencies": {
     "@types/lodash": "^4.17.21",
-    "@types/react": "^19.2.7",
+    "@types/react": "~19.1.10",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
     "typescript": "~5.9.2"
