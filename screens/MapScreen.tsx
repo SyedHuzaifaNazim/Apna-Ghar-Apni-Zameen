@@ -10,13 +10,16 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
+// [CHANGED] Added UrlTile and PROVIDER_DEFAULT imports
+import MapView, { Marker, PROVIDER_DEFAULT, PROVIDER_GOOGLE, Region, UrlTile } from 'react-native-maps';
 
 import { Property } from '@/api/apiMock';
 import AppButton from '@/components/base/AppButton';
 import AppText from '@/components/base/AppText';
 import { Colors } from '@/constants/Colors';
 import { useFetchProperties } from '@/hooks/useFetchProperties';
+// [CHANGED] Imported MapConfig to check which provider to use
+import { MapConfig } from '@/constants/Config';
 
 const { width } = Dimensions.get('window');
 
@@ -25,6 +28,10 @@ const MapScreen = () => {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
+
+  // [CHANGED] Dynamic Provider Logic
+  // If config says 'google', force Google. Otherwise use Default (Apple Maps on iOS, Empty on Android)
+  const mapProvider = MapConfig.provider === 'osm' ? PROVIDER_GOOGLE : PROVIDER_DEFAULT;
 
   // Filter properties based on search
   const filteredProperties = useMemo(() => {
@@ -77,7 +84,6 @@ const MapScreen = () => {
   };
 
   const getMarkerColor = (property: Property) => {
-    // Fallback to primary/secondary if specific status colors aren't available
     if (property.listingType === 'For Sale') return Colors.success?.[500] || 'green';
     if (property.listingType === 'For Rent') return Colors.warning?.[500] || 'orange';
     return Colors.primary[500];
@@ -117,11 +123,26 @@ const MapScreen = () => {
       <View style={styles.mapContainer}>
         <MapView
           style={styles.map}
-          provider={PROVIDER_GOOGLE}
+          provider={mapProvider} // [CHANGED] Using dynamic provider
           initialRegion={initialRegion}
           showsUserLocation={true}
           showsMyLocationButton={true}
+          rotateEnabled={true}
+          zoomEnabled={true}
         >
+          {/* [CHANGED] Add OpenStreetMap Tiles if provider is set to 'osm' */}
+          {MapConfig.provider === 'osm' && (
+            <UrlTile
+              /**
+               * The URL template for OpenStreetMap tiles.
+               */
+              urlTemplate="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              maximumZ={19}
+              flipY={false}
+              tileSize={256}
+            />
+          )}
+
           {filteredProperties.map(property => (
             <Marker
               key={property.id}

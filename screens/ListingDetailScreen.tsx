@@ -10,15 +10,15 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapView, { Marker, PROVIDER_DEFAULT } from 'react-native-maps'; // Updated for OSM support
 
 // Hooks and Context
 import AppButton from '@/components/base/AppButton';
 import AppText from '@/components/base/AppText';
-import LoadingSpinner from '@/components/base/LoadingSpinner'; // <--- Added
+import LoadingSpinner from '@/components/base/LoadingSpinner';
 import { Colors } from '@/constants/Colors';
 import { useFavorites } from '@/context/FavoritesContext';
-import { useFetchProperty } from '@/hooks/useFetchProperties'; // <--- USE REAL HOOK
+import { useFetchProperty } from '@/hooks/useFetchProperties';
 
 const { width } = Dimensions.get('window');
 
@@ -29,7 +29,7 @@ const ListingDetailScreen = () => {
   
   const { isFavorite, toggleFavorite } = useFavorites();
   
-  // Use the hook to fetch the specific property from POSTS_API
+  // Use the real hook
   const { property, loading, error } = useFetchProperty(propertyId);
 
   if (loading) {
@@ -49,7 +49,7 @@ const ListingDetailScreen = () => {
             Property not found
           </AppText>
           <AppText variant="body" color="secondary" style={{marginBottom: 16}}>
-            {error}
+            {error || "Could not fetch details"}
           </AppText>
           <AppButton onPress={() => router.back()} style={styles.backButton}>
             Go Back
@@ -61,7 +61,7 @@ const ListingDetailScreen = () => {
 
   const formatPrice = (price: number) => {
     if (price >= 10000000) {
-      return `${(price / 1000000).toFixed(1)} Million`;
+      return `${(price / 10000000).toFixed(1)} Crore`;
     } else if (price >= 100000) {
       return `${(price / 100000).toFixed(1)} Lac`;
     }
@@ -146,7 +146,7 @@ const ListingDetailScreen = () => {
             <View style={styles.detailItem}>
               <Ionicons name="resize-outline" size={24} color={Colors.primary[500]} />
               <AppText variant="small" color="secondary">Area</AppText>
-              <AppText variant="body" weight="bold">{property.areaSize} sq ft</AppText>
+              <AppText variant="body" weight="bold">{property.areaSize} {property.areaUnit}</AppText>
             </View>
             <View style={styles.detailItem}>
               <Ionicons name="business-outline" size={24} color={Colors.primary[500]} />
@@ -187,7 +187,7 @@ const ListingDetailScreen = () => {
             <View style={styles.mapContainer}>
               <MapView
                 style={styles.map}
-                provider={PROVIDER_GOOGLE}
+                provider={PROVIDER_DEFAULT}
                 initialRegion={{
                   latitude: property.address.latitude,
                   longitude: property.address.longitude,
@@ -248,116 +248,30 @@ const ListingDetailScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: 'white',
-  },
-  center: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  scrollContent: {
-    paddingBottom: 20,
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  errorText: {
-    marginTop: 16,
-  },
-  backButton: {
-    marginTop: 16,
-    width: 200,
-  },
-  imageContainer: {
-    position: 'relative',
-    height: 300,
-    width: '100%',
-  },
-  propertyImage: {
-    width: width,
-    height: 300,
-  },
-  iconButton: {
-    position: 'absolute',
-    top: 48, // Adjust for status bar
-    backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  backButtonPos: {
-    left: 16,
-  },
-  favButtonPos: {
-    right: 16,
-  },
-  badgeContainer: {
-    position: 'absolute',
-    bottom: 16,
-    left: 16,
-    flexDirection: 'row',
-    gap: 8,
-  },
-  badge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-  },
-  contentContainer: {
-    padding: 16,
-  },
-  section: {
-    marginBottom: 16,
-    gap: 8,
-  },
-  detailsCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    backgroundColor: Colors.gray[50],
-    padding: 16,
-    borderRadius: 12,
-    marginVertical: 8,
-  },
-  detailItem: {
-    alignItems: 'center',
-    gap: 4,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: Colors.gray[200],
-    marginVertical: 16,
-  },
-  descriptionText: {
-    lineHeight: 24,
-  },
-  addressRow: {
-    flexDirection: 'row',
-    gap: 8,
-    alignItems: 'flex-start',
-  },
-  mapContainer: {
-    height: 200,
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  map: {
-    flex: 1,
-  },
-  actionButtonsRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  flexButton: {
-    flex: 1,
-  },
+  container: { flex: 1, backgroundColor: 'white' },
+  center: { justifyContent: 'center', alignItems: 'center' },
+  scrollContent: { paddingBottom: 20 },
+  errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
+  errorText: { marginTop: 16 },
+  backButton: { marginTop: 16, width: 200 },
+  imageContainer: { position: 'relative', height: 300, width: '100%' },
+  propertyImage: { width: width, height: 300 },
+  iconButton: { position: 'absolute', top: 48, backgroundColor: 'white', borderRadius: 20, padding: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4, elevation: 4 },
+  backButtonPos: { left: 16 },
+  favButtonPos: { right: 16 },
+  badgeContainer: { position: 'absolute', bottom: 16, left: 16, flexDirection: 'row', gap: 8 },
+  badge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4 },
+  contentContainer: { padding: 16 },
+  section: { marginBottom: 16, gap: 8 },
+  detailsCard: { flexDirection: 'row', justifyContent: 'space-around', backgroundColor: Colors.gray[50], padding: 16, borderRadius: 12, marginVertical: 8 },
+  detailItem: { alignItems: 'center', gap: 4 },
+  divider: { height: 1, backgroundColor: Colors.gray[200], marginVertical: 16 },
+  descriptionText: { lineHeight: 24 },
+  addressRow: { flexDirection: 'row', gap: 8, alignItems: 'flex-start' },
+  mapContainer: { height: 200, borderRadius: 12, overflow: 'hidden' },
+  map: { flex: 1 },
+  actionButtonsRow: { flexDirection: 'row', gap: 12 },
+  flexButton: { flex: 1 },
 });
 
 export default ListingDetailScreen;

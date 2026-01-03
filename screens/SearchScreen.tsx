@@ -4,13 +4,15 @@ import FilterModal from '@/components/ui/FilterModal';
 import PropertyCard from '@/components/ui/PropertyCard';
 import { Colors } from '@/constants/Colors';
 import SearchSuggestions from '@/features/search/SearchSuggestions';
-import { useFetchProperties } from '@/hooks/useFetchProperties';
-import { useFilterProperties } from '@/hooks/useFilterProperties';
+import { propertyApi } from '@/services/apiService';
+import { Property } from '@/types/property';
 import { Ionicons } from '@expo/vector-icons';
 import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import { debounce } from 'lodash';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   SafeAreaView,
   StyleSheet,
   TextInput,
@@ -20,31 +22,40 @@ import {
 
 const SearchScreen: React.FC = () => {
   const router = useRouter();
-  const { properties, loading } = useFetchProperties();
   
   const [searchQuery, setSearchQuery] = useState('');
+  const [results, setResults] = useState<Property[]>([]);
+  const [loading, setLoading] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   
-  const {
-    filteredProperties,
-    activeFilters,
-    filterCount,
-    updateFilters,
-  } = useFilterProperties(properties);
-
-  const modalFilters = useMemo(
-    () => ({
-      listingType: activeFilters.listingType || '',
-      propertyCategory: activeFilters.propertyCategory || '',
-      // Fixed: changed 'city' to 'cities' to match FilterOptions interface
-      cities: activeFilters.cities || [], 
-      minPrice: activeFilters.minPrice ?? 0,
-      maxPrice: activeFilters.maxPrice ?? 100000000,
-      bedrooms: activeFilters.bedrooms ?? 0,
-      amenities: activeFilters.amenities ?? [],
-    }),
-    [activeFilters]
+  // Debounced API Call for Server-Side Search
+  const performSearch = useCallback(
+    debounce(async (query: string) => {
+      if (!query.trim()) {
+        setResults([]);
+        return;
+      }
+      setLoading(true);
+      try {
+        const response = await propertyApi.searchProperties(query);
+        if (response.data && Array.isArray(response.data)) {
+            setResults(response.data as any);
+        }
+      } catch (error) {
+        console.error("Search failed", error);
+      } finally {
+        setLoading(false);
+      }
+    }, 500),
+    []
   );
+
+  useEffect(() => {
+    performSearch(searchQuery);
+    return () => {
+      performSearch.cancel();
+    };
+  }, [searchQuery, performSearch]);
 
   const handlePropertyPress = (propertyId: number) => {
     router.push(`/listing/${propertyId}`);
@@ -52,13 +63,8 @@ const SearchScreen: React.FC = () => {
 
   const handleClearSearch = () => {
     setSearchQuery('');
-    updateFilters({ keywords: '' });
+    setResults([]);
   };
-
-  const activeFilterCount = Math.max(
-    filterCount - (activeFilters.keywords && activeFilters.keywords.trim() ? 1 : 0),
-    0
-  );
 
   // Mock data for search suggestions
   const recentSearches = [
@@ -100,14 +106,15 @@ const SearchScreen: React.FC = () => {
                 placeholder="Search properties, locations, keywords..."
                 placeholderTextColor="#666"
                 value={searchQuery}
-                onChangeText={query => {
-                  setSearchQuery(query);
-                  updateFilters({ keywords: query });
-                }}
+                onChangeText={setSearchQuery}
                 style={styles.searchInput}
                 autoFocus={true}
               />
-              {searchQuery.trim() ? (
+              {loading ? (
+                <View style={styles.clearButton}>
+                    <ActivityIndicator size="small" color={Colors.primary[500]} />
+                </View>
+              ) : searchQuery.trim() ? (
                 <TouchableOpacity 
                   style={styles.clearButton}
                   onPress={handleClearSearch}
@@ -122,30 +129,23 @@ const SearchScreen: React.FC = () => {
             <TouchableOpacity 
               style={[
                 styles.filterButton,
-                { backgroundColor: activeFilterCount > 0 ? Colors.primary[500] : '#e5e7eb' }
+                { backgroundColor: '#e5e7eb' }
               ]}
               onPress={() => setShowFilters(true)}
             >
               <Ionicons 
                 name="options-outline" 
                 size={18} 
-                color={activeFilterCount > 0 ? "white" : Colors.text.secondary} 
+                color={Colors.text.secondary} 
               />
-              {activeFilterCount > 0 && (
-                <View style={styles.filterBadge}>
-                  <AppText variant="small" style={styles.filterBadgeText}>
-                    {activeFilterCount}
-                  </AppText>
-                </View>
-              )}
             </TouchableOpacity>
           </View>
         </View>
 
-        {searchQuery || activeFilterCount > 0 ? (
+        {searchQuery.length > 0 ? (
           // Search Results
           <FlashList
-            data={filteredProperties}
+            data={results}
             renderItem={({ item }) => (
               <View style={styles.propertyCardWrapper}>
                 <PropertyCard 
@@ -157,46 +157,38 @@ const SearchScreen: React.FC = () => {
             keyExtractor={item => item.id.toString()}
             showsVerticalScrollIndicator={false}
             ListHeaderComponent={
-              <View style={styles.resultsHeader}>
-                <AppText variant="h3" weight="bold">
-                  Search Results ({filteredProperties.length})
-                </AppText>
-                {searchQuery && (
-                  <AppText variant="body" color="secondary" style={styles.resultsQuery}>
-                    Results for "{searchQuery}"
-                  </AppText>
-                )}
-              </View>
+              !loading ? (
+                <View style={styles.resultsHeader}>
+                    <AppText variant="h3" weight="bold">
+                    Search Results ({results.length})
+                    </AppText>
+                    <AppText variant="body" color="secondary" style={styles.resultsQuery}>
+                        Results for "{searchQuery}"
+                    </AppText>
+                </View>
+              ) : null
             }
             ListEmptyComponent={
-              <View style={styles.emptyContainer}>
-                <Ionicons name="search-outline" size={64} color={Colors.text.disabled} />
-                <AppText variant="h3" weight="semibold" style={styles.emptyTitle}>
-                  No properties found
-                </AppText>
-                <AppText variant="body" color="secondary" style={styles.emptyText}>
-                  Try adjusting your search criteria or filters
-                </AppText>
-                <TouchableOpacity
-                  style={styles.emptyFilterButton}
-                  onPress={() => setShowFilters(true)}
-                >
-                  <Ionicons name="filter" size={20} color={Colors.primary[500]} />
-                  <AppText variant="body" color="primary" style={styles.emptyFilterButtonText}>
-                    Adjust Filters
-                  </AppText>
-                </TouchableOpacity>
-              </View>
+              !loading ? (
+                <View style={styles.emptyContainer}>
+                    <Ionicons name="search-outline" size={64} color={Colors.text.disabled} />
+                    <AppText variant="h3" weight="semibold" style={styles.emptyTitle}>
+                    No properties found
+                    </AppText>
+                    <AppText variant="body" color="secondary" style={styles.emptyText}>
+                    Try adjusting your search criteria or keywords
+                    </AppText>
+                </View>
+              ) : null
             }
             contentContainerStyle={styles.listContent}
-            // estimatedItemSize={200} Removed for FlashList v2 compatibility
+            // estimatedItemSize removed to resolve type error
           />
         ) : (
-          // Search Suggestions
+          // Search Suggestions (Default State)
           <SearchSuggestions
             onSelectSuggestion={(suggestion: string) => {
               setSearchQuery(suggestion);
-              updateFilters({ keywords: suggestion });
             }}
             onClearRecentSearches={() => {}}
             recentSearches={recentSearches}
@@ -208,11 +200,10 @@ const SearchScreen: React.FC = () => {
           <FilterModal
             isVisible={showFilters}
             onClose={() => setShowFilters(false)}
-            onApplyFilters={nextFilters => {
-              updateFilters(nextFilters);
-              setShowFilters(false);
+            onApplyFilters={() => {
+                setShowFilters(false);
             }}
-            currentFilters={modalFilters}
+            currentFilters={{}}
           />
         )}
       </SafeAreaView>
@@ -273,22 +264,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  filterBadge: {
-    position: 'absolute',
-    top: -4,
-    right: -4,
-    backgroundColor: '#ef4444',
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  filterBadgeText: {
-    color: 'white',
-    fontSize: 10,
-    fontWeight: 'bold',
   },
   resultsHeader: {
     paddingHorizontal: 16,

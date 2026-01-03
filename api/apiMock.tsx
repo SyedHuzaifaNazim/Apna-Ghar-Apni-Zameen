@@ -1,5 +1,6 @@
 // ===============================================================
 // TYPE DEFINITIONS
+import { Property } from '../types/property';
 // ===============================================================
 export type ListingType = 'For Sale' | 'For Rent' | 'Auction' | 'Short Term Rent';
 export type PropertyCategory =
@@ -24,70 +25,70 @@ export type ContactVisibility = 'Public' | 'Verified Users Only';
 export type EnergyRating = 'A' | 'B' | 'C' | 'D' | 'E';
 export type WaterSupply = 'Available' | 'Not Available';
 export type ElectricityBackup = 'None' | 'Partial' | 'Full';
+export { Property };
+// export interface Property {
+//   id: number;
+//   title: string;
+//   listingType: ListingType;
+//   propertyCategory: PropertyCategory;
 
-export interface Property {
-  id: number;
-  title: string;
-  listingType: ListingType;
-  propertyCategory: PropertyCategory;
-
-  price: number;
-  currency: string;
-  areaSize: number;
-  areaUnit: AreaUnit;
+//   price: number;
+//   currency: string;
+//   areaSize: number;
+//   areaUnit: AreaUnit;
   
-  address: {
-    city: string;
-    area: string;
-    line1: string;
-    postalCode: string;
-    latitude: number;
-    longitude: number;
-  };
+//   address: {
+//     city: string;
+//     area: string;
+//     line1: string;
+//     postalCode: string;
+//     latitude: number;
+//     longitude: number;
+//   };
 
-  bedrooms: number;
-  bathrooms: number;
-  floorLevel: number | null;
-  furnishing: FurnishingType;
+//   bedrooms: number;
+//   bathrooms: number;
+//   floorLevel: number | null;
+//   furnishing: FurnishingType;
 
-  yearBuilt: number;
-  propertyCondition: PropertyCondition;
+//   yearBuilt: number;
+//   propertyCondition: PropertyCondition;
 
-  amenities: string[]; 
-  features: string[]; 
-  tags: string[];
+//   amenities: string[]; 
+//   features: string[]; 
+//   tags: string[];
 
-  nearbyLandmarks: {
-    name: string;
-    distanceKm: number;
-  }[];
+//   nearbyLandmarks: {
+//     name: string;
+//     distanceKm: number;
+//   }[];
 
-  ownerType: OwnerType;
-  ownerDetails: {
-    name: string;
-    phone: string;
-    email: string;
-    agencyName?: string;
-  };
+//   ownerType: OwnerType;
+//   ownerDetails: {
+//     name: string;
+//     phone: string;
+//     email: string;
+//     agencyName?: string;
+//   };
 
-  contactVisibility: ContactVisibility;
+//   contactVisibility: ContactVisibility;
 
-  videoTour?: string;
-  virtual3DTour?: string;
+//   videoTour?: string;
+//   virtual3DTour?: string;
 
-  energyRating?: EnergyRating;
-  waterSupply: WaterSupply;
-  electricityBackup: ElectricityBackup;
-  parkingSpaces: number;
+//   energyRating?: EnergyRating;
+//   waterSupply: WaterSupply;
+//   electricityBackup: ElectricityBackup;
+//   parkingSpaces: number;
 
-  description: string;
-  datePosted: string;
-  isFeatured: boolean;
+//   description: string;
+//   datePosted: string;
+//   isFeatured: boolean;
 
-  rating?: number;  
-  views: number;
-  images: string[];
-}
+//   rating?: number;  
+//   views: number;
+//   images: string[];
+// }
 
 // ===============================================================
 // MOCK DATA (COMBINED CHUNKS)
