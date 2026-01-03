@@ -1,3 +1,4 @@
+import { ApiConfig } from '@/constants/Config'; // Import your unified config
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { Platform } from 'react-native';
@@ -11,31 +12,12 @@ export interface ApiResponse<T = any> {
   statusCode: number;
 }
 
-export interface PaginatedResponse<T = any> extends ApiResponse<T> {
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-    hasNext: boolean;
-    hasPrev: boolean;
-  };
-}
-
 export interface ApiError {
   message: string;
   code: string;
   status: number;
   timestamp: string;
 }
-
-// Configuration
-const API_CONFIG = {
-  BASE_URL: process.env.EXPO_PUBLIC_API_URL || 'https://apna-ghar-apni-zameen.vercel.app',
-  TIMEOUT: 30000,
-  RETRY_ATTEMPTS: 3,
-  RETRY_DELAY: 1000,
-};
 
 // Auth token management
 const TOKEN_STORAGE_KEY = 'auth_token';
@@ -48,8 +30,8 @@ class ApiService {
 
   constructor() {
     this.client = axios.create({
-      baseURL: API_CONFIG.BASE_URL,
-      timeout: API_CONFIG.TIMEOUT,
+      baseURL: ApiConfig.baseUrl, // Use the URL from Config.ts
+      timeout: ApiConfig.settings.timeout,
       headers: {
         'Content-Type': 'application/json',
         'X-Platform': Platform.OS,
@@ -68,30 +50,14 @@ class ApiService {
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }
-        
-        // Add timestamp for cache busting
-        if (config.method === 'get') {
-          config.params = {
-            ...config.params,
-            _t: Date.now(),
-          };
-        }
-
-        console.log(`🚀 ${config.method?.toUpperCase()} ${config.url}`, config.params);
         return config;
       },
-      (error) => {
-        console.error('❌ Request Error:', error);
-        return Promise.reject(error);
-      }
+      (error) => Promise.reject(error)
     );
 
     // Response interceptor
     this.client.interceptors.response.use(
-      (response) => {
-        console.log(`✅ ${response.status} ${response.config.url}`);
-        return response;
-      },
+      (response) => response,
       async (error) => {
         const originalRequest = error.config;
 
@@ -117,48 +83,21 @@ class ApiService {
             }
           } catch (refreshError) {
             await this.clearTokens();
-            this.onRefreshTokenFailure();
             return Promise.reject(refreshError);
           } finally {
             this.isRefreshing = false;
           }
         }
-
-        console.error('❌ Response Error:', {
-          url: error.config?.url,
-          status: error.response?.status,
-          message: error.message,
-          data: error.response?.data,
-        });
-
         return Promise.reject(this.normalizeError(error));
       }
     );
   }
 
   private normalizeError(error: any): ApiError {
-    if (error.response?.data) {
-      return {
-        message: error.response.data.message || error.response.data.error || 'An error occurred',
-        code: error.response.data.code || 'UNKNOWN_ERROR',
-        status: error.response.status,
-        timestamp: new Date().toISOString(),
-      };
-    }
-
-    if (error.request) {
-      return {
-        message: 'Network error: Unable to connect to server',
-        code: 'NETWORK_ERROR',
-        status: 0,
-        timestamp: new Date().toISOString(),
-      };
-    }
-
     return {
-      message: error.message || 'An unexpected error occurred',
-      code: 'UNKNOWN_ERROR',
-      status: 500,
+      message: error.response?.data?.message || error.message || 'An error occurred',
+      code: error.code || 'UNKNOWN_ERROR',
+      status: error.response?.status || 500,
       timestamp: new Date().toISOString(),
     };
   }
@@ -172,32 +111,23 @@ class ApiService {
     return await AsyncStorage.getItem(TOKEN_STORAGE_KEY);
   }
 
-  async setRefreshToken(token: string): Promise<void> {
-    await AsyncStorage.setItem(REFRESH_TOKEN_STORAGE_KEY, token);
-  }
-
-  async getRefreshToken(): Promise<string | null> {
-    return await AsyncStorage.getItem(REFRESH_TOKEN_STORAGE_KEY);
-  }
-
   async clearTokens(): Promise<void> {
     await AsyncStorage.multiRemove([TOKEN_STORAGE_KEY, REFRESH_TOKEN_STORAGE_KEY]);
   }
 
   async refreshToken(): Promise<string | null> {
+    // Note: Standard JWT Auth plugin for WP often requires a different flow for refresh
+    // This is a placeholder for the validate/refresh endpoint
     try {
-      const refreshToken = await this.getRefreshToken();
-      if (!refreshToken) {
-        throw new Error('No refresh token available');
-      }
-
-      const response = await axios.post(`${API_CONFIG.BASE_URL}/auth/refresh`, {
-        refreshToken,
+      const token = await this.getToken();
+      if (!token) throw new Error('No token');
+      
+      const response = await axios.post(`${ApiConfig.baseUrl}${ApiConfig.endpoints.auth.validate}`, {}, {
+         headers: { Authorization: `Bearer ${token}` }
       });
-
-      const { accessToken } = response.data;
-      await this.setToken(accessToken);
-      return accessToken;
+      
+      if (response.status === 200) return token; // Token is still valid
+      return null;
     } catch (error) {
       await this.clearTokens();
       throw error;
@@ -209,227 +139,66 @@ class ApiService {
     this.refreshSubscribers = [];
   }
 
-  private onRefreshTokenFailure() {
-    this.refreshSubscribers = [];
-    // Emit event or trigger logout
-  }
-
   // HTTP Methods
   async get<T = any>(url: string, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
-    try {
-      const response: AxiosResponse = await this.client.get(url, config);
-      return {
-        success: true,
-        data: response.data,
-        statusCode: response.status,
-      };
-    } catch (error) {
-      throw error;
-    }
+    const response: AxiosResponse = await this.client.get(url, config);
+    return { success: true, data: response.data, statusCode: response.status };
   }
 
   async post<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
-    try {
-      const response: AxiosResponse = await this.client.post(url, data, config);
-      return {
-        success: true,
-        data: response.data,
-        statusCode: response.status,
-      };
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  async put<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
-    try {
-      const response: AxiosResponse = await this.client.put(url, data, config);
-      return {
-        success: true,
-        data: response.data,
-        statusCode: response.status,
-      };
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  async patch<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
-    try {
-      const response: AxiosResponse = await this.client.patch(url, data, config);
-      return {
-        success: true,
-        data: response.data,
-        statusCode: response.status,
-      };
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  async delete<T = any>(url: string, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
-    try {
-      const response: AxiosResponse = await this.client.delete(url, config);
-      return {
-        success: true,
-        data: response.data,
-        statusCode: response.status,
-      };
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  // File Upload
-  async uploadFile<T = any>(
-    url: string, 
-    file: any, 
-    onProgress?: (progress: number) => void
-  ): Promise<ApiResponse<T>> {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-      const response: AxiosResponse = await this.client.post(url, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-        onUploadProgress: (progressEvent) => {
-          if (onProgress && progressEvent.total) {
-            const progress = (progressEvent.loaded / progressEvent.total) * 100;
-            onProgress(Math.round(progress));
-          }
-        },
-      });
-
-      return {
-        success: true,
-        data: response.data,
-        statusCode: response.status,
-      };
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  // Batch requests
-  async all<T = any>(requests: Promise<ApiResponse<T>>[]): Promise<ApiResponse<T>[]> {
-    return Promise.all(requests);
-  }
-
-  // Cancel token for request cancellation
-  createCancelToken() {
-    return axios.CancelToken.source();
-  }
-
-  // Health check
-  async healthCheck(): Promise<boolean> {
-    try {
-      await this.client.get('/health');
-      return true;
-    } catch (error) {
-      return false;
-    }
+    const response: AxiosResponse = await this.client.post(url, data, config);
+    return { success: true, data: response.data, statusCode: response.status };
   }
 }
 
-// Create singleton instance
 export const apiService = new ApiService();
 
-// Property-specific API methods
+// --- WORDPRESS SPECIFIC API METHODS ---
+
 export const propertyApi = {
-  // Properties
+  // Get all properties (using standard WP query params)
   getProperties: (params?: any) => 
-    apiService.get('/properties', { params }),
-
-  getProperty: (id: string | number) => 
-    apiService.get(`/properties/${id}`),
-
-  createProperty: (data: any) => 
-    apiService.post('/properties', data),
-
-  updateProperty: (id: string | number, data: any) => 
-    apiService.put(`/properties/${id}`, data),
-
-  deleteProperty: (id: string | number) => 
-    apiService.delete(`/properties/${id}`),
-
-  // Search
-  searchProperties: (query: string, filters?: any) => 
-    apiService.get('/properties/search', { 
-      params: { q: query, ...filters } 
+    apiService.get(ApiConfig.endpoints.properties.list, { 
+      params: { 
+        _embed: true, // Crucial for fetching images/author data in one go
+        ...params 
+      } 
     }),
 
-  // Favorites
-  getFavorites: () => 
-    apiService.get('/favorites'),
+  getProperty: (id: string | number) => 
+    apiService.get(ApiConfig.endpoints.properties.detail.replace(':id', String(id)), {
+      params: { _embed: true }
+    }),
 
-  addToFavorites: (propertyId: string | number) => 
-    apiService.post('/favorites', { propertyId }),
-
-  removeFromFavorites: (propertyId: string | number) => 
-    apiService.delete(`/favorites/${propertyId}`),
-
-  // Similar properties
-  getSimilarProperties: (propertyId: string | number) => 
-    apiService.get(`/properties/${propertyId}/similar`),
+  // Search uses the list endpoint with ?search=term
+  searchProperties: (query: string) => 
+    apiService.get(ApiConfig.endpoints.properties.search, { 
+      params: { search: query, _embed: true } 
+    }),
 };
 
 export const authApi = {
-  login: (email: string, password: string) => 
-    apiService.post('/auth/login', { email, password }),
+  // Standard WP JWT Auth Plugin Login
+  login: async (username: string, password: string) => {
+    // Note: JWT Auth plugin usually expects 'username' and 'password'
+    const res = await apiService.post(ApiConfig.endpoints.auth.login, { username, password });
+    if (res.data?.token) {
+        await apiService.setToken(res.data.token);
+    }
+    return res;
+  },
 
   register: (userData: any) => 
-    apiService.post('/auth/register', userData),
-
-  logout: () => 
-    apiService.post('/auth/logout'),
-
-  forgotPassword: (email: string) => 
-    apiService.post('/auth/forgot-password', { email }),
-
-  resetPassword: (token: string, newPassword: string) => 
-    apiService.post('/auth/reset-password', { token, newPassword }),
-
-  verifyEmail: (token: string) => 
-    apiService.post('/auth/verify-email', { token }),
+    apiService.post(ApiConfig.endpoints.auth.register, userData),
 
   getProfile: () => 
-    apiService.get('/auth/profile'),
-
-  updateProfile: (data: any) => 
-    apiService.put('/auth/profile', data),
-};
-
-export const userApi = {
-  getPreferences: () => 
-    apiService.get('/user/preferences'),
-
-  updatePreferences: (data: any) => 
-    apiService.put('/user/preferences', data),
-
-  getSearchHistory: () => 
-    apiService.get('/user/search-history'),
-
-  clearSearchHistory: () => 
-    apiService.delete('/user/search-history'),
-
-  getViewedProperties: () => 
-    apiService.get('/user/viewed-properties'),
+    apiService.get(ApiConfig.endpoints.auth.profile),
 };
 
 export const agentApi = {
-  getAgents: (params?: any) => 
-    apiService.get('/agents', { params }),
-
-  getAgent: (id: string | number) => 
-    apiService.get(`/agents/${id}`),
-
-  contactAgent: (agentId: string | number, message: string) => 
-    apiService.post(`/agents/${agentId}/contact`, { message }),
-
-  scheduleViewing: (propertyId: string | number, dateTime: string, message?: string) => 
-    apiService.post('/viewings/schedule', { propertyId, dateTime, message }),
+  // Agents are users with 'agent' role in WP
+  getAgents: () => 
+    apiService.get(ApiConfig.endpoints.agents.list),
 };
 
 export default apiService;

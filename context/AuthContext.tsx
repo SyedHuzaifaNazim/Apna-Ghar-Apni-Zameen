@@ -1,34 +1,27 @@
-import { ApiConfig } from '@/constants/Config';
-import AsyncStorage from '@react-native-async-storage/async-storage'; // <--- INSTALL THIS IF NEEDED
+import { authApi } from '@/services/apiService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 import { Alert } from 'react-native';
-
-// ------------------------------------------------------------------
-// CONFIGURATION
-// ------------------------------------------------------------------
-// ANDROID EMULATOR: Use 'http://10.0.2.2:5000'
-// PHYSICAL DEVICE: Use your computer's IP, e.g., 'http://192.168.1.5:5000'
-// IOS SIMULATOR: Use 'http://localhost:5000'
-// const API_URL = Platform.OS === 'android' ? 'http://10.0.2.2:5000' : 'http://localhost:5000';
-const API_URL = ApiConfig.baseUrl;
 
 // ------------------------------------------------------------------
 // INTERFACES
 // ------------------------------------------------------------------
 interface User {
-  phone: string;
-  id: string;
-  name: string;
+  id: string | number;
+  username: string;
   email: string;
+  name: string;
+  phone?: string;
   role: 'buyer' | 'seller' | 'agent' | 'admin';
   avatar?: string;
+  token?: string;
 }
 
 interface AuthContextProps {
   user: User | null;
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (userData: Omit<User, 'id'> & { password: string }) => Promise<void>;
+  signUp: (userData: any) => Promise<void>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<User>) => Promise<void>;
 }
@@ -59,7 +52,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const loadUserFromStorage = async () => {
       try {
         const userJson = await AsyncStorage.getItem('user_session');
-        if (userJson) {
+        const token = await AsyncStorage.getItem('auth_token');
+        
+        if (userJson && token) {
           setUser(JSON.parse(userJson));
         }
       } catch (error) {
@@ -75,32 +70,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const signIn = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_URL}/signin`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
+      const response = await authApi.login(email, password);
+      
+      const { token, user_email, user_nicename, user_display_name } = response.data;
 
-      const data = await response.json();
+      const userPayload: User = {
+        id: response.data.id || 0,
+        username: user_nicename,
+        email: user_email,
+        name: user_display_name,
+        role: 'buyer', 
+        token: token,
+      };
 
-      if (data.status === 'ok') {
-        // Map MongoDB _id to your app's id
-        const userPayload: User = {
-          id: data.user._id,
-          name: data.user.name,
-          email: data.user.email,
-          phone: data.user.phone,
-          role: 'buyer', // Default role since backend doesn't have it yet
-        };
-
-        setUser(userPayload);
-        await AsyncStorage.setItem('user_session', JSON.stringify(userPayload));
-      } else {
-        throw new Error(data.message || 'Login failed');
-      }
+      setUser(userPayload);
+      await AsyncStorage.setItem('user_session', JSON.stringify(userPayload));
+      
     } catch (error: any) {
       console.error('Sign-in error:', error);
-      Alert.alert('Login Failed', error.message);
+      Alert.alert('Login Failed', error.message || 'Invalid credentials');
       throw error;
     } finally {
       setIsLoading(false);
@@ -108,27 +96,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   // 3. SIGN UP
-  const signUp = async (userData: Omit<User, 'id'> & { password: string }) => {
+  const signUp = async (userData: any) => {
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_URL}/signup`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(userData),
-      });
-
-      const data = await response.json();
-
-      if (data.status === 'ok') {
-        // Auto-login after signup? Or require manual login? 
-        // For now, let's just return and let the UI redirect to SignIn
-        Alert.alert('Success', 'Account created! Please log in.');
-      } else {
-        throw new Error(data.error || 'Signup failed');
-      }
+      await authApi.register(userData);
+      Alert.alert('Success', 'Account created! Please log in.');
     } catch (error: any) {
       console.error('Sign-up error:', error);
-      Alert.alert('Error', error.message);
+      Alert.alert('Registration Failed', error.message);
       throw error;
     } finally {
       setIsLoading(false);
@@ -140,7 +115,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setIsLoading(true);
     try {
       setUser(null);
-      await AsyncStorage.removeItem('user_session');
+      await AsyncStorage.multiRemove(['user_session', 'auth_token']);
     } catch (error) {
       console.error('Sign-out error:', error);
     } finally {
@@ -149,38 +124,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   // 5. UPDATE PROFILE
-const updateProfile = async (updates: Partial<User>) => {
+  const updateProfile = async (updates: Partial<User>) => {
     if (!user) return;
     setIsLoading(true);
 
     try {
-      // 1. Send update to Backend
-      const response = await fetch(`${API_URL}/update-profile`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: user.email, // We use email to identify the user
-          name: updates.name,
-          phone: updates.phone,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (data.status === 'ok') {
-        // 2. Update Local State & Storage with the new data from server
-        const updatedUserPayload: User = {
-          ...user,
-          name: data.user.name,
-          phone: data.user.phone,
-        };
-
-        setUser(updatedUserPayload);
-        await AsyncStorage.setItem('user_session', JSON.stringify(updatedUserPayload));
-        Alert.alert("Success", "Profile updated successfully!");
-      } else {
-        throw new Error(data.message || 'Update failed');
-      }
+      // Optimistic update
+      const updatedUserPayload: User = { ...user, ...updates };
+      setUser(updatedUserPayload);
+      await AsyncStorage.setItem('user_session', JSON.stringify(updatedUserPayload));
+      Alert.alert("Success", "Profile updated successfully!");
+      
     } catch (error: any) {
       console.error('Profile update error:', error);
       Alert.alert('Error', error.message || "Could not update profile");

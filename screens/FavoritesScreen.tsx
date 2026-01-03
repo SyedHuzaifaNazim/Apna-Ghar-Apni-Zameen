@@ -1,29 +1,57 @@
 import { Ionicons } from '@expo/vector-icons';
 import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
-import React, { useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, SafeAreaView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
-import { MOCK_PROPERTIES } from '@/api/apiMock';
 import AppButton from '@/components/base/AppButton';
 import AppText from '@/components/base/AppText';
+import LoadingSpinner from '@/components/base/LoadingSpinner';
 import PropertyCard from '@/components/ui/PropertyCard';
 import { Colors } from '@/constants/Colors';
+import { useAuth } from '@/context/AuthContext';
 import { useFavorites } from '@/context/FavoritesContext';
+import { propertyApi } from '@/services/apiService';
+import { Property } from '@/types/property';
 
-// Use standard View instead of NativeBase components to prevent crashes
 const FavoritesScreen: React.FC = () => {
   const router = useRouter();
+  const { user } = useAuth();
   const { favorites, removeFromFavorites } = useFavorites();
   
-  // Mock Auth State
-  const isAuthenticated = true; // Set to true for development/demo
+  const [favoriteProperties, setFavoriteProperties] = useState<Property[]>([]);
+  const [loading, setLoading] = useState(false);
+  
+  const isAuthenticated = !!user;
 
-  const favoriteProperties = useMemo(() => {
-    return MOCK_PROPERTIES.filter(property => 
-      favorites.includes(property.id)
-    );
-  }, [favorites]);
+  useEffect(() => {
+    const fetchFavoriteProperties = async () => {
+      if (favorites.length === 0) {
+        setFavoriteProperties([]);
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const response = await propertyApi.getProperties({
+          include: favorites,
+          per_page: 100,
+        });
+        
+        if (Array.isArray(response.data)) {
+             setFavoriteProperties(response.data as any); 
+        }
+      } catch (error) {
+        console.error("Failed to fetch favorites", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (isAuthenticated) {
+      fetchFavoriteProperties();
+    }
+  }, [favorites, isAuthenticated]);
 
   const handlePropertyPress = (propertyId: number) => {
     router.push(`/listing/${propertyId}`);
@@ -31,17 +59,16 @@ const FavoritesScreen: React.FC = () => {
 
   const handleRemoveFavorite = (propertyId: number, propertyTitle: string) => {
     removeFromFavorites(propertyId);
-    // Replaced Toast with Alert
-    Alert.alert("Removed", `${propertyTitle} has been removed from your favorites.`);
+    setFavoriteProperties(prev => prev.filter(p => p.id !== propertyId));
+    Alert.alert("Removed", "Property has been removed from your favorites.");
   };
 
   const handleClearAll = () => {
-    // Implement clear all logic if needed
     Alert.alert("Clear All", "This feature would clear all favorites.");
   };
 
   const handleSignIn = () => {
-    router.replace('/login');
+    router.replace('/signin');
   };
   
   const renderHeader = () => (
@@ -95,6 +122,17 @@ const FavoritesScreen: React.FC = () => {
     );
   }
 
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        {renderHeader()}
+        <View style={styles.centerContainer}>
+          <LoadingSpinner text="Loading favorites..." />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   if (favoriteProperties.length === 0) {
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -142,7 +180,6 @@ const FavoritesScreen: React.FC = () => {
         keyExtractor={item => item.id.toString()}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
-        // estimatedItemSize removed for FlashList v2
       />
 
       <View style={styles.footer}>
