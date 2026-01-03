@@ -117,10 +117,10 @@ export const ApiConfig = {
 // Map Configuration
 export const MapConfig = {
   // Map provider (google, mapbox, etc.)
-  provider: 'google',
+  provider: 'osm',
 
   // API Keys
-  apiKey: process.env.EXPO_PUBLIC_MAP_API_KEY,
+  apiKey: null,
 
   // Map settings
   settings: {
