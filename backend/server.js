@@ -1,11 +1,11 @@
-import dotenv from "dotenv"
-import express from "express"
-import mongoose from "mongoose"
-import cors from "cors"
-import bodyParser from "body-parser"
 import axios from "axios"
 import bcrypt from "bcryptjs"
+import bodyParser from "body-parser"
+import cors from "cors"
+import dotenv from "dotenv"
+import express from "express"
 import jwt from "jsonwebtoken"
+import mongoose from "mongoose"
 
 dotenv.config()
 
@@ -309,7 +309,12 @@ app.get('/properties', async (req, res) => {
    
     const limit = parseInt(req.query.limit) || 20
 
-    const response = await axios.get("https://apnagharapnizameen.com/wp-json/mo/v1/posts")
+    const response = await axios.get("https://apnagharapnizameen.com/wp-json/wp/v2/properties", {
+      params: {
+        per_page: limit,
+        page
+      }
+    })
     const allData = response.data
 
     const total = allData.length
