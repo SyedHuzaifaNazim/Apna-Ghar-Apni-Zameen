@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Alert } from 'react-native';
-import { Property } from '../api/apiMock';
 import { ApiConfig } from '../constants/Config';
 import { storageService } from '../services/storageService';
+import { Property } from '../types/property';
 import { useNetworkStatus } from './useNetworkStatus';
 
 // --- MAPPER FUNCTION ---

@@ -110,7 +110,7 @@ web_modules/
 
 # Output of 'npm pack'
 *.tgz
-
+api\wp_posts.json
 # Yarn Integrity file
 .yarn-integrity
 .

@@ -1,5 +1,6 @@
 require('dotenv').config(); 
 const express = require('express');
+const axios = require('axios');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const bodyParser = require('body-parser');
@@ -86,19 +87,29 @@ app.post('/signin', async (req, res) => {
 // PROPERTY ROUTES (You were missing these!)
 app.get('/properties', async (req, res) => {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 20;
-    
-    const properties = await Property.find()
-      .limit(limit)
-      .skip((page - 1) * limit)
-      .sort({ datePosted: -1 });
-      
-    res.json(properties);
+    const page = parseInt(req.query.page) || 1
+    const limit = parseInt(req.query.limit) || 20
+
+    const response = await axios.get("https://apnagharapnizameen.com/wp-json/mo/v1/posts")
+    const allData = response.data
+
+    const total = allData.length
+    const totalPages = Math.ceil(total / limit)
+    const start = (page - 1) * limit
+    const end = start + limit
+    const paginatedData = allData.slice(start, end)
+
+    res.json({
+      total,
+      totalPages,
+      page,
+      limit,
+      data: paginatedData
+    })
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: error.message })
   }
-});
+})
 
 app.get('/properties/:id', async (req, res) => {
   try {

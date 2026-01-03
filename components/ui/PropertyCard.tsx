@@ -2,9 +2,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { memo } from 'react';
 import { Image, StyleSheet, TouchableOpacity, View } from 'react-native';
-import { AreaUnit, Property } from '../../api/apiMock';
 import { Colors } from '../../constants/Colors';
 import { useFavorites } from '../../context/FavoritesContext';
+import { AreaUnit, Property } from '../../types/property';
 import AppText from '../base/AppText';
 
 interface PropertyCardProps {
