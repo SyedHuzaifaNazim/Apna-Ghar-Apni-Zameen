@@ -38,18 +38,18 @@ export const ApiConfig = {
   baseUrl: (process.env.EXPO_PUBLIC_API_URL ?? 'https://apnagharapnizameen.com/wp-json') as string,
   
   // CDN for static assets (if different from WP uploads)
-  cdnUrl: (process.env.EXPO_PUBLIC_CDN_URL ?? 'https://apnagharapnizameen.com/wp-content/uploads') as string,
+  cdnUrl: (process.env.EXPO_PUBLIC_CDN_URL ?? 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css') as string,
   
   // Endpoints - Mapped to WordPress Structure
   endpoints: {
     // Auth endpoints (Standard JWT Auth for WordPress)
-    auth: {
-      login: '/jwt-auth/v1/token',        // Requires JWT Auth plugin
-      validate: '/jwt-auth/v1/token/validate',
-      register: '/wp/v2/users/register',  // Requires custom endpoint or specific plugin
-      resetPassword: '/wp/v2/users/lostpassword',
-      profile: '/wp/v2/users/me',
-    },
+    // auth: {
+    //   login: '/jwt-auth/v1/token',        // Requires JWT Auth plugin
+    //   validate: '/jwt-auth/v1/token/validate',
+    //   register: '/wp/v2/users/register',  // Requires custom endpoint or specific plugin
+    //   resetPassword: '/wp/v2/users/lostpassword',
+    //   profile: '/wp/v2/users/me',
+    // },
 
     // Property endpoints (Assumes 'properties' Custom Post Type)
     properties: {
@@ -70,17 +70,17 @@ export const ApiConfig = {
     },
 
     // User endpoints
-    user: {
-      me: '/wp/v2/users/me',
-      update: '/wp/v2/users/me', // POST to update
-      favorites: '/wp/v2/favorites', // Requires 'Favorites' plugin REST API
-    },
+    // user: {
+    //   me: '/wp/v2/users/me',
+    //   update: '/wp/v2/users/me', // POST to update
+    //   favorites: '/wp/v2/favorites', // Requires 'Favorites' plugin REST API
+    // },
 
     // Agent endpoints (Agents are usually Users with 'agent' role)
-    agents: {
-      list: '/wp/v2/users?roles=agent',
-      detail: '/wp/v2/users/:id',
-    },
+    // agents: {
+    //   list: '/wp/v2/users?roles=agent',
+    //   detail: '/wp/v2/users/:id',
+    // },
 
     // General Content
     posts: {
@@ -472,3 +472,56 @@ export const formatArea = (area: number): string => {
 };
 
 export default Config;
+
+
+
+
+
+
+
+// // -----------------------------------------------------------------------------
+// // ⚠️ CRITICAL SETUP: REPLACE THIS IP WITH YOUR COMPUTER'S LAN IP ADDRESS
+// // On Windows: Open cmd -> type 'ipconfig' -> look for IPv4 Address
+// // On Mac: Open terminal -> type 'ipconfig getifaddr en0'
+// // -----------------------------------------------------------------------------
+// const DEV_API_URL = 'http://192.168.1.6:8000'; // Example: Change 1.6 to your IP
+
+// // App Configuration
+// export const AppConfig = {
+//   app: {
+//     name: 'Apna Ghar Apni Zameen',
+//     version: '1.0.0',
+//     bundleId: 'com.apnaghar.apnizameen',
+//   },
+// } as const;
+
+// // API Configuration
+// export const ApiConfig = {
+//   // Use the Prod URL if defined, otherwise use your local IP
+//   baseUrl: (process.env.EXPO_PUBLIC_API_URL ?? DEV_API_URL) as string,
+  
+//   endpoints: {
+//     // Auth endpoints (Matched to your server.js)
+//     auth: {
+//       login: '/signin',
+//       register: '/signup',
+//       profile: '/profile', // You need to add this route to server.js later
+//     },
+
+//     // Property endpoints (Matched to your server.js)
+//     properties: {
+//       list: '/properties',
+//       detail: '/properties/:id',
+//       search: '/properties/search',
+//     },
+//   },
+  
+//   headers: {
+//     common: {
+//       'Content-Type': 'application/json',
+//       'Accept': 'application/json',
+//     },
+//   },
+// } as const;
+
+// export default ApiConfig;
