@@ -171,9 +171,9 @@ export default function RootLayout() {
                     headerBackTitle: '', 
                   }}
                 >
-                  <Stack.Screen name="login" options={{ animation: 'fade', presentation: 'modal', headerShown: true, title: 'Sign In' }} />
-                  <Stack.Screen name="register" options={{ animation: 'slide_from_right', headerShown: true, title: 'Create Account' }} />
-                  <Stack.Screen name="forgot-password" options={{ animation: 'slide_from_right', headerShown: true, title: 'Forgot Password' }} />
+                  <Stack.Screen name="(auth)/login" options={{ animation: 'fade', presentation: 'modal', headerShown: true, title: 'Sign In' }} />
+                  <Stack.Screen name="(auth)/register" options={{ animation: 'slide_from_right', headerShown: true, title: 'Create Account' }} />
+                  <Stack.Screen name="(auth)/forgot-password" options={{ animation: 'slide_from_right', headerShown: true, title: 'Forgot Password' }} />
                   <Stack.Screen name="(tabs)" />
                   <Stack.Screen name="favorites" options={{ headerShown: true, title: 'My Favorites' }} />
                   <Stack.Screen name="search" options={{ headerShown: true, title: 'Search' }} />

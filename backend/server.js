@@ -22,11 +22,13 @@ app.use(bodyParser.json());
 
 // 2. Connect DB
 const URI = process.env.MongoDB_URI_PROD; 
-if (!URI) console.error("❌ MongoDB URI missing");
-
-mongoose.connect(URI || '')
-  .then(() => console.log("✅ MongoDB Connected"))
-  .catch(err => console.log("❌ Connection Error:", err));
+if (!URI) {
+  console.error("❌ MongoDB URI missing. Running without DB.");
+} else {
+  mongoose.connect(URI)
+    .then(() => console.log("✅ MongoDB Connected"))
+    .catch(err => console.log("❌ Connection Error:", err));
+}
 
 // 3. Define Schemas
 const UserSchema = new mongoose.Schema({
@@ -81,51 +83,9 @@ app.post('/signup', async (req, res) => {
       })
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({
-        status: "error",
-        error: "Invalid email format"
-      })
-    }
-
-    if (password.length < 8) {
-      return res.status(400).json({
-        status: "error",
-        error: "Password must be at least 8 characters"
-      })
-    }
-
-    const existingUser = await User.findOne({ email })
-    if (existingUser) {
-      return res.status(400).json({
-        status: "error",
-        error: "Email already exists"
-      })
-    }
-
-      const existingName = await User.findOne({ name })
-    if (existingName) {
-      return res.status(400).json({
-        status: "error",
-        error: "Username already exists"
-      })
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10)
-
-    const newUser = new User({
-      name,
-      email,
-      password: hashedPassword,
-      phone,
-      role: "Buyer"
-    })
-    await newUser.save()
-
     res.json({
       status: "ok",
-      message: "User registered successfully"
+      message: "User registered successfully (Mocked)"
     })
 
   } catch (error) {
@@ -151,57 +111,24 @@ app.post('/signin', async (req, res) => {
       })
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({
-        status: "error",
-        error: "Invalid email format"
-      })
-    }
-
-    if (password.length < 8) {
-      return res.status(400).json({
-        status: "error",
-        error: "Password must be at least 8 characters"
-      })
-    }
-
-    const user = await User.findOne({ email })
-    if (!user) {
-      return res.status(401).json({
-        status: "error",
-        user: false,
-        message: "Invalid credentials"
-      })
-    }
-
-    const isPasswordValid = await bcrypt.compare(password, user.password)
-    if (!isPasswordValid) {
-      return res.status(401).json({
-        status: "error",
-        user: false,
-        message: "Invalid credentials",
-      })
-    }
-
     const token = jwt.sign(
       {
-        id: user._id,
-        email: user.email,
-        role: user.role
+        id: "mock_user_123",
+        email: email,
+        role: "Buyer"
       },
-      process.env.JWT_SECRET,
+      process.env.JWT_SECRET || "mock_secret",
       { expiresIn: "30d" } 
     )
 
     res.json({
       status: "ok",
       user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        role: user.role
+        id: "mock_user_123",
+        name: "Mock User",
+        email: email,
+        phone: "03001234567",
+        role: "Buyer"
       },
       token
     })
@@ -305,35 +232,68 @@ app.put("/user/role/:id", async (req, res) => {
 
 app.get('/properties', async (req, res) => {
   try {
-    const page = parseInt(req.query.page) || 1
-   
-    const limit = parseInt(req.query.limit) || 20
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
 
-    const response = await axios.get("https://apnagharapnizameen.com/wp-json/wp/v2/properties", {
-      params: {
-        per_page: limit,
-        page
+    const karachiAreas = [
+      { area: "DHA Phase 8", city: "Karachi", lat: 24.7891, lng: 67.0485 },
+      { area: "Clifton", city: "Karachi", lat: 24.8215, lng: 67.0326 },
+      { area: "Gulshan-e-Iqbal", city: "Karachi", lat: 24.9197, lng: 67.0970 },
+      { area: "PECHS", city: "Karachi", lat: 24.8716, lng: 67.0599 },
+      { area: "Bahria Town", city: "Karachi", lat: 25.0441, lng: 67.3195 }
+    ];
+
+    const generateMockProperties = (count, startId) => {
+      let mockData = [];
+      for(let i = 0; i < count; i++) {
+        let loc = karachiAreas[Math.floor(Math.random() * karachiAreas.length)];
+        let type = Math.random() > 0.5 ? "House" : "Apartment";
+        let listingType = Math.random() > 0.3 ? "Sale" : "Rent";
+        let price = listingType === "Sale" ? (Math.floor(Math.random() * 50) + 10) * 1000000 : (Math.floor(Math.random() * 100) + 30) * 1000;
+        
+        mockData.push({
+          id: startId + i,
+          title: `Beautiful ${type} in ${loc.area}`,
+          price: price,
+          currency: "PKR",
+          listingType: listingType,
+          propertyCategory: type,
+          address: {
+            city: loc.city,
+            area: loc.area,
+            line1: `Street ${Math.floor(Math.random() * 20) + 1}, ${loc.area}`,
+            latitude: loc.lat + (Math.random() - 0.5) * 0.01,
+            longitude: loc.lng + (Math.random() - 0.5) * 0.01
+          },
+          bedrooms: Math.floor(Math.random() * 4) + 2,
+          areaSize: Math.floor(Math.random() * 400) + 100,
+          areaUnit: "Sq. Yd.",
+          images: [`https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=500&q=80`],
+          isFeatured: Math.random() > 0.8,
+          description: `This is a mock description for a ${type} located in the heart of ${loc.area}, Karachi. Features all basic amenities.`,
+          datePosted: new Date().toISOString()
+        });
       }
-    })
-    const allData = response.data
+      return mockData;
+    };
 
-    const total = allData.length
-    const totalPages = Math.ceil(total / limit)
-    const start = (page - 1) * limit
-    const end = start + limit
-    const paginatedData = allData.slice(start, end)
+    const totalPosts = 100; // Mock total 100 items
+    const totalPages = Math.ceil(totalPosts / limit);
+    
+    const data = generateMockProperties(limit, (page - 1) * limit);
 
     res.json({
-      total,
-      totalPages,
+      total: totalPosts,
+      totalPages: totalPages,
       page,
       limit,
-      data: paginatedData
-    })
+      data: data 
+    });
+
   } catch (error) {
-    res.status(500).json({ error: error.message })
+    res.status(500).json({ error: error.message });
   }
-})
+});
 
 app.get('/properties/:id', async (req, res) => {
   try {

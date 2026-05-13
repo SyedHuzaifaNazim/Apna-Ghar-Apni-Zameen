@@ -2,17 +2,17 @@
 
 module.exports = {
   expo: {
-    "name": "Apna Ghar Apni Zameen",
-    "slug": "apaz",
+    "name": "Farsh e Zameen",
+    "slug": "farshezameen",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/logo_agaz.jpg",
-    "scheme": "apaz",
+    "scheme": "farshezameen",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "Apna.Ghar.Apni.Zameen",
+      "bundleIdentifier": "com.farshezameen.app",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -27,7 +27,7 @@ module.exports = {
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": true,
-      "package": "com.agaz.apaz",
+      "package": "com.farshezameen.app",
       "permissions": [
         "CAMERA",
         "ACCESS_COARSE_LOCATION",

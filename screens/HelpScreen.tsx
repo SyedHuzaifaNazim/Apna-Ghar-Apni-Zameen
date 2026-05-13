@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { Linking, SafeAreaView, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Linking, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import AppButton from '@/components/base/AppButton';
 import AppText from '@/components/base/AppText';
@@ -19,7 +20,7 @@ const HelpScreen: React.FC = () => {
 
   const handleContactSupport = (method: 'email' | 'phone') => {
     if (method === 'email') {
-      Linking.openURL('mailto:support@apnagharapnizameen.com');
+      Linking.openURL('mailto:support@farshezameen.com');
     } else {
       Linking.openURL('tel:+921234567890');
     }

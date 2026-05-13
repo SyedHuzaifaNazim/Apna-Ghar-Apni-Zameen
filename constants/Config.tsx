@@ -4,14 +4,14 @@ import { Platform } from 'react-native';
 export const AppConfig = {
   // App Information
   app: {
-    name: 'Apna Ghar Apni Zameen',
-    displayName: 'Apna Ghar Apni Zameen',
+    name: 'Farsh e Zameen',
+    displayName: 'Farsh e Zameen',
     version: '1.0.0',
     build: '1',
     bundleId: Platform.select({
-      ios: 'com.apnaghar.apnizameen',
-      android: 'com.apnaghar.apnizameen',
-      default: 'com.apnaghar.apnizameen',
+      ios: 'com.farshezameen.app',
+      android: 'com.farshezameen.app',
+      default: 'com.farshezameen.app',
     }),
   },
 
@@ -35,7 +35,7 @@ export const AppConfig = {
 export const ApiConfig = {
   // Base URLs
   // This points to your WordPress REST API root
-  baseUrl: (process.env.EXPO_PUBLIC_API_URL ?? 'https://apnagharapnizameen.com/wp-json') as string,
+  baseUrl: (process.env.EXPO_PUBLIC_API_URL ?? Platform.select({ android: 'http://10.0.2.2:8000', default: 'http://localhost:8000' })) as string,
   
   // CDN for static assets (if different from WP uploads)
   cdnUrl: (process.env.EXPO_PUBLIC_CDN_URL ?? 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css') as string,
@@ -43,20 +43,18 @@ export const ApiConfig = {
   // Endpoints - Mapped to WordPress Structure
   endpoints: {
     // Auth endpoints (Standard JWT Auth for WordPress)
-    // auth: {
-    //   login: '/jwt-auth/v1/token',        // Requires JWT Auth plugin
-    //   validate: '/jwt-auth/v1/token/validate',
-    //   register: '/wp/v2/users/register',  // Requires custom endpoint or specific plugin
-    //   resetPassword: '/wp/v2/users/lostpassword',
-    //   profile: '/wp/v2/users/me',
-    // },
+    auth: {
+      login: '/signin',
+      register: '/signup',
+      profile: '/profile', 
+    },
 
     // Property endpoints (Assumes 'properties' Custom Post Type)
     properties: {
-      list: '/wp/v2/properties',
-      detail: '/wp/v2/properties/:id',
+      list: '/properties',
+      detail: '/properties/:id',
       // WordPress handles search via query params on the list endpoint (?search=...)
-      search: '/wp/v2/properties', 
+      search: '/properties', 
       // Categories in WP are usually 'property_type' or 'property_status' taxonomies
       categories: '/wp/v2/property_type', 
       statuses: '/wp/v2/property_status',
@@ -489,9 +487,9 @@ export default Config;
 // // App Configuration
 // export const AppConfig = {
 //   app: {
-//     name: 'Apna Ghar Apni Zameen',
+//     name: 'Farsh e Zameen',
 //     version: '1.0.0',
-//     bundleId: 'com.apnaghar.apnizameen',
+//     bundleId: 'com.farshezameen.app',
 //   },
 // } as const;
 
