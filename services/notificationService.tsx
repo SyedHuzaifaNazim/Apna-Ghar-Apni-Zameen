@@ -1,30 +1,22 @@
+// NOTE: Push notifications are mocked because Expo Go no longer supports
+// Android remote notifications. Wire this up to `expo-notifications` once
+// the app ships as a Development Build / standalone binary.
 
-// NOTE: We are temporarily mocking this service because Expo Go SDK 53
-// removed support for Android Push Notifications. To use real notifications
-// later, we will need to create a "Development Build".
+class NotificationService {
+  async schedulePriceDropAlert(
+    propertyId: number,
+    title: string,
+    currentPrice: number,
+    targetPrice: number,
+    date: Date
+  ): Promise<void> {
+    console.log(`LOG: Price drop alert scheduled for "${title}" (#${propertyId}) — notify if price drops to ${targetPrice} by ${date.toISOString()}`);
+  }
 
-export async function registerForPushNotificationsAsync() {
-  console.log("LOG: Push Notifications skipped (Expo Go limitation)");
-  return null;
+  async cancelNotification(identifier: string): Promise<void> {
+    console.log(`LOG: Notification cancelled: ${identifier}`);
+  }
 }
 
-export async function schedulePushNotification(title: string, body: string, data = {}) {
-  console.log(`LOG: Notification Simulated: ${title} - ${body}`);
-  return;
-}
-
-export async function sendPushNotification(expoPushToken: string, title: string, body: string) {
-  console.log("LOG: Send Push Notification skipped");
-}
-
-export const cancelAllNotifications = async () => {
-  console.log("LOG: Cancel Notifications skipped");
-}
-
-// Add any other exports your app might be using as empty functions here
-export default {
-    registerForPushNotificationsAsync,
-    schedulePushNotification,
-    sendPushNotification,
-    cancelAllNotifications
-};
+export const notificationService = new NotificationService();
+export default notificationService;
