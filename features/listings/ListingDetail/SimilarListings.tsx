@@ -1,15 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useRouter } from 'expo-router';
 import React from 'react';
 import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 
-import { Property } from '@/api/apiMock'; // <--- UPDATED IMPORT
 import AppText from '@/components/base/AppText';
 import PropertyCard from '@/components/ui/PropertyCard';
 import { Colors } from '@/constants/Colors';
-import { BorderRadius } from '@/constants/Layout';
-import { useFetchProperties } from '@/hooks/useFetchProperties'; // <--- USE REAL HOOK
+import { BorderRadius, Spacing } from '@/constants/Layout';
+import { useFetchProperties } from '@/hooks/useFetchProperties';
 import { analyticsService } from '@/services/analyticsService';
+import type { Property } from '@/types/property';
 
 interface SimilarListingsProps {
   currentProperty: Property;
@@ -20,24 +20,29 @@ const SimilarListings: React.FC<SimilarListingsProps> = ({
   currentProperty, 
   count = 4 
 }) => {
-  const navigation = useNavigation<any>();
+  const router = useRouter();
 
-  // Use real data hook to find similar properties
-  // Note: ideally the API would have a specific endpoint or we pass specific filters
-  // Here we assume fetching properties with same category and city approximates "similar"
-  // If your useFetchProperties supports filtering via arguments, use that.
-  // Assuming useFetchProperties returns 'properties' which might be all properties for now
-  // or you could add a specialized hook for similar properties.
-  const { properties } = useFetchProperties({ enabled: true }); 
+  // Approximates "similar" by category, city, or price proximity to the current property.
+  // Needs the whole pool to search within, not one infinite-scroll page.
+  const { properties } = useFetchProperties({ paginate: false });
+
+  const isPriceClose = (property: Property) =>
+    Math.abs(property.price - currentProperty.price) / currentProperty.price < 0.3;
 
   const similarProperties = properties
-      .filter(property => 
-        property.id !== currentProperty.id && 
+      .filter(property =>
+        property.id !== currentProperty.id &&
         (property.propertyCategory === currentProperty.propertyCategory ||
          property.address.city === currentProperty.address.city ||
-         Math.abs(property.price - currentProperty.price) / currentProperty.price < 0.3)
+         isPriceClose(property))
       )
       .slice(0, count);
+
+  // Only claim the reasons that actually apply to at least one result shown —
+  // the OR-based match above doesn't guarantee every reason held for every result.
+  const matchedByCategory = similarProperties.some(p => p.propertyCategory === currentProperty.propertyCategory);
+  const matchedByCity = similarProperties.some(p => p.address.city === currentProperty.address.city);
+  const matchedByPrice = similarProperties.some(isPriceClose);
 
 
   const handlePropertyPress = (property: Property) => {
@@ -47,7 +52,7 @@ const SimilarListings: React.FC<SimilarListingsProps> = ({
       similarity_reason: 'category_location_price',
     });
 
-    navigation.push('listing/[id]', { id: property.id.toString() });
+    router.push({ pathname: '/listing/[id]', params: { id: property.id.toString() } });
   };
 
   const handleViewAll = () => {
@@ -56,13 +61,7 @@ const SimilarListings: React.FC<SimilarListingsProps> = ({
       similar_count: similarProperties.length,
     });
 
-    navigation.navigate('search', { 
-      screen: 'SearchScreen', 
-      params: { 
-          keywords: currentProperty.propertyCategory,
-          city: currentProperty.address.city 
-      } 
-    });
+    router.push('/search');
   };
 
   if (similarProperties.length === 0) {
@@ -83,7 +82,7 @@ const SimilarListings: React.FC<SimilarListingsProps> = ({
         </View>
         
         {similarProperties.length > 2 && (
-          <TouchableOpacity onPress={handleViewAll}>
+          <TouchableOpacity onPress={handleViewAll} accessibilityRole="button">
             <AppText variant="body" color="primary" weight="medium">
               View All
             </AppText>
@@ -116,26 +115,32 @@ const SimilarListings: React.FC<SimilarListingsProps> = ({
         </AppText>
         
         <View style={styles.reasonList}>
-          <View style={styles.reasonItem}>
-            <Ionicons name="business" size={16} color={Colors.primary[500]} style={styles.reasonIcon} />
-            <AppText variant="body" color="secondary" style={styles.reasonText}>
-              Same property type: {currentProperty.propertyCategory}
-            </AppText>
-          </View>
-          
-          <View style={styles.reasonItem}>
-            <Ionicons name="location" size={16} color={Colors.primary[500]} style={styles.reasonIcon} />
-            <AppText variant="body" color="secondary" style={styles.reasonText}>
-              Similar location in {currentProperty.address.city}
-            </AppText>
-          </View>
-          
-          <View style={styles.reasonItem}>
-            <Ionicons name="pricetag" size={16} color={Colors.primary[500]} style={styles.reasonIcon} />
-            <AppText variant="body" color="secondary" style={styles.reasonText}>
-              Comparable price range
-            </AppText>
-          </View>
+          {matchedByCategory && (
+            <View style={styles.reasonItem}>
+              <Ionicons name="business" size={16} color={Colors.primary[500]} style={styles.reasonIcon} />
+              <AppText variant="body" color="secondary" style={styles.reasonText}>
+                Same property type: {currentProperty.propertyCategory}
+              </AppText>
+            </View>
+          )}
+
+          {matchedByCity && (
+            <View style={styles.reasonItem}>
+              <Ionicons name="location" size={16} color={Colors.primary[500]} style={styles.reasonIcon} />
+              <AppText variant="body" color="secondary" style={styles.reasonText}>
+                Similar location in {currentProperty.address.city}
+              </AppText>
+            </View>
+          )}
+
+          {matchedByPrice && (
+            <View style={styles.reasonItem}>
+              <Ionicons name="pricetag" size={16} color={Colors.primary[500]} style={styles.reasonIcon} />
+              <AppText variant="body" color="secondary" style={styles.reasonText}>
+                Comparable price range
+              </AppText>
+            </View>
+          )}
         </View>
       </View>
     </View>
@@ -144,49 +149,27 @@ const SimilarListings: React.FC<SimilarListingsProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
-    backgroundColor: 'white',
+    padding: Spacing.lg,
+    backgroundColor: Colors.background.card,
     borderRadius: BorderRadius.xl,
-    marginTop: 16,
-    marginBottom: 16,
+    marginTop: Spacing.md,
+    marginBottom: Spacing.md,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  scrollViewContent: { 
-    paddingRight: 16,
-  },
-  horizontalList: {
-    flexDirection: 'row',
-    gap: 16,
-  },
-  cardWrapper: {
-    width: 300,
-  },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md },
+  scrollViewContent: { paddingRight: Spacing.md },
+  horizontalList: { flexDirection: 'row', gap: Spacing.md },
+  cardWrapper: { width: 300 },
   whySimilarSection: {
-    marginTop: 16,
-    gap: 12,
+    marginTop: Spacing.md,
+    gap: Spacing.sm + 4,
     backgroundColor: Colors.background.secondary,
-    padding: 16,
+    padding: Spacing.md,
     borderRadius: BorderRadius.lg,
   },
-  reasonList: {
-      gap: 8,
-  },
-  reasonItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  reasonIcon: {
-      marginTop: 2,
-      marginRight: 12,
-  },
-  reasonText: {
-      flex: 1,
-  }
+  reasonList: { gap: Spacing.sm },
+  reasonItem: { flexDirection: 'row', alignItems: 'flex-start' },
+  reasonIcon: { marginTop: 2, marginRight: Spacing.md },
+  reasonText: { flex: 1 },
 });
 
 export default SimilarListings;
