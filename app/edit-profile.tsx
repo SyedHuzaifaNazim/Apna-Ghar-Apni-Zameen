@@ -14,12 +14,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import Colors from '../constants/Colors';
+import { Colors } from '../constants/Colors';
 import { useAuth } from '../context/AuthContext';
 
 export default function EditProfileScreen() {
   const router = useRouter();
-  const { user, updateProfile, isLoading } = useAuth();
+  const { user, updateProfile, isSubmitting } = useAuth();
 
   // Initialize form with current user data
   const [name, setName] = useState(user?.name || '');
@@ -44,16 +44,16 @@ export default function EditProfileScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#333" />
+          <Ionicons name="arrow-back" size={24} color={Colors.text.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Edit Profile</Text>
         <TouchableOpacity 
           onPress={handleSave} 
-          disabled={isLoading}
+          disabled={isSubmitting}
           style={styles.saveButton}
         >
-          <Text style={[styles.saveText, isLoading && { opacity: 0.5 }]}>
-            {isLoading ? "Saving..." : "Save"}
+          <Text style={[styles.saveText, isSubmitting && { opacity: 0.5 }]}>
+            {isSubmitting ? "Saving..." : "Save"}
           </Text>
         </TouchableOpacity>
       </View>
@@ -71,7 +71,7 @@ export default function EditProfileScreen() {
                 {name ? name.charAt(0).toUpperCase() : 'U'}
               </Text>
               <View style={styles.cameraIcon}>
-                <Ionicons name="camera" size={16} color="#fff" />
+                <Ionicons name="camera" size={16} color={Colors.text.inverse} />
               </View>
             </View>
             <Text style={styles.changePhotoText}>Change Profile Photo</Text>
@@ -81,7 +81,7 @@ export default function EditProfileScreen() {
           <View style={styles.formGroup}>
             <Text style={styles.label}>Full Name</Text>
             <View style={styles.inputWrapper}>
-              <Ionicons name="person-outline" size={20} color="#666" />
+              <Ionicons name="person-outline" size={20} color={Colors.gray[600]} />
               <TextInput
                 style={styles.input}
                 value={name}
@@ -94,13 +94,13 @@ export default function EditProfileScreen() {
           <View style={styles.formGroup}>
             <Text style={styles.label}>Email Address</Text>
             <View style={[styles.inputWrapper, styles.disabledInput]}>
-              <Ionicons name="mail-outline" size={20} color="#999" />
+              <Ionicons name="mail-outline" size={20} color={Colors.gray[500]} />
               <TextInput
-                style={[styles.input, { color: '#999' }]}
+                style={[styles.input, { color: Colors.gray[500] }]}
                 value={email}
                 editable={false} // Email is non-editable
               />
-              <Ionicons name="lock-closed" size={16} color="#ccc" />
+              <Ionicons name="lock-closed" size={16} color={Colors.gray[400]} />
             </View>
             <Text style={styles.helperText}>Email cannot be changed.</Text>
           </View>
@@ -108,7 +108,7 @@ export default function EditProfileScreen() {
           <View style={styles.formGroup}>
             <Text style={styles.label}>Phone Number</Text>
             <View style={styles.inputWrapper}>
-              <Ionicons name="call-outline" size={20} color="#666" />
+              <Ionicons name="call-outline" size={20} color={Colors.gray[600]} />
               <TextInput
                 style={styles.input}
                 value={phone}
@@ -126,8 +126,8 @@ export default function EditProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff' },
-  
+  container: { flex: 1, backgroundColor: Colors.background.primary },
+
   // Header
   header: {
     flexDirection: 'row',
@@ -136,9 +136,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: Colors.border.light,
   },
-  headerTitle: { fontSize: 18, fontWeight: 'bold', color: '#333' },
+  headerTitle: { fontSize: 18, fontWeight: 'bold', color: Colors.text.primary },
   backButton: { padding: 5 },
   saveButton: { padding: 5 },
   saveText: { fontSize: 16, fontWeight: 'bold', color: Colors.primary[500] },
@@ -157,36 +157,36 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     position: 'relative',
   },
-  avatarText: { fontSize: 40, color: '#fff', fontWeight: 'bold' },
+  avatarText: { fontSize: 40, color: Colors.text.inverse, fontWeight: 'bold' },
   cameraIcon: {
     position: 'absolute',
     bottom: 0,
     right: 0,
-    backgroundColor: '#333',
+    backgroundColor: Colors.gray[800],
     width: 30,
     height: 30,
     borderRadius: 15,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#fff',
+    borderColor: Colors.text.inverse,
   },
   changePhotoText: { color: Colors.primary[500], fontWeight: '600' },
 
   // Form
   formGroup: { marginBottom: 20 },
-  label: { fontSize: 14, fontWeight: '600', color: '#333', marginBottom: 8 },
+  label: { fontSize: 14, fontWeight: '600', color: Colors.text.primary, marginBottom: 8 },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F5F7FA',
+    backgroundColor: Colors.background.secondary,
     borderRadius: 12,
     paddingHorizontal: 15,
     height: 50,
     borderWidth: 1,
-    borderColor: '#E1E1E1',
+    borderColor: Colors.border.light,
   },
-  input: { flex: 1, marginLeft: 10, fontSize: 16, color: '#333' },
-  disabledInput: { backgroundColor: '#f9f9f9', borderColor: '#eee' },
-  helperText: { fontSize: 12, color: '#999', marginTop: 5, marginLeft: 5 },
+  input: { flex: 1, marginLeft: 10, fontSize: 16, color: Colors.text.primary },
+  disabledInput: { backgroundColor: Colors.gray[50], borderColor: Colors.gray[200] },
+  helperText: { fontSize: 12, color: Colors.text.disabled, marginTop: 5, marginLeft: 5 },
 });
