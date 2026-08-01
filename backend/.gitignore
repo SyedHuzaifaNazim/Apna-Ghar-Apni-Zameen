@@ -75,6 +75,7 @@ web_modules/
 .env.test.local
 .env.production.local
 .env.local
+atlas-credentials.env
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache
@@ -139,3 +140,5 @@ desktop.ini
 *.swp
 *.swo
 *~
+.vercel
+.env*
