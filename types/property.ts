@@ -63,6 +63,7 @@ export interface Property {
 
   ownerType: OwnerType;
   ownerDetails: {
+    agentId: string;
     name: string;
     phone: string;
     email: string;
@@ -83,7 +84,44 @@ export interface Property {
   datePosted: string;
   isFeatured: boolean;
 
-  rating?: number;  
+  rating?: number;
   views: number;
   images: string[];
+
+  /** Present only on real, user-posted listings — absent on the mock demo pool. */
+  ownerUserId?: string;
+}
+
+/** Fields a user fills in to create or edit a listing (server derives the rest). */
+export interface PropertyDraft {
+  title: string;
+  listingType: ListingType;
+  propertyCategory: PropertyCategory;
+  price: number;
+  currency: string;
+  areaSize: number;
+  areaUnit: AreaUnit;
+  address: {
+    city: string;
+    area: string;
+    line1: string;
+    postalCode: string;
+    latitude: number;
+    longitude: number;
+  };
+  bedrooms: number;
+  bathrooms: number;
+  floorLevel: number | null;
+  furnishing: FurnishingType;
+  yearBuilt: number;
+  propertyCondition: PropertyCondition;
+  amenities: string[];
+  features: string[];
+  parkingSpaces: number;
+  waterSupply: WaterSupply;
+  electricityBackup: ElectricityBackup;
+  description: string;
+  images: string[];
+  contactPhone: string;
+  agencyName?: string;
 }
