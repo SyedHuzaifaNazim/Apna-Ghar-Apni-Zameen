@@ -8,129 +8,174 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
-  Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import Colors from '../constants/Colors';
-import { useAuth } from '../context/AuthContext';
+import AppText from '@/components/base/AppText';
+import { Colors } from '@/constants/Colors';
+import { ValidationRules } from '@/constants/Config';
+import { BorderRadius, Shadows, Spacing } from '@/constants/Layout';
+import { useAuth } from '@/context/AuthContext';
+import { ApiError } from '@/services/apiService';
+
+const LOGO = require('@/assets/images/transparent-logo1.png');
+
+interface FormState {
+  name: string;
+  email: string;
+  password: string;
+  phone: string;
+}
+
+const INITIAL_FORM: FormState = { name: '', email: '', password: '', phone: '' };
 
 export default function SignUpScreen() {
   const router = useRouter();
   const { signUp } = useAuth();
-  
-  const [formData, setFormData] = useState({ 
-    name: '', 
-    email: '', 
-    password: '', 
-    phone: '' 
-  });
+
+  const [formData, setFormData] = useState<FormState>(INITIAL_FORM);
   const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const validate = (): string | null => {
+    const name = formData.name.trim();
+    const email = formData.email.trim();
+    const phone = formData.phone.trim();
+
+    if (!name || !email || !formData.password) return 'Please fill in all required fields.';
+    if (name.length < ValidationRules.name.minLength) return 'Name is too short.';
+    if (!ValidationRules.email.regex.test(email)) return 'Please enter a valid email address.';
+    if (formData.password.length < ValidationRules.password.minLength) {
+      return `Password must be at least ${ValidationRules.password.minLength} characters.`;
+    }
+    if (phone && !ValidationRules.phone.regex.test(phone)) return 'Please enter a valid Pakistani mobile number.';
+    return null;
+  };
 
   const handleSignUp = async () => {
-    if(!formData.name || !formData.email || !formData.password) {
-       Alert.alert("Error", "Please fill in all required fields");
-       return;
+    setFormError(null);
+    const validationError = validate();
+    if (validationError) {
+      setFormError(validationError);
+      return;
     }
 
     setLoading(true);
     try {
-      await signUp({ ...formData, role: 'buyer' });
+      await signUp({
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        password: formData.password,
+        phone: formData.phone.trim() || undefined,
+        role: 'buyer',
+      });
+      Alert.alert('Account created', 'You can now sign in with your new account.');
       router.replace('/signin' as Href);
-    } catch (error) {
-      console.log("Signup failed");
+    } catch (err) {
+      setFormError(err instanceof ApiError ? err.message : 'Sign up failed. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
-      >
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.flex}>
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          
           <View style={styles.headerContainer}>
-            <Image 
-              source={require('../assets/images/logo_agaz.png')} 
-              style={styles.logo}
-              resizeMode="contain"
-            />
-            <Text style={styles.title}>Create Account</Text>
-            <Text style={styles.subtitle}>Join us to find your dream property</Text>
+            <Image source={LOGO} style={styles.logo} resizeMode="contain" />
+            <AppText variant="h2" weight="bold" align="center">
+              Create Account
+            </AppText>
+            <AppText variant="body" color="muted" align="center" style={styles.subtitle}>
+              Join us to find your dream property
+            </AppText>
           </View>
 
           <View style={styles.formContainer}>
-            
-            {/* Full Name */}
+            {formError && (
+              <View style={styles.errorBanner}>
+                <Ionicons name="alert-circle" size={16} color={Colors.error[600]} />
+                <AppText variant="bodySmall" color={Colors.error[600]} style={styles.errorText}>
+                  {formError}
+                </AppText>
+              </View>
+            )}
+
             <View style={styles.inputWrapper}>
-              <Ionicons name="person-outline" size={20} color="#666" style={styles.inputIcon} />
-              <TextInput 
-                placeholder="Full Name" 
-                placeholderTextColor="#999"
-                style={styles.input} 
-                onChangeText={t => setFormData({...formData, name: t})}
+              <Ionicons name="person-outline" size={20} color={Colors.gray[600]} style={styles.inputIcon} />
+              <TextInput
+                placeholder="Full Name"
+                placeholderTextColor={Colors.gray[500]}
+                style={styles.input}
+                value={formData.name}
+                onChangeText={t => setFormData(prev => ({ ...prev, name: t }))}
               />
             </View>
 
-            {/* Email */}
             <View style={styles.inputWrapper}>
-              <Ionicons name="mail-outline" size={20} color="#666" style={styles.inputIcon} />
-              <TextInput 
-                placeholder="Email Address" 
-                placeholderTextColor="#999"
-                style={styles.input} 
+              <Ionicons name="mail-outline" size={20} color={Colors.gray[600]} style={styles.inputIcon} />
+              <TextInput
+                placeholder="Email Address"
+                placeholderTextColor={Colors.gray[500]}
+                style={styles.input}
                 autoCapitalize="none"
+                autoComplete="email"
                 keyboardType="email-address"
-                onChangeText={t => setFormData({...formData, email: t})}
+                value={formData.email}
+                onChangeText={t => setFormData(prev => ({ ...prev, email: t }))}
               />
             </View>
 
-            {/* Phone */}
             <View style={styles.inputWrapper}>
-              <Ionicons name="call-outline" size={20} color="#666" style={styles.inputIcon} />
-              <TextInput 
-                placeholder="Phone Number" 
-                placeholderTextColor="#999"
-                style={styles.input} 
+              <Ionicons name="call-outline" size={20} color={Colors.gray[600]} style={styles.inputIcon} />
+              <TextInput
+                placeholder="Phone Number (optional)"
+                placeholderTextColor={Colors.gray[500]}
+                style={styles.input}
                 keyboardType="phone-pad"
-                onChangeText={t => setFormData({...formData, phone: t})}
+                value={formData.phone}
+                onChangeText={t => setFormData(prev => ({ ...prev, phone: t }))}
               />
             </View>
 
-            {/* Password */}
             <View style={styles.inputWrapper}>
-              <Ionicons name="lock-closed-outline" size={20} color="#666" style={styles.inputIcon} />
-              <TextInput 
-                placeholder="Password" 
-                placeholderTextColor="#999"
-                style={styles.input} 
-                secureTextEntry 
-                onChangeText={t => setFormData({...formData, password: t})}
+              <Ionicons name="lock-closed-outline" size={20} color={Colors.gray[600]} style={styles.inputIcon} />
+              <TextInput
+                placeholder="Password"
+                placeholderTextColor={Colors.gray[500]}
+                style={styles.input}
+                secureTextEntry
+                autoComplete="password-new"
+                value={formData.password}
+                onChangeText={t => setFormData(prev => ({ ...prev, password: t }))}
               />
             </View>
 
-            {/* Sign Up Button */}
-            <TouchableOpacity 
-              style={[styles.button, loading && styles.buttonDisabled]} 
+            <TouchableOpacity
+              style={[styles.button, loading && styles.buttonDisabled]}
               onPress={handleSignUp}
               disabled={loading}
+              accessibilityRole="button"
             >
-              <Text style={styles.buttonText}>{loading ? "Creating Account..." : "Sign Up"}</Text>
+              <AppText variant="body" weight="bold" color="inverse">
+                {loading ? 'Creating Account…' : 'Sign Up'}
+              </AppText>
             </TouchableOpacity>
 
             <View style={styles.footer}>
-              <Text style={styles.footerText}>Already have an account? </Text>
+              <AppText variant="body" color="secondary">
+                Already have an account?{' '}
+              </AppText>
               <TouchableOpacity onPress={() => router.replace('/signin' as Href)}>
-                <Text style={styles.linkText}>Sign In</Text>
+                <AppText variant="body" weight="bold" color="brand">
+                  Sign In
+                </AppText>
               </TouchableOpacity>
             </View>
-
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -139,92 +184,51 @@ export default function SignUpScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: '#fff' 
+  container: { flex: 1, backgroundColor: Colors.background.primary },
+  flex: { flex: 1 },
+  scrollContent: { flexGrow: 1, justifyContent: 'center', padding: Spacing.lg },
+  headerContainer: { alignItems: 'center', marginBottom: Spacing.lg },
+  logo: { width: 100, height: 50, marginBottom: Spacing.md },
+  subtitle: { marginTop: Spacing.xs },
+  formContainer: { width: '100%' },
+
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Spacing.xs,
+    backgroundColor: Colors.error[50],
+    borderWidth: 1,
+    borderColor: Colors.error[100],
+    borderRadius: BorderRadius.md,
+    padding: Spacing.sm,
+    marginBottom: Spacing.md,
   },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    padding: 24,
-  },
-  headerContainer: {
-    alignItems: 'center',
-    marginBottom: 30,
-  },
-  logo: {
-    width: 80,
-    height: 80,
-    marginBottom: 16,
-  },
-  title: { 
-    fontSize: 28, 
-    fontWeight: 'bold', 
-    color: '#333', 
-    textAlign: 'center' 
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#666',
-    marginTop: 8,
-    textAlign: 'center'
-  },
-  formContainer: {
-    width: '100%',
-  },
+  errorText: { flex: 1 },
+
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F5F7FA',
-    borderRadius: 12,
-    marginBottom: 16,
-    paddingHorizontal: 16,
+    backgroundColor: Colors.background.secondary,
+    borderRadius: BorderRadius.lg,
+    marginBottom: Spacing.md,
+    paddingHorizontal: Spacing.md,
     height: 56,
     borderWidth: 1,
-    borderColor: '#E1E1E1',
+    borderColor: Colors.border.light,
   },
-  inputIcon: {
-    marginRight: 12,
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    color: '#333',
-  },
-  button: { 
-    backgroundColor: Colors.primary?.[500] || '#007bff',
-    paddingVertical: 16, 
-    borderRadius: 12, 
-    alignItems: 'center', 
-    marginTop: 10,
-    marginBottom: 20,
-    shadowColor: Colors.primary?.[500] || '#007bff',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  buttonDisabled: { 
-    opacity: 0.7 
-  },
-  buttonText: { 
-    color: '#fff', 
-    fontSize: 18, 
-    fontWeight: 'bold' 
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+  inputIcon: { marginRight: Spacing.sm },
+  input: { flex: 1, fontSize: 16, color: Colors.text.primary },
+
+  button: {
+    backgroundColor: Colors.primary[500],
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.lg,
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: Spacing.xs,
+    marginBottom: Spacing.lg,
+    ...Shadows.md,
   },
-  footerText: {
-    color: '#666',
-    fontSize: 16,
-  },
-  linkText: { 
-    color: Colors.primary?.[500] || '#007bff', 
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
+  buttonDisabled: { opacity: 0.7 },
+
+  footer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
 });
