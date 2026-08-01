@@ -1,133 +1,148 @@
-// components/ui/SideDrawer.tsx
 import { Ionicons } from '@expo/vector-icons';
 import { Href, useRouter } from 'expo-router';
 import React from 'react';
-import { Alert, Dimensions, SafeAreaView, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import AppButton from '@/components/base/AppButton';
 import AppText from '@/components/base/AppText';
 import { Colors } from '@/constants/Colors';
-import { useAuth } from '@/context/AuthContext'; // <--- 1. Import Context
-
-const { height: screenHeight } = Dimensions.get('window');
+import { BorderRadius, Spacing } from '@/constants/Layout';
+import { useAuth } from '@/context/AuthContext';
 
 interface SideDrawerProps {
   onClose: () => void;
 }
 
-const SIDEBAR_LINKS = [
-    { title: "Home", icon: "home-outline", route: "/(tabs)/index" },
-    { title: "Industrial Hub", icon: "business-outline", route: "/industrial-hub" },
-    { title: "Map View", icon: "map-outline", route: "/map" },
-    { title: "My Favorites", icon: "heart-outline", route: "/favorites", requiresAuth: true },
-    { title: "My Listings", icon: "home-outline", route: "/my-listings", requiresAuth: true },
+interface DrawerLink {
+  title: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  route: Href;
+  requiresAuth?: boolean;
+}
+
+const SIDEBAR_LINKS: DrawerLink[] = [
+  { title: 'Home', icon: 'home-outline', route: '/' },
+  { title: 'Industrial Hub', icon: 'business-outline', route: '/industrial-hub' },
+  { title: 'Map View', icon: 'map-outline', route: '/map' },
+  // Favorites are device-local, not account-tied (see FavoritesScreen) — guests
+  // can use them too, so this must not gate behind sign-in.
+  { title: 'My Favorites', icon: 'heart-outline', route: '/favorites' },
+  { title: 'My Listings', icon: 'briefcase-outline', route: '/my-listings', requiresAuth: true },
 ];
 
-const LEGAL_LINKS = [
-    { title: "My Profile", icon: "person-outline", route: "/profile", requiresAuth: true },
-    { title: "Settings", icon: "settings-outline", route: "/settings" },
-    { title: "Help & Support", icon: "help-circle-outline", route: "/help" },
+const LEGAL_LINKS: DrawerLink[] = [
+  { title: 'My Profile', icon: 'person-outline', route: '/profile', requiresAuth: true },
+  { title: 'Settings', icon: 'settings-outline', route: '/settings' },
+  { title: 'Help & Support', icon: 'help-circle-outline', route: '/help' },
 ];
 
 const SideDrawer: React.FC<SideDrawerProps> = ({ onClose }) => {
   const router = useRouter();
-  const { user, signOut } = useAuth(); // <--- 2. Get real user state
-  
-  const isAuthenticated = !!user; // Check if user exists
+  const { height: screenHeight } = useWindowDimensions();
+  const { user, signOut } = useAuth();
+
+  const isAuthenticated = !!user;
 
   const handleLogout = async () => {
-      onClose();
-      await signOut(); // <--- 3. Call real sign out
-      router.replace('/signin' as Href);
-      Alert.alert("Logged Out", "You have been logged out successfully.");
+    onClose();
+    await signOut();
+    router.replace('/(tabs)/' as Href);
   };
 
-  const handleNavigation = (route: string, requiresAuth: boolean = false) => {
-      onClose();
-      if (requiresAuth && !isAuthenticated) {
-          router.push('/signin' as Href); // <--- 4. Correct route to 'signin'
-          Alert.alert("Sign In Required", "Please sign in to access this feature.");
-      } else {
-          router.push(route as Href);
-      }
+  const handleNavigation = (route: Href, requiresAuth: boolean = false) => {
+    onClose();
+    if (requiresAuth && !isAuthenticated) {
+      router.push('/signin' as Href);
+      Alert.alert('Sign In Required', 'Please sign in to access this feature.');
+    } else {
+      router.push(route);
+    }
   };
 
   return (
-    <View style={styles.container}>
-      <SafeAreaView style={styles.flex1}>
+    <View style={[styles.container, { height: screenHeight }]}>
+      <SafeAreaView style={styles.flex1} edges={['top', 'bottom']}>
         <View style={styles.header}>
-            <AppText variant="h2" weight="bold" style={styles.headerTitle}>Menu</AppText>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-                <Ionicons name="close-circle" size={30} color={Colors.text.secondary} />
-            </TouchableOpacity>
+          <AppText variant="h3" weight="bold">
+            Menu
+          </AppText>
+          <TouchableOpacity onPress={onClose} style={styles.closeButton} accessibilityRole="button">
+            <Ionicons name="close-circle" size={28} color={Colors.text.secondary} />
+          </TouchableOpacity>
         </View>
 
-        <ScrollView style={styles.scrollContent}>
-            {/* User Info / Auth Status */}
-            <View style={styles.authSection}>
-                {isAuthenticated ? (
-                    <View style={styles.authInfo}>
-                        <Ionicons name="person-circle" size={60} color={Colors.primary[500]} />
-                        {/* 5. Display Real User Data */}
-                        <AppText variant="body" weight="semibold">
-                            {user?.name || "User"}
-                        </AppText>
-                        <AppText variant="small" color="secondary">
-                            {user?.email || ""}
-                        </AppText>
-                    </View>
-                ) : (
-                    <AppButton
-                        onPress={() => handleNavigation('/signin')} // <--- Correct route
-                        style={styles.authButton}
-                        leftIcon={<Ionicons name="log-in" size={18} color="white" />}
-                    >
-                        Sign In / Register
-                    </AppButton>
-                )}
-            </View>
-
-            {/* Main Navigation Links */}
-            <View style={styles.linkGroup}>
-                {SIDEBAR_LINKS.map(link => (
-                    <TouchableOpacity
-                        key={link.title}
-                        style={styles.linkItem}
-                        onPress={() => handleNavigation(link.route, link.requiresAuth)}
-                        activeOpacity={0.7}
-                    >
-                        <Ionicons name={link.icon as any} size={24} color={Colors.primary[500]} />
-                        <AppText variant="body" style={styles.linkText}>{link.title}</AppText>
-                    </TouchableOpacity>
-                ))}
-            </View>
-
-            {/* Legal Links */}
-            <View style={styles.linkGroup}>
-                {LEGAL_LINKS.map(link => (
-                    <TouchableOpacity
-                        key={link.title}
-                        style={styles.linkItem}
-                        onPress={() => handleNavigation(link.route, link.requiresAuth)}
-                        activeOpacity={0.7}
-                    >
-                        <Ionicons name={link.icon as any} size={24} color={Colors.gray[500]} />
-                        <AppText variant="body" style={styles.linkText}>{link.title}</AppText>
-                    </TouchableOpacity>
-                ))}
-            </View>
-            
-            {isAuthenticated && (
-                <TouchableOpacity
-                    style={[styles.linkItem, styles.logoutButton]}
-                    onPress={handleLogout}
-                    activeOpacity={0.7}
-                >
-                    <Ionicons name="log-out-outline" size={24} color={Colors.error[500]} />
-                    <AppText variant="body" style={[styles.linkText, { color: Colors.error[500] }]}>Log Out</AppText>
-                </TouchableOpacity>
+        <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <View style={styles.authSection}>
+            {isAuthenticated ? (
+              <View style={styles.authInfo}>
+                <Ionicons name="person-circle" size={56} color={Colors.primary[500]} />
+                <AppText variant="body" weight="semibold">
+                  {user?.name || 'User'}
+                </AppText>
+                <AppText variant="bodySmall" color="secondary">
+                  {user?.email || ''}
+                </AppText>
+              </View>
+            ) : (
+              <AppButton
+                onPress={() => handleNavigation('/signin' as Href)}
+                style={styles.authButton}
+                leftIcon={<Ionicons name="log-in" size={18} color={Colors.text.inverse} />}
+              >
+                Sign In / Register
+              </AppButton>
             )}
-            <View style={{ height: 40 }} />
+          </View>
+
+          <View style={styles.linkGroup}>
+            {SIDEBAR_LINKS.map(link => (
+              <TouchableOpacity
+                key={link.title}
+                style={styles.linkItem}
+                onPress={() => handleNavigation(link.route, link.requiresAuth)}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+              >
+                <Ionicons name={link.icon} size={22} color={Colors.primary[500]} />
+                <AppText variant="body" style={styles.linkText}>
+                  {link.title}
+                </AppText>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <View style={styles.linkGroup}>
+            {LEGAL_LINKS.map(link => (
+              <TouchableOpacity
+                key={link.title}
+                style={styles.linkItem}
+                onPress={() => handleNavigation(link.route, link.requiresAuth)}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+              >
+                <Ionicons name={link.icon} size={22} color={Colors.gray[500]} />
+                <AppText variant="body" style={styles.linkText}>
+                  {link.title}
+                </AppText>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {isAuthenticated && (
+            <TouchableOpacity
+              style={[styles.linkItem, styles.logoutButton]}
+              onPress={handleLogout}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+            >
+              <Ionicons name="log-out-outline" size={22} color={Colors.error[500]} />
+              <AppText variant="body" weight="medium" color="error" style={styles.linkText}>
+                Log Out
+              </AppText>
+            </TouchableOpacity>
+          )}
+          <View style={styles.bottomSpacer} />
         </ScrollView>
       </SafeAreaView>
     </View>
@@ -135,12 +150,9 @@ const SideDrawer: React.FC<SideDrawerProps> = ({ onClose }) => {
 };
 
 const styles = StyleSheet.create({
-  flex1: {
-    flex: 1,
-  },
+  flex1: { flex: 1 },
   container: {
-    width: 300, 
-    height: screenHeight,
+    width: 300,
     backgroundColor: Colors.background.card,
     shadowColor: Colors.shadow.dark,
     shadowOffset: { width: 4, height: 0 },
@@ -152,56 +164,42 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 12,
+    padding: Spacing.sm + 4,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border.light,
   },
-  headerTitle: {
-      color: Colors.text.primary,
-  },
-  closeButton: {
-      padding: 4,
-  },
-  scrollContent: {
-    padding: 16,
-  },
-  // Auth Section
+  closeButton: { padding: Spacing.xs },
+  scrollContent: { padding: Spacing.md },
+
   authSection: {
-    paddingVertical: 12,
+    paddingVertical: Spacing.sm + 4,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border.light,
-    marginBottom: 16,
+    marginBottom: Spacing.md,
   },
-  authInfo: {
-    alignItems: 'center',
-    gap: 4,
-  },
-  authButton: {
-      width: '100%',
-  },
-  // Links
+  authInfo: { alignItems: 'center', gap: 4 },
+  authButton: { width: '100%' },
+
   linkGroup: {
     borderBottomWidth: 1,
     borderBottomColor: Colors.border.light,
-    marginBottom: 16,
+    marginBottom: Spacing.md,
   },
   linkItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    gap: 16,
+    paddingVertical: Spacing.sm + 4,
+    paddingHorizontal: Spacing.xs,
+    gap: Spacing.md,
   },
-  linkText: {
-    color: Colors.text.primary,
-    fontSize: 16,
-  },
+  linkText: { color: Colors.text.primary, fontSize: 16 },
   logoutButton: {
-      marginTop: 10,
-      marginBottom: 20,
-      backgroundColor: Colors.error[50],
-      borderRadius: 12,
-  }
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.lg,
+    backgroundColor: Colors.error[50],
+    borderRadius: BorderRadius.lg,
+  },
+  bottomSpacer: { height: Spacing.xl },
 });
 
 export default SideDrawer;
