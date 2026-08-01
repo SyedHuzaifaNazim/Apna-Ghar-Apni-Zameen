@@ -1,214 +1,79 @@
-// import { ApiConfig } from '@/constants/Config'; // Import your unified config
-// import AsyncStorage from '@react-native-async-storage/async-storage';
-// import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
-// import { Platform } from 'react-native';
-
-// // Types
-// export interface ApiResponse<T = any> {
-//   success: boolean;
-//   data?: T;
-//   message?: string;
-//   error?: string;
-//   statusCode: number;
-// }
-
-// export interface ApiError {
-//   message: string;
-//   code: string;
-//   status: number;
-//   timestamp: string;
-// }
-
-// // Auth token management
-// const TOKEN_STORAGE_KEY = 'auth_token';
-// const REFRESH_TOKEN_STORAGE_KEY = 'refresh_token';
-
-// class ApiService {
-//   private client: AxiosInstance;
-//   private isRefreshing = false;
-//   private refreshSubscribers: ((token: string) => void)[] = [];
-
-//   constructor() {
-//     this.client = axios.create({
-//       baseURL: ApiConfig.baseUrl, // Use the URL from Config.ts
-//       timeout: ApiConfig.settings.timeout,
-//       headers: {
-//         'Content-Type': 'application/json',
-//         'X-Platform': Platform.OS,
-//         'X-App-Version': '1.0.0',
-//       },
-//     });
-
-//     this.setupInterceptors();
-//   }
-
-//   private setupInterceptors() {
-//     // Request interceptor
-//     this.client.interceptors.request.use(
-//       async (config) => {
-//         const token = await this.getToken();
-//         if (token) {
-//           config.headers.Authorization = `Bearer ${token}`;
-//         }
-//         return config;
-//       },
-//       (error) => Promise.reject(error)
-//     );
-
-//     // Response interceptor
-//     this.client.interceptors.response.use(
-//       (response) => response,
-//       async (error) => {
-//         const originalRequest = error.config;
-
-//         if (error.response?.status === 401 && !originalRequest._retry) {
-//           if (this.isRefreshing) {
-//             return new Promise((resolve) => {
-//               this.refreshSubscribers.push((token: string) => {
-//                 originalRequest.headers.Authorization = `Bearer ${token}`;
-//                 resolve(this.client(originalRequest));
-//               });
-//             });
-//           }
-
-//           originalRequest._retry = true;
-//           this.isRefreshing = true;
-
-//           try {
-//             const newToken = await this.refreshToken();
-//             if (newToken) {
-//               this.onRefreshToken(newToken);
-//               originalRequest.headers.Authorization = `Bearer ${newToken}`;
-//               return this.client(originalRequest);
-//             }
-//           } catch (refreshError) {
-//             await this.clearTokens();
-//             return Promise.reject(refreshError);
-//           } finally {
-//             this.isRefreshing = false;
-//           }
-//         }
-//         return Promise.reject(this.normalizeError(error));
-//       }
-//     );
-//   }
-
-//   private normalizeError(error: any): ApiError {
-//     return {
-//       message: error.response?.data?.message || error.message || 'An error occurred',
-//       code: error.code || 'UNKNOWN_ERROR',
-//       status: error.response?.status || 500,
-//       timestamp: new Date().toISOString(),
-//     };
-//   }
-
-//   // Token Management
-//   async setToken(token: string): Promise<void> {
-//     await AsyncStorage.setItem(TOKEN_STORAGE_KEY, token);
-//   }
-
-//   async getToken(): Promise<string | null> {
-//     return await AsyncStorage.getItem(TOKEN_STORAGE_KEY);
-//   }
-
-//   async clearTokens(): Promise<void> {
-//     await AsyncStorage.multiRemove([TOKEN_STORAGE_KEY, REFRESH_TOKEN_STORAGE_KEY]);
-//   }
-
-//   async refreshToken(): Promise<string | null> {
-//     // Note: Standard JWT Auth plugin for WP often requires a different flow for refresh
-//     // This is a placeholder for the validate/refresh endpoint
-//     try {
-//       const token = await this.getToken();
-//       if (!token) throw new Error('No token');
-      
-//       const response = await axios.post(`${ApiConfig.baseUrl}${ApiConfig.endpoints.auth.validate}`, {}, {
-//          headers: { Authorization: `Bearer ${token}` }
-//       });
-      
-//       if (response.status === 200) return token; // Token is still valid
-//       return null;
-//     } catch (error) {
-//       await this.clearTokens();
-//       throw error;
-//     }
-//   }
-
-//   private onRefreshToken(token: string) {
-//     this.refreshSubscribers.forEach((callback) => callback(token));
-//     this.refreshSubscribers = [];
-//   }
-
-//   // HTTP Methods
-//   async get<T = any>(url: string, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
-//     const response: AxiosResponse = await this.client.get(url, config);
-//     return { success: true, data: response.data, statusCode: response.status };
-//   }
-
-//   async post<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
-//     const response: AxiosResponse = await this.client.post(url, data, config);
-//     return { success: true, data: response.data, statusCode: response.status };
-//   }
-// }
-
-// export const apiService = new ApiService();
-
-// // --- WORDPRESS SPECIFIC API METHODS ---
-
-// export const propertyApi = {
-//   // Get all properties (using standard WP query params)
-//   getProperties: (params?: any) => 
-//     apiService.get(ApiConfig.endpoints.properties.list, { 
-//       params: { 
-//         _embed: true, // Crucial for fetching images/author data in one go
-//         ...params 
-//       } 
-//     }),
-
-//   getProperty: (id: string | number) => 
-//     apiService.get(ApiConfig.endpoints.properties.detail.replace(':id', String(id)), {
-//       params: { _embed: true }
-//     }),
-
-//   // Search uses the list endpoint with ?search=term
-//   searchProperties: (query: string) => 
-//     apiService.get(ApiConfig.endpoints.properties.search, { 
-//       params: { search: query, _embed: true } 
-//     }),
-// };
-
-// export const authApi = {
-//   // Standard WP JWT Auth Plugin Login
-//   login: async (username: string, password: string) => {
-//     // Note: JWT Auth plugin usually expects 'username' and 'password'
-//     const res = await apiService.post(ApiConfig.endpoints.auth.login, { username, password });
-//     if (res.data?.token) {
-//         await apiService.setToken(res.data.token);
-//     }
-//     return res;
-//   },
-
-//   register: (userData: any) => 
-//     apiService.post(ApiConfig.endpoints.auth.register, userData),
-
-//   getProfile: () => 
-//     apiService.get(ApiConfig.endpoints.auth.profile),
-// };
-
-// export const agentApi = {
-//   // Agents are users with 'agent' role in WP
-//   getAgents: () => 
-//     apiService.get(ApiConfig.endpoints.agents.list),
-// };
-
-// export default apiService;
-
-import { ApiConfig } from '@/constants/Config'; // Import from your Config
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios, { AxiosInstance } from 'axios';
+import axios, { AxiosError, AxiosInstance } from 'axios';
+import { Platform } from 'react-native';
 
-const TOKEN_KEY = 'auth_token';
-const USER_KEY = 'user_session';
+import { ApiConfig } from '@/constants/Config';
+import type { Property, PropertyDraft } from '@/types/property';
+
+/**
+ * The ONLY boundary between the app and the backend.
+ *
+ * Nothing else in the app may import from `backend/` or know the server's
+ * internals — everything goes through here over HTTP to `ApiConfig.baseUrl`.
+ */
+
+export const TOKEN_KEY = 'auth_token';
+export const USER_KEY = 'user_session';
+
+export interface AuthUser {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  role: string;
+}
+
+export interface AuthResult {
+  user: AuthUser;
+  token: string;
+}
+
+export interface PropertyPage {
+  data: Property[];
+  total: number;
+  totalPages: number;
+  page: number;
+  limit: number;
+}
+
+/** Normalized error so screens never have to unwrap axios internals. */
+export class ApiError extends Error {
+  readonly status: number;
+  readonly code: string;
+
+  constructor(message: string, status = 0, code = 'UNKNOWN') {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.code = code;
+  }
+}
+
+const normalizeError = (error: unknown): ApiError => {
+  if (error instanceof ApiError) return error;
+
+  const axiosError = error as AxiosError<{ error?: string; message?: string }>;
+
+  if (axiosError?.isAxiosError) {
+    // No response at all -> almost always a wrong/unreachable API base URL.
+    if (!axiosError.response) {
+      return new ApiError(
+        `Can't reach the server at ${ApiConfig.baseUrl}. Check that the backend is running and that EXPO_PUBLIC_API_URL points at this machine's LAN IP.`,
+        0,
+        'NETWORK'
+      );
+    }
+
+    const { status, data } = axiosError.response;
+    return new ApiError(
+      data?.error || data?.message || `Request failed (${status})`,
+      status,
+      status === 401 ? 'UNAUTHORIZED' : 'HTTP_ERROR'
+    );
+  }
+
+  return new ApiError((error as Error)?.message || 'Unexpected error');
+};
 
 class ApiService {
   private client: AxiosInstance;
@@ -216,62 +81,143 @@ class ApiService {
   constructor() {
     this.client = axios.create({
       baseURL: ApiConfig.baseUrl,
-      timeout: 30000,
-      headers: ApiConfig.headers.common,
+      timeout: ApiConfig.settings.timeout,
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'X-Platform': Platform.OS,
+        'X-App-Version': ApiConfig.appVersion,
+      },
     });
 
-    // Attach Token to every request
-    this.client.interceptors.request.use(async (config) => {
-      const token = await AsyncStorage.getItem(TOKEN_KEY);
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
+    // Attach the bearer token to every outgoing request.
+    this.client.interceptors.request.use(async config => {
+      const token = await this.getToken();
+      if (token) config.headers.Authorization = `Bearer ${token}`;
       return config;
     });
+
+    this.client.interceptors.response.use(
+      response => response,
+      error => Promise.reject(normalizeError(error))
+    );
   }
 
-  // --- AUTH METHODS (Matched to server.js) ---
-  
-  async login(email: string, password: string) {
-    // server.js route: app.post('/signin')
-    const response = await this.client.post(ApiConfig.endpoints.auth.login, { email, password });
-    return response.data; // server.js returns { status: 'ok', user: {...} }
+  // ---------------------------------------------------------------- tokens
+
+  async getToken(): Promise<string | null> {
+    try {
+      return await AsyncStorage.getItem(TOKEN_KEY);
+    } catch {
+      return null;
+    }
   }
 
-  async register(userData: any) {
-    // server.js route: app.post('/signup')
-    const response = await this.client.post(ApiConfig.endpoints.auth.register, userData);
-    return response.data;
+  /**
+   * Persisting the token was previously missing entirely, which meant the
+   * session never survived a restart and every authenticated request went
+   * out with no Authorization header.
+   */
+  async setToken(token: string): Promise<void> {
+    await AsyncStorage.setItem(TOKEN_KEY, token);
   }
 
-  async logout() {
+  async clearSession(): Promise<void> {
     await AsyncStorage.multiRemove([TOKEN_KEY, USER_KEY]);
   }
 
-  // --- PROPERTY METHODS (Matched to server.js) ---
+  // ------------------------------------------------------------------ auth
 
-  async getProperties(page = 1, limit = 20) {
-    // server.js route: app.get('/properties')
-    const response = await this.client.get(ApiConfig.endpoints.properties.list, {
-      params: { page, limit }
+  async login(email: string, password: string): Promise<AuthResult> {
+    const { data } = await this.client.post(ApiConfig.endpoints.auth.login, {
+      email: email.trim().toLowerCase(),
+      password,
     });
-    return response.data; // server.js returns { total, totalPages, data: [...] }
+
+    if (!data?.token || !data?.user) {
+      throw new ApiError('Malformed response from server (missing token or user).', 502, 'BAD_RESPONSE');
+    }
+
+    await this.setToken(data.token);
+    return { user: data.user as AuthUser, token: data.token as string };
   }
 
-  async getProperty(id: string | number) {
-    // server.js route: app.get('/properties/:id')
+  async register(payload: {
+    name: string;
+    email: string;
+    password: string;
+    phone?: string;
+    role?: string;
+  }): Promise<{ message: string }> {
+    const { data } = await this.client.post(ApiConfig.endpoints.auth.register, {
+      ...payload,
+      email: payload.email.trim().toLowerCase(),
+    });
+    return { message: data?.message ?? 'Account created successfully.' };
+  }
+
+  async logout(): Promise<void> {
+    await this.clearSession();
+  }
+
+  async getProfile(): Promise<AuthUser> {
+    const { data } = await this.client.get(ApiConfig.endpoints.auth.profile);
+    return data.user as AuthUser;
+  }
+
+  async updateProfile(updates: { name?: string; phone?: string }): Promise<AuthUser> {
+    const { data } = await this.client.put(ApiConfig.endpoints.auth.profile, updates);
+    return data.user as AuthUser;
+  }
+
+  // -------------------------------------------------------------- properties
+
+  async listProperties(page: number, limit: number): Promise<PropertyPage> {
+    const { data } = await this.client.get(ApiConfig.endpoints.properties.list, { params: { page, limit } });
+    return data as PropertyPage;
+  }
+
+  async getProperty(id: number): Promise<Property> {
     const url = ApiConfig.endpoints.properties.detail.replace(':id', String(id));
-    const response = await this.client.get(url);
-    return response.data;
+    const { data } = await this.client.get(url);
+    return data as Property;
   }
 
-  async searchProperties(query: string) {
-     // You haven't implemented search in server.js yet, so we fallback to list
-     // Or implement app.get('/properties/search') in server.js
-     return this.getProperties(1, 20); 
+  async listMyProperties(): Promise<Property[]> {
+    const { data } = await this.client.get(ApiConfig.endpoints.properties.mine);
+    return data.data as Property[];
+  }
+
+  async createProperty(draft: PropertyDraft): Promise<Property> {
+    const { data } = await this.client.post(ApiConfig.endpoints.properties.list, draft);
+    return data as Property;
+  }
+
+  async updateProperty(id: number, draft: PropertyDraft): Promise<Property> {
+    const url = ApiConfig.endpoints.properties.detail.replace(':id', String(id));
+    const { data } = await this.client.put(url, draft);
+    return data as Property;
+  }
+
+  async deleteProperty(id: number): Promise<void> {
+    const url = ApiConfig.endpoints.properties.detail.replace(':id', String(id));
+    await this.client.delete(url);
+  }
+
+  /** Cheap reachability probe used by diagnostics / connection banners. */
+  async health(): Promise<boolean> {
+    try {
+      await this.client.get('/health', { timeout: 5000 });
+      return true;
+    } catch {
+      return false;
+    }
   }
 }
 
 export const apiService = new ApiService();
-export const authApi = apiService; // Alias for backward compatibility
-export const propertyApi = apiService; // Alias for backward compatibility
+
+// Named aliases kept so existing call sites keep reading naturally.
+export const authApi = apiService;
+
+export default apiService;
