@@ -1,14 +1,21 @@
+import AnimatedSplash from '@/components/AnimatedSplash';
 import SideDrawer from '@/components/ui/SideDrawer';
-import Colors from '@/constants/Colors';
+import { Colors } from '@/constants/Colors';
 import { AuthProvider } from '@/context/AuthContext';
+import { CompareProvider } from '@/context/CompareContext';
 import { FavoritesProvider } from '@/context/FavoritesContext';
 import { NetworkProvider } from '@/context/NetworkContext';
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack } from 'expo-router';
-import React, { createContext, useContext, useRef, useState } from 'react';
+import { STORAGE_KEYS, storageService } from '@/services/storageService';
+import { DarkTheme, DefaultTheme, Href, Stack, ThemeProvider, useRouter } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Animated, Easing, Modal, StyleSheet, TouchableWithoutFeedback, useColorScheme, View } from 'react-native';
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+
+// Keep the native splash up until our JS AnimatedSplash has mounted and taken
+// over — both use the same brand-green background, so the handoff is seamless.
+SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
 // --- Drawer Context ---
 const DrawerContext = createContext<{
@@ -25,7 +32,7 @@ export const useDrawer = () => useContext(DrawerContext);
 
 const DrawerProvider = ({ children }: { children: React.ReactNode }) => {
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-    const slideAnim = useRef(new Animated.Value(0)).current;
+    const [slideAnim] = useState(() => new Animated.Value(0));
 
     const openDrawer = () => {
         setIsDrawerOpen(true);
@@ -74,8 +81,6 @@ const DrawerRenderer = ({ isDrawerOpen, slideAnim, closeDrawer }: { isDrawerOpen
         }),
         pointerEvents: isDrawerOpen ? 'auto' : 'none',
     } as any;
-
-    if (!isDrawerOpen && (slideAnim as any)._value === 0) return null;
 
     return (
         <Modal 
@@ -151,13 +156,41 @@ export const unstable_settings = {
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const theme = colorScheme === 'dark' ? CustomDarkTheme : CustomDefaultTheme;
+  const router = useRouter();
+
+  const [onboardingChecked, setOnboardingChecked] = useState(false);
+  const [showSplash, setShowSplash] = useState(true);
+
+  // Hand off from the native splash to the JS AnimatedSplash as soon as we've
+  // mounted — they share the same background color, so nothing flashes.
+  useEffect(() => {
+    SplashScreen.hideAsync().catch(() => undefined);
+  }, []);
+
+  // One-time first-launch redirect. The AnimatedSplash overlay stays up until
+  // this resolves, so there's no longer a frame of Home visible before the
+  // redirect to onboarding happens on a device's very first launch.
+  useEffect(() => {
+    storageService
+      .getItem<boolean>(STORAGE_KEYS.HAS_SEEN_ONBOARDING)
+      .then(hasSeen => {
+        if (!hasSeen) router.replace('/onboarding' as Href);
+      })
+      .catch(() => undefined)
+      .finally(() => setOnboardingChecked(true));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
-    <SafeAreaProvider> 
+    <SafeAreaProvider>
+      {showSplash && (
+        <AnimatedSplash ready={onboardingChecked} onFinished={() => setShowSplash(false)} />
+      )}
       {/* ⚠️ CRITICAL FIX: AuthProvider MUST be at the top level */}
       <AuthProvider>
         <NetworkProvider>
           <FavoritesProvider>
+          <CompareProvider>
             <ThemeProvider value={theme}>
               <DrawerProvider> 
                 <Stack 
@@ -171,25 +204,27 @@ export default function RootLayout() {
                     headerBackTitle: '', 
                   }}
                 >
-                  <Stack.Screen name="(auth)/login" options={{ animation: 'fade', presentation: 'modal', headerShown: true, title: 'Sign In' }} />
-                  <Stack.Screen name="(auth)/register" options={{ animation: 'slide_from_right', headerShown: true, title: 'Create Account' }} />
+                  <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />
+                  <Stack.Screen name="signin" options={{ animation: 'fade', presentation: 'modal', headerShown: true, title: 'Sign In' }} />
+                  <Stack.Screen name="signup" options={{ animation: 'slide_from_right', headerShown: true, title: 'Create Account' }} />
                   <Stack.Screen name="(auth)/forgot-password" options={{ animation: 'slide_from_right', headerShown: true, title: 'Forgot Password' }} />
                   <Stack.Screen name="(tabs)" />
-                  <Stack.Screen name="favorites" options={{ headerShown: true, title: 'My Favorites' }} />
-                  <Stack.Screen name="search" options={{ headerShown: true, title: 'Search' }} />
                   <Stack.Screen name="map" options={{ headerShown: true, title: 'Map View' }} />
-                  <Stack.Screen name="profile" options={{ headerShown: true, title: 'User Profile' }} />
                   <Stack.Screen name="notifications" options={{ headerShown: true, title: 'Notifications' }} />
                   <Stack.Screen name="settings" options={{ headerShown: true, title: 'Settings' }} />
                   <Stack.Screen name="edit-profile" options={{ headerShown: true, title: 'Edit Profile' }} />
                   <Stack.Screen name="my-listings" options={{ headerShown: true, title: 'My Listings' }} />
                   <Stack.Screen name="help" options={{ headerShown: true, title: 'Help & Support' }} />
-                  <Stack.Screen name="industrial-hub" options={{ headerShown: true, title: 'Industrial Hub' }} /> 
-                  <Stack.Screen name="modal" options={{ presentation: 'modal', headerShown: true, title: 'Filters & Options', headerTitleAlign: 'center', headerTintColor: Colors.primary[500] }} />
+                  <Stack.Screen name="industrial-hub" options={{ headerShown: true, title: 'Industrial Hub' }} />
+                  <Stack.Screen name="saved-searches" options={{ headerShown: false }} />
+                  <Stack.Screen name="compare" options={{ headerShown: false }} />
+                  <Stack.Screen name="agent/[id]" options={{ headerShown: false }} />
+                  <Stack.Screen name="post-listing" options={{ headerShown: false }} />
                   <Stack.Screen name="listing/[id]" options={{ animation: 'slide_from_right', headerShown: true, title: '', headerTransparent: true, headerTintColor: Colors.text.inverse }} />
                 </Stack>
               </DrawerProvider>
             </ThemeProvider>
+          </CompareProvider>
           </FavoritesProvider>
         </NetworkProvider>
       </AuthProvider>
