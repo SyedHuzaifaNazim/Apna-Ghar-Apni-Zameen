@@ -1,297 +1,183 @@
-// import { useNetworkStatus } from '@/hooks/useNetworkStatus';
-// import { propertyApi } from '@/services/apiService';
-// import { storageService } from '@/services/storageService';
-// import { ListingType, Property, PropertyCategory } from '@/types/property';
-// import { useCallback, useEffect, useState } from 'react';
-// import { Alert } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-// // --- MAPPER FUNCTION ---
-// const mapWordPressProperty = (wpItem: any): Property => {
-//   const acf = wpItem.acf || {};
-//   const embedded = wpItem._embedded || {};
-
-//   // Extract Featured Image
-//   let featuredImage = 'https://via.placeholder.com/400x300';
-//   if (embedded['wp:featuredmedia'] && embedded['wp:featuredmedia'][0]) {
-//     featuredImage = embedded['wp:featuredmedia'][0].source_url;
-//   } else if (wpItem.jetpack_featured_media_url) {
-//     featuredImage = wpItem.jetpack_featured_media_url;
-//   }
-
-//   return {
-//     id: wpItem.id,
-//     title: wpItem.title?.rendered || 'Untitled Property',
-//     listingType: (acf.listing_type as ListingType) || 'For Sale',
-//     propertyCategory: (acf.property_category as PropertyCategory) || 'Residential House',
-//     price: Number(acf.price) || 0,
-//     currency: acf.currency || 'PKR',
-//     areaSize: Number(acf.area_size) || 0,
-//     areaUnit: acf.area_unit || 'sqft',
-//     address: {
-//       city: acf.city || '',
-//       area: acf.area || '',
-//       line1: acf.address_line_1 || '',
-//       postalCode: acf.postal_code || '',
-//       latitude: Number(acf.latitude) || 24.8607,
-//       longitude: Number(acf.longitude) || 67.0011,
-//     },
-//     bedrooms: Number(acf.bedrooms) || 0,
-//     bathrooms: Number(acf.bathrooms) || 0,
-//     floorLevel: acf.floor_level ? Number(acf.floor_level) : null,
-//     furnishing: acf.furnishing || 'Unfurnished',
-//     yearBuilt: Number(acf.year_built) || new Date().getFullYear(),
-//     propertyCondition: acf.condition || 'Well-Maintained',
-//     amenities: Array.isArray(acf.amenities) ? acf.amenities : [],
-//     features: Array.isArray(acf.features) ? acf.features : [],
-//     tags: [],
-//     nearbyLandmarks: [],
-//     ownerType: acf.owner_type || 'Agent',
-//     ownerDetails: {
-//       name: acf.contact_name || 'Agent',
-//       phone: acf.contact_phone || '',
-//       email: acf.contact_email || '',
-//     },
-//     contactVisibility: 'Public',
-//     images: Array.isArray(acf.gallery) && acf.gallery.length > 0 ? acf.gallery : [featuredImage],
-//     waterSupply: 'Available',
-//     electricityBackup: 'None',
-//     parkingSpaces: Number(acf.parking_spaces) || 0,
-//     description: wpItem.content?.rendered?.replace(/<[^>]+>/g, '') || '',
-//     datePosted: wpItem.date,
-//     isFeatured: Boolean(acf.is_featured),
-//     views: 0,
-//   };
-// };
-
-// // --- LIST HOOK ---
-// export const useFetchProperties = (options: { enabled?: boolean; pageSize?: number } = {}) => {
-//   const { enabled = true, pageSize = 10 } = options;
-//   const { isOnline } = useNetworkStatus();
-  
-//   const [properties, setProperties] = useState<Property[]>([]);
-//   const [loading, setLoading] = useState(true);
-//   const [error, setError] = useState<string | null>(null);
-//   const [page, setPage] = useState(1);
-//   const [hasMore, setHasMore] = useState(true);
-//   const [isRefreshing, setIsRefreshing] = useState(false);
-//   const [isOfflineData, setIsOfflineData] = useState(false);
-//   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-
-//   const fetchProperties = useCallback(async (isRefresh = false, isLoadMore = false, targetPage = page) => {
-//     if (!enabled) return;
-
-//     try {
-//       if (!isLoadMore) setLoading(true);
-//       setError(null);
-
-//       if (!isOnline) {
-//         const cached = await storageService.getCache<Property[]>('properties_cache');
-//         if (cached) {
-//           setProperties(cached);
-//           setIsOfflineData(true);
-//         } else {
-//           setError('No internet connection');
-//         }
-//         setLoading(false);
-//         setIsRefreshing(false);
-//         return;
-//       }
-
-//       const response = await propertyApi.getProperties({
-//         per_page: pageSize,
-//         page: targetPage,
-//       });
-
-//       const mappedData = Array.isArray(response.data) ? response.data.map(mapWordPressProperty) : [];
-
-//       if (isLoadMore) {
-//         setProperties(prev => [...prev, ...mappedData]);
-//       } else {
-//         setProperties(mappedData);
-//         setLastUpdated(new Date());
-//         if (targetPage === 1) {
-//             await storageService.setCache('properties_cache', mappedData);
-//         }
-//       }
-
-//       setHasMore(mappedData.length === pageSize);
-
-//     } catch (err) {
-//       setError(err instanceof Error ? err.message : 'Fetch failed');
-//       if (!isLoadMore) Alert.alert('Error', 'Could not fetch properties.');
-//     } finally {
-//       setLoading(false);
-//       setIsRefreshing(false);
-//     }
-//   }, [enabled, page, pageSize, isOnline]);
-
-//   const refresh = useCallback(async () => {
-//     setIsRefreshing(true);
-//     setPage(1);
-//     await fetchProperties(true, false, 1);
-//   }, [fetchProperties]);
-
-//   const loadMore = useCallback(async () => {
-//     if (loading || !hasMore) return;
-//     const nextPage = page + 1;
-//     setPage(nextPage);
-//     await fetchProperties(false, true, nextPage);
-//   }, [loading, hasMore, fetchProperties, page]);
-
-//   useEffect(() => {
-//     if (enabled) fetchProperties(false, false, 1);
-//   }, [enabled, fetchProperties]);
-
-//   return {
-//     properties,
-//     loading,
-//     error,
-//     refetch: refresh,
-//     refresh,
-//     hasMore,
-//     loadMore,
-//     isOfflineData,
-//     lastUpdated,
-//   };
-// };
-
-// // --- SINGLE PROPERTY HOOK ---
-// export const useFetchProperty = (id: number) => {
-//   const [property, setProperty] = useState<Property | null>(null);
-//   const [loading, setLoading] = useState(true);
-//   const [error, setError] = useState<string | null>(null);
-
-//   useEffect(() => {
-//     if (!id) return;
-    
-//     const load = async () => {
-//       setLoading(true);
-//       setError(null);
-//       try {
-//         const response = await propertyApi.getProperty(id);
-//         const mapped = mapWordPressProperty(response.data);
-//         setProperty(mapped);
-//       } catch (err: any) {
-//         setError(err.message || "Failed to load property");
-//       } finally {
-//         setLoading(false);
-//       }
-//     };
-    
-//     load();
-//   }, [id]);
-
-//   return { property, loading, error };
-// };
-
-// export default useFetchProperties;
-
-
-import { propertyApi } from '@/services/apiService'; // Use the service we just fixed
-import { Property } from '@/types/property';
-import { useCallback, useEffect, useState } from 'react';
+import { apiService, ApiError } from '@/services/apiService';
+import type { Property } from '@/types/property';
 import { useNetworkStatus } from './useNetworkStatus';
 
-// --- MAPPER ---
-// Your backend proxies WordPress, so the data structure is still WordPress-like
-const mapProperty = (item: any): Property => {
-  // If item comes from MongoDB (Saved properties), it has flat fields
-  if (!item.acf && !item.title?.rendered) {
-      return item; 
-  }
+const DEFAULT_PAGE_SIZE = 20;
+/** Screens that need the whole pool at once (map pins, "similar properties") request pages this large. */
+const BULK_PAGE_SIZE = 100;
 
-  // If item comes from WordPress (via Proxy), it has nested fields
-  const acf = item.acf || {};
-  return {
-    id: item.id,
-    title: item.title?.rendered || 'Untitled',
-    price: Number(acf.price) || 0,
-    currency: acf.currency || 'PKR',
-    listingType: acf.type === 'rent' ? 'For Rent' : 'For Sale',
-    propertyCategory: acf.category || 'Residential',
-    address: {
-      city: acf.city || '',
-      area: acf.area || '',
-      line1: acf.address || '',
-      latitude: Number(acf.latitude) || 0,
-      longitude: Number(acf.longitude) || 0,
-    },
-    bedrooms: Number(acf.bedrooms) || 0,
-    bathrooms: Number(acf.bathrooms) || 0,
-    areaSize: Number(acf.area_size) || 0,
-    areaUnit: acf.area_unit || 'sqft',
-    images: Array.isArray(acf.gallery) ? acf.gallery : ['https://via.placeholder.com/400'],
-    description: item.content?.rendered?.replace(/<[^>]+>/g, '') || '',
-    isFeatured: Boolean(acf.is_featured),
-    datePosted: item.date,
-    ownerDetails: { name: 'Agent', phone: '', email: '' },
-    contactVisibility: 'Public',
-    waterSupply: 'Available',
-    electricityBackup: 'None',
-    parkingSpaces: 0,
-    floorLevel: 0,
-    furnishing: 'Unfurnished',
-    yearBuilt: 2024,
-    propertyCondition: 'New',
-    amenities: [],
-    features: [],
-    tags: [],
-    nearbyLandmarks: [],
-    views: 0
-  } as unknown as Property;
-};
+interface UseFetchPropertiesOptions {
+  /** true (default): load one page at a time via loadMore(). false: fetch the whole pool in a single request. */
+  paginate?: boolean;
+  pageSize?: number;
+}
 
-export const useFetchProperties = () => {
+export const useFetchProperties = (options: UseFetchPropertiesOptions = {}) => {
+  const { paginate = true } = options;
+  const pageSize = options.pageSize ?? (paginate ? DEFAULT_PAGE_SIZE : BULK_PAGE_SIZE);
   const { isOnline } = useNetworkStatus();
+
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const requestId = useRef(0);
 
-  const fetchProperties = useCallback(async () => {
+  const fetchPage = useCallback(
+    async (targetPage: number, append: boolean) => {
+      const thisRequest = ++requestId.current;
+      if (append) setLoadingMore(true);
+      else setLoading(true);
+      setError(null);
+
+      try {
+        if (!isOnline) throw new ApiError('No internet connection.', 0, 'OFFLINE');
+        const result = await apiService.listProperties(targetPage, pageSize);
+        if (thisRequest !== requestId.current) return; // superseded by a newer request
+
+        setProperties(prev => (append ? [...prev, ...result.data] : result.data));
+        setTotalPages(result.totalPages);
+        setPage(targetPage);
+      } catch (err) {
+        if (thisRequest !== requestId.current) return;
+        setError(err instanceof ApiError ? err.message : 'Failed to load properties.');
+      } finally {
+        if (thisRequest === requestId.current) {
+          setLoading(false);
+          setLoadingMore(false);
+        }
+      }
+    },
+    [isOnline, pageSize]
+  );
+
+  // paginate:false callers expect the ENTIRE pool back, not just one page's
+  // worth. That used to be a single request sized to BULK_PAGE_SIZE, which
+  // silently truncated results once real user-posted listings (Task 10)
+  // pushed the total past the mock pool's fixed 100 — so this loops pages
+  // until totalPages says there's nothing left, however many that takes.
+  const fetchAll = useCallback(async () => {
+    const thisRequest = ++requestId.current;
+    setLoading(true);
+    setError(null);
+
     try {
-      setLoading(true);
-      if (!isOnline) throw new Error("No Internet");
+      if (!isOnline) throw new ApiError('No internet connection.', 0, 'OFFLINE');
 
-      // CALL THE FIXED API SERVICE
-      const response = await propertyApi.getProperties(1, 20);
-      
-      // HANDLE SERVER.JS RESPONSE STRUCTURE
-      // Server returns: { total: 50, data: [ ...posts ] }
-      const rawData = response.data || []; 
-      
-      const mapped = rawData.map(mapProperty);
-      setProperties(mapped);
+      let all: Property[] = [];
+      let currentPage = 1;
+      let pages = 1;
 
-    } catch (err: any) {
-      setError(err.message);
-      console.error("Fetch error:", err);
+      do {
+        const result = await apiService.listProperties(currentPage, pageSize);
+        if (thisRequest !== requestId.current) return;
+        all = currentPage === 1 ? result.data : [...all, ...result.data];
+        pages = result.totalPages;
+        currentPage += 1;
+      } while (currentPage <= pages);
+
+      if (thisRequest !== requestId.current) return;
+      setProperties(all);
+      setTotalPages(pages);
+      setPage(pages);
+    } catch (err) {
+      if (thisRequest !== requestId.current) return;
+      setError(err instanceof ApiError ? err.message : 'Failed to load properties.');
     } finally {
-      setLoading(false);
+      if (thisRequest === requestId.current) setLoading(false);
     }
-  }, [isOnline]);
+  }, [isOnline, pageSize]);
 
   useEffect(() => {
-    fetchProperties();
-  }, [fetchProperties]);
+    if (paginate) fetchPage(1, false);
+    else fetchAll();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paginate, fetchPage, fetchAll]);
 
-  return { properties, loading, error, refetch: fetchProperties, loadMore: () => {}, hasMore: false, isOfflineData: !isOnline, lastUpdated: Date.now() };
+  const loadMore = useCallback(() => {
+    if (paginate && !loading && !loadingMore && page < totalPages) {
+      fetchPage(page + 1, true);
+    }
+  }, [paginate, loading, loadingMore, page, totalPages, fetchPage]);
+
+  const refetch = useCallback(() => (paginate ? fetchPage(1, false) : fetchAll()), [paginate, fetchPage, fetchAll]);
+
+  return {
+    properties,
+    loading,
+    loadingMore,
+    error,
+    refetch,
+    loadMore,
+    hasMore: paginate && page < totalPages,
+    isOfflineData: !isOnline,
+  };
 };
 
 export const useFetchProperty = (id: number) => {
-    const [property, setProperty] = useState<Property | null>(null);
-    const [loading, setLoading] = useState(true);
-    
-    useEffect(() => {
-        if(!id) return;
-        const load = async () => {
-            try {
-                const data = await propertyApi.getProperty(id);
-                setProperty(mapProperty(data));
-            } catch(e) { console.error(e); } 
-            finally { setLoading(false); }
-        };
-        load();
-    }, [id]);
-    
-    return { property, loading, error: null, refetch: () => {} };
+  const [property, setProperty] = useState<Property | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchProperty = useCallback(async () => {
+    if (Number.isNaN(id)) {
+      setProperty(null);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await apiService.getProperty(id);
+      setProperty(result);
+    } catch (err) {
+      setProperty(null);
+      setError(err instanceof ApiError ? err.message : 'Failed to load property.');
+    } finally {
+      setLoading(false);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    fetchProperty();
+  }, [fetchProperty]);
+
+  return { property, loading, error, refetch: fetchProperty };
+};
+
+/** Fetches specific properties by id (e.g. favorites) rather than relying on paginated browsing to have loaded them. */
+export const useFetchPropertiesByIds = (ids: number[]) => {
+  const idsKey = ids.join(',');
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (ids.length === 0) {
+      setProperties([]);
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setLoading(true);
+
+    Promise.all(ids.map(id => apiService.getProperty(id).catch(() => null)))
+      .then(results => {
+        if (!cancelled) setProperties(results.filter((p): p is Property => p !== null));
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- idsKey is the stable, comparable form of ids
+  }, [idsKey]);
+
+  return { properties, loading };
 };
