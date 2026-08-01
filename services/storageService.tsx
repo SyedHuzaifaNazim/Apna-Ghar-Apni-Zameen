@@ -11,6 +11,8 @@ export const STORAGE_KEYS = {
   VIEWED_PROPERTIES: 'viewed_properties',
   APP_SETTINGS: 'app_settings',
   CACHE: 'cache_',
+  HAS_SEEN_ONBOARDING: 'has_seen_onboarding',
+  SAVED_SEARCHES: 'saved_searches',
 } as const;
 
 // Types
@@ -74,9 +76,9 @@ class StorageServiceImpl implements StorageService {
   async setItem<T = any>(key: string, value: T, options?: CacheOptions): Promise<void> {
     try {
       const prefixedKey = this.getPrefixedKey(key);
-      
-      let dataToStore = value;
-      
+
+      let dataToStore: unknown = value;
+
       if (options?.ttl) {
         dataToStore = {
           data: value,
@@ -321,6 +323,3 @@ class StorageServiceImpl implements StorageService {
 
 // Create singleton instance
 export const storageService = new StorageServiceImpl();
-
-// Export type for dependency injection
-export type { StorageServiceImpl as StorageService };
