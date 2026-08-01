@@ -1,96 +1,104 @@
 import { Ionicons } from '@expo/vector-icons';
 import { FlashList } from '@shopify/flash-list';
-import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
-import { Alert, SafeAreaView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Href, useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import { Alert, Share, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import AppButton from '@/components/base/AppButton';
 import AppText from '@/components/base/AppText';
 import LoadingSpinner from '@/components/base/LoadingSpinner';
 import PropertyCard from '@/components/ui/PropertyCard';
 import { Colors } from '@/constants/Colors';
-import { useAuth } from '@/context/AuthContext';
+import { BorderRadius, Shadows, Spacing } from '@/constants/Layout';
+import { MAX_COMPARE, useCompare } from '@/context/CompareContext';
 import { useFavorites } from '@/context/FavoritesContext';
-import { propertyApi } from '@/services/apiService';
-import { Property } from '@/types/property';
+import { useFetchPropertiesByIds } from '@/hooks/useFetchProperties';
+import { formatPriceWithPeriod } from '@/lib/format';
 
 const FavoritesScreen: React.FC = () => {
   const router = useRouter();
-  const { user } = useAuth();
-  const { favorites, removeFromFavorites } = useFavorites();
-  
-  const [favoriteProperties, setFavoriteProperties] = useState<Property[]>([]);
-  const [loading, setLoading] = useState(false);
-  
-  const isAuthenticated = !!user;
+  // Favorites are device-local (not account-tied), so this list is available
+  // to guests too — matches PropertyCard's heart toggle, which never checks auth.
+  const { favorites, isLoading: favoritesLoading, clearFavorites } = useFavorites();
+  const { properties: favoriteProperties, loading: propertiesLoading } = useFetchPropertiesByIds(favorites);
+  const { compareIds, isComparing, toggleCompare } = useCompare();
 
-  useEffect(() => {
-    const fetchFavoriteProperties = async () => {
-      if (favorites.length === 0) {
-        setFavoriteProperties([]);
-        return;
-      }
+  const [isClearing, setIsClearing] = useState(false);
+  const [compareMode, setCompareMode] = useState(false);
 
-      setLoading(true);
-      try {
-        const response = await propertyApi.getProperties({
-          include: favorites,
-          per_page: 100,
-        });
-        
-        if (Array.isArray(response.data)) {
-             setFavoriteProperties(response.data as any); 
-        }
-      } catch (error) {
-        console.error("Failed to fetch favorites", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const isLoading = favoritesLoading || propertiesLoading;
 
-    if (isAuthenticated) {
-      fetchFavoriteProperties();
-    }
-  }, [favorites, isAuthenticated]);
-
-  const handlePropertyPress = (propertyId: number) => {
-    router.push(`/listing/${propertyId}`);
-  };
-
-  const handleRemoveFavorite = (propertyId: number, propertyTitle: string) => {
-    removeFromFavorites(propertyId);
-    setFavoriteProperties(prev => prev.filter(p => p.id !== propertyId));
-    Alert.alert("Removed", "Property has been removed from your favorites.");
+  const handleOpenProperty = (id: number) => {
+    router.push({ pathname: '/listing/[id]', params: { id: String(id) } });
   };
 
   const handleClearAll = () => {
-    Alert.alert("Clear All", "This feature would clear all favorites.");
+    Alert.alert('Clear all favorites?', `This removes all ${favoriteProperties.length} saved properties.`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Clear All',
+        style: 'destructive',
+        onPress: () => {
+          setIsClearing(true);
+          clearFavorites();
+          setIsClearing(false);
+        },
+      },
+    ]);
   };
 
-  const handleSignIn = () => {
-    router.replace('/signin');
+  const handleShare = async () => {
+    const lines = favoriteProperties
+      .slice(0, 10)
+      .map(p => `• ${p.title} — ${formatPriceWithPeriod(p.price, p.listingType)}`);
+
+    try {
+      await Share.share({
+        message: `My saved properties on Farsh e Zameen:\n\n${lines.join('\n')}`,
+      });
+    } catch {
+      // User dismissed the share sheet — nothing to do.
+    }
   };
-  
+
   const renderHeader = () => (
     <View style={styles.header}>
       <View style={styles.headerRow}>
         {router.canGoBack() && (
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color={Colors.primary[500]} />
+          <TouchableOpacity onPress={() => router.back()} style={styles.iconButton}>
+            <Ionicons name="arrow-back" size={22} color={Colors.text.primary} />
           </TouchableOpacity>
         )}
-        
+
         <View style={styles.headerTitleContainer}>
-          <AppText variant="h2" weight="bold">Favorites</AppText>
-          {isAuthenticated && (
-            <AppText variant="body" color="secondary">
-              {favoriteProperties.length} saved properties
+          <AppText variant="h3" weight="bold">
+            Favorites
+          </AppText>
+          {favoriteProperties.length > 0 && (
+            <AppText variant="bodySmall" color="muted">
+              {favoriteProperties.length} saved {favoriteProperties.length === 1 ? 'property' : 'properties'}
             </AppText>
           )}
         </View>
 
-        {isAuthenticated && favoriteProperties.length > 0 && (
-          <TouchableOpacity onPress={handleClearAll} style={styles.iconButton}>
+        {favoriteProperties.length > 0 && (
+          <TouchableOpacity
+            onPress={() => setCompareMode(prev => !prev)}
+            style={[styles.iconButton, compareMode && styles.iconButtonActive]}
+            accessibilityRole="button"
+            accessibilityLabel={compareMode ? 'Exit compare mode' : 'Compare properties'}
+          >
+            <Ionicons
+              name="git-compare-outline"
+              size={20}
+              color={compareMode ? Colors.text.inverse : Colors.text.primary}
+            />
+          </TouchableOpacity>
+        )}
+
+        {favoriteProperties.length > 0 && (
+          <TouchableOpacity onPress={handleClearAll} style={styles.iconButton} disabled={isClearing}>
             <Ionicons name="trash-outline" size={20} color={Colors.error[500]} />
           </TouchableOpacity>
         )}
@@ -98,57 +106,31 @@ const FavoritesScreen: React.FC = () => {
     </View>
   );
 
-  if (!isAuthenticated) {
+  if (isLoading) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
         {renderHeader()}
-        <View style={styles.centerContainer}>
-          <Ionicons name="lock-closed-outline" size={80} color={Colors.text.disabled} />
-          <AppText variant="h2" weight="bold" align="center" style={styles.marginTop}>
-            Sign In to View Favorites
-          </AppText>
-          <AppText variant="body" color="secondary" align="center" style={styles.marginTopSmall}>
-            Your favorite properties are saved securely to your account.
-          </AppText>
-          <AppButton 
-            onPress={handleSignIn}
-            style={styles.actionButton}
-            leftIcon={<Ionicons name="log-in" size={16} color="white" />}
-          >
-            Sign In Now
-          </AppButton>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.safeArea}>
-        {renderHeader()}
-        <View style={styles.centerContainer}>
-          <LoadingSpinner text="Loading favorites..." />
-        </View>
+        <LoadingSpinner text="Loading favorites…" />
       </SafeAreaView>
     );
   }
 
   if (favoriteProperties.length === 0) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
         {renderHeader()}
         <View style={styles.centerContainer}>
-          <Ionicons name="heart-outline" size={80} color={Colors.text.disabled} />
-          <AppText variant="h2" weight="bold" align="center" style={styles.marginTop}>
+          <Ionicons name="heart-outline" size={72} color={Colors.gray[300]} />
+          <AppText variant="h4" weight="bold" align="center" style={styles.spacedTop}>
             No favorites yet
           </AppText>
-          <AppText variant="body" color="secondary" align="center" style={styles.marginTopSmall}>
-            Start exploring properties and save your favorites to see them here
+          <AppText variant="bodySmall" color="muted" align="center" style={styles.spacedSmall}>
+            Tap the heart on any listing to save it here.
           </AppText>
-          <AppButton 
-            onPress={() => router.replace('/')}
+          <AppButton
+            onPress={() => router.push('/')}
             style={styles.actionButton}
-            leftIcon={<Ionicons name="search" size={16} color="white" />}
+            leftIcon={<Ionicons name="search" size={16} color={Colors.text.inverse} />}
           >
             Start Exploring
           </AppButton>
@@ -158,144 +140,100 @@ const FavoritesScreen: React.FC = () => {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       {renderHeader()}
 
       <FlashList
         data={favoriteProperties}
         renderItem={({ item }) => (
-          <View style={styles.cardContainer}>
-            <PropertyCard 
-              property={item} 
-              onPress={() => handlePropertyPress(item.id)}
+          <View style={styles.cardWrapper}>
+            <PropertyCard
+              property={item}
+              onPress={p => handleOpenProperty(p.id)}
+              compareMode={compareMode}
+              isCompareSelected={isComparing(item.id)}
+              onToggleCompare={p => toggleCompare(p.id)}
             />
-            <TouchableOpacity
-              style={styles.favoriteButton}
-              onPress={() => handleRemoveFavorite(item.id, item.title)}
-            >
-              <Ionicons name="heart" size={16} color={Colors.status.featured} />
-            </TouchableOpacity>
           </View>
         )}
-        keyExtractor={item => item.id.toString()}
+        keyExtractor={item => `fav-${item.id}`}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
       />
 
-      <View style={styles.footer}>
-        <View style={styles.footerContent}>
-          <AppText variant="body" weight="medium" align="center">
-            {favoriteProperties.length} properties in favorites
-          </AppText>
+      {compareMode && compareIds.length > 0 ? (
+        <View style={styles.footer}>
           <View style={styles.buttonRow}>
-            <AppButton 
-              variant="outline" 
+            <AppText variant="bodySmall" weight="semibold" style={styles.compareCount}>
+              {compareIds.length} of {MAX_COMPARE} selected
+            </AppText>
+            <AppButton
+              variant="primary"
               style={styles.flexButton}
-              onPress={() => router.push('/')}
+              isDisabled={compareIds.length < 2}
+              onPress={() => router.push('/compare' as Href)}
             >
+              Compare Now
+            </AppButton>
+          </View>
+        </View>
+      ) : (
+        <View style={styles.footer}>
+          <View style={styles.buttonRow}>
+            <AppButton variant="outline" style={styles.flexButton} onPress={() => router.push('/')}>
               Browse More
             </AppButton>
-            <AppButton 
-              variant="primary" 
+            <AppButton
+              variant="primary"
               style={styles.flexButton}
-              onPress={() => {
-                Alert.alert("Share", "Sharing functionality would open here.");
-              }}
-              leftIcon={<Ionicons name="share-outline" size={16} color="white" />}
+              onPress={handleShare}
+              leftIcon={<Ionicons name="share-outline" size={16} color={Colors.text.inverse} />}
             >
               Share List
             </AppButton>
           </View>
         </View>
-      </View>
+      )}
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#F9FAFB', // gray.50
-  },
+  safeArea: { flex: 1, backgroundColor: Colors.background.secondary },
   header: {
-    backgroundColor: 'white',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    backgroundColor: Colors.background.card,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm + 4,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB', // gray.200
+    borderBottomColor: Colors.border.light,
   },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-  },
-  backButton: {
-    padding: 4,
-  },
-  headerTitleContainer: {
-    flex: 1,
-  },
-  iconButton: {
-    padding: 8,
-  },
-  centerContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 24,
-  },
-  marginTop: {
-    marginTop: 24,
-  },
-  marginTopSmall: {
-    marginTop: 8,
-  },
-  actionButton: {
-    marginTop: 24,
-    width: 200,
-  },
-  cardContainer: {
-    position: 'relative',
-    marginBottom: 16,
-  },
-  favoriteButton: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    zIndex: 10,
-    backgroundColor: 'white',
-    borderRadius: 999,
-    padding: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.41,
-    elevation: 2,
-  },
-  listContent: {
-    padding: 16,
-    paddingBottom: 120, // Space for footer
-  },
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
+  iconButton: { padding: 4 },
+  iconButtonActive: { backgroundColor: Colors.primary[500], borderRadius: BorderRadius.md },
+  headerTitleContainer: { flex: 1, gap: 2 },
+
+  centerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: Spacing.lg },
+  spacedTop: { marginTop: Spacing.lg },
+  spacedSmall: { marginTop: Spacing.xs },
+  actionButton: { marginTop: Spacing.lg, minWidth: 200 },
+
+  cardWrapper: { paddingHorizontal: Spacing.md, marginBottom: Spacing.md },
+  listContent: { paddingTop: Spacing.md, paddingBottom: 100 },
+
   footer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'white',
+    backgroundColor: Colors.background.card,
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: Colors.border.light,
+    padding: Spacing.md,
+    ...Shadows.sm,
   },
-  footerContent: {
-    padding: 16,
-    gap: 12,
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  flexButton: {
-    flex: 1,
-  },
+  buttonRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+  flexButton: { flex: 1 },
+  compareCount: { flex: 1 },
 });
 
 export default FavoritesScreen;
