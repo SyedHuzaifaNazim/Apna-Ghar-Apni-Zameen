@@ -44,7 +44,7 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
 
 const styles = StyleSheet.create({
   overlayContainer: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 999,
   },
   container: {
@@ -54,7 +54,7 @@ const styles = StyleSheet.create({
   },
   overlay: {
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 1000,
   },
   content: {
