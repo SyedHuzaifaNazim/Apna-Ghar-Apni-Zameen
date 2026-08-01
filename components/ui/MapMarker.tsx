@@ -2,8 +2,9 @@ import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { Property } from '@/api/apiMock';
 import { Colors } from '@/constants/Colors';
+import { formatPrice } from '@/lib/format';
+import type { Property } from '@/types/property';
 import AppText from '../base/AppText';
 
 interface MapMarkerProps {
@@ -11,35 +12,26 @@ interface MapMarkerProps {
   isSelected?: boolean;
 }
 
-const formatPricePKR = (price: number) => {
-  if (price >= 10000000) {
-    return `Rs ${(price / 10000000).toFixed(1)} Cr`;
+/** Shared with the OpenStreetMap marker renderer (MapView.tsx/.web.tsx) so both stay in sync. */
+export const getMarkerColor = (listingType: string): string => {
+  switch (listingType) {
+    case 'For Sale':
+      return Colors.success?.[500] || '#10B981';
+    case 'For Rent':
+    case 'Short Term Rent':
+      return Colors.warning?.[500] || '#F59E0B';
+    case 'Auction':
+      return Colors.error?.[500] || '#EF4444';
+    default:
+      return Colors.primary[500];
   }
-  if (price >= 100000) {
-    return `Rs ${(price / 100000).toFixed(1)} L`;
-  }
-  return `Rs ${price.toLocaleString()}`;
 };
 
 const MapMarker: React.FC<MapMarkerProps> = ({
   property,
   isSelected = false,
 }) => {
-  const getMarkerColor = () => {
-    switch (property.listingType) {
-      case 'For Sale':
-        return Colors.success?.[500] || '#10B981';
-      case 'For Rent':
-      case 'Short Term Rent':
-        return Colors.warning?.[500] || '#F59E0B';
-      case 'Auction':
-        return Colors.error?.[500] || '#EF4444';
-      default:
-        return Colors.primary[500];
-    }
-  };
-
-  const markerColor = getMarkerColor();
+  const markerColor = getMarkerColor(property.listingType);
 
   if (isSelected) {
     return (
@@ -50,8 +42,8 @@ const MapMarker: React.FC<MapMarkerProps> = ({
               {property.title}
             </AppText>
             
-            <AppText variant="h4" weight="bold" style={{ color: Colors.primary[500] }}>
-              {formatPricePKR(property.price)}
+            <AppText variant="h4" weight="bold" color={Colors.primary[500]}>
+              {formatPrice(property.price)}
             </AppText>
             
             <View style={styles.badgeRow}>
@@ -85,11 +77,11 @@ const MapMarker: React.FC<MapMarkerProps> = ({
   return (
     <View style={styles.markerWrapper}>
       <View style={[styles.markerCircle, { backgroundColor: markerColor }]}>
-        <Ionicons name="home" size={16} color="white" />
+        <Ionicons name="home" size={16} color={Colors.text.inverse} />
         
         {property.isFeatured && (
           <View style={styles.starBadge}>
-            <Ionicons name="star" size={8} color="white" />
+            <Ionicons name="star" size={8} color={Colors.text.inverse} />
           </View>
         )}
       </View>
@@ -97,7 +89,7 @@ const MapMarker: React.FC<MapMarkerProps> = ({
       {/* Price Badge Below Marker */}
       <View style={styles.priceBadge}>
         <AppText variant="small" weight="semibold" align="center" style={styles.priceText}>
-          {formatPricePKR(property.price)}
+          {formatPrice(property.price)}
         </AppText>
       </View>
     </View>
@@ -111,7 +103,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   selectedCard: {
-    backgroundColor: 'white',
+    backgroundColor: Colors.background.card,
     borderRadius: 12,
     padding: 10,
     minWidth: 180,
@@ -150,7 +142,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   badgeText: {
-    color: 'white',
+    color: Colors.text.inverse,
     fontSize: 10,
   },
   // Default Marker Styles
@@ -167,7 +159,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: 'white',
+    borderColor: Colors.background.card,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
@@ -186,12 +178,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'white',
+    borderColor: Colors.background.card,
   },
   priceBadge: {
     position: 'absolute',
     bottom: 2,
-    backgroundColor: 'white',
+    backgroundColor: Colors.background.card,
     paddingHorizontal: 4,
     paddingVertical: 1,
     borderRadius: 4,
