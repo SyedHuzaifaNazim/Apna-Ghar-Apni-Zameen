@@ -1,195 +1,126 @@
 import { Ionicons } from '@expo/vector-icons';
+import { Href, useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import {
-  Alert,
-  Linking,
-  Modal,
-  StyleSheet,
-  TextInput,
-  View
-} from 'react-native';
+import { Alert, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
-import AppButton from '../../../components/base/AppButton';
-import AppText from '../../../components/base/AppText';
-import { Colors } from '../../../constants/Colors';
-import { BorderRadius } from '../../../constants/Layout';
-import { analyticsService } from '../../../services/analyticsService';
+import AppButton from '@/components/base/AppButton';
+import AppText from '@/components/base/AppText';
+import { Colors } from '@/constants/Colors';
+import { BorderRadius, Spacing } from '@/constants/Layout';
+import { ValidationRules } from '@/constants/Config';
+import { openEmail, openPhoneDialer, openSms, openWhatsApp } from '@/lib/contactLinks';
+import { analyticsService } from '@/services/analyticsService';
+import type { Property } from '@/types/property';
 
 interface ContactAgentProps {
-  property: {
-    id: number;
-    title: string;
-    price: number;
-    ownerDetails?: {
-        name: string;
-        phone: string;
-        email: string;
-        agencyName?: string;
-    }
-  };
+  property: Pick<Property, 'id' | 'title' | 'price' | 'ownerDetails'>;
 }
 
 const ContactAgent: React.FC<ContactAgentProps> = ({ property }) => {
-  const [isModalOpen, setIsModalOpen] = useState(false); 
-  
+  const router = useRouter();
+  const agent = property.ownerDetails;
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
     message: `Hi, I'm interested in the property: ${property.title} (Rs${property.price.toLocaleString()}). Please contact me with more details.`,
   });
-  const [loading, setLoading] = useState(false);
 
-  // Agent details use property.ownerDetails if available
-  const defaultAgent = {
-    name: 'Rajesh Kumar',
-    phone: '+923001234567',
-    email: 'rajesh.kumar@realestate.com',
-    company: 'Elite Properties',
-    rating: 4.8,
-    propertiesListed: 47,
-  };
-  
-  const agent = (property as any).ownerDetails || defaultAgent;
-
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: keyof typeof formData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const showSimpleAlert = (title: string, message: string) => {
-    Alert.alert(title, message);
-  };
+  const showSimpleAlert = (title: string, message: string) => Alert.alert(title, message);
 
   const handleCall = async () => {
-    try {
-      await analyticsService.track('agent_contact', {
-        method: 'call',
-        property_id: property.id,
-        agent_name: agent.name,
-      });
+    await analyticsService.track('agent_contact', { method: 'call', property_id: property.id, agent_name: agent.name });
+    await openPhoneDialer(agent.phone);
+  };
 
-      const url = `tel:${agent.phone}`;
-      const supported = await Linking.canOpenURL(url);
-      
-      if (supported) {
-        await Linking.openURL(url);
-      } else {
-        showSimpleAlert('Error', 'Calling is not supported on this device');
-      }
-    } catch (error) {
-      showSimpleAlert('Error', 'Failed to make call');
-    }
+  const handleSms = async () => {
+    await analyticsService.track('agent_contact', { method: 'sms', property_id: property.id, agent_name: agent.name });
+    const message = `Hi, I'm interested in the property: ${property.title} (Rs${property.price.toLocaleString()}).`;
+    await openSms(agent.phone, message);
   };
 
   const handleWhatsApp = async () => {
-    try {
-      await analyticsService.track('agent_contact', {
-        method: 'whatsapp',
-        property_id: property.id,
-        agent_name: agent.name,
-      });
-
-      const message = `Hi, I'm interested in the property: ${property.title} (Rs${property.price.toLocaleString()}). Please contact me with more details.`;
-      const url = `whatsapp://send?phone=${agent.phone}&text=${encodeURIComponent(message)}`;
-      
-      const supported = await Linking.canOpenURL(url);
-      
-      if (supported) {
-        await Linking.openURL(url);
-      } else {
-        showSimpleAlert('Error', 'WhatsApp is not installed');
-      }
-    } catch (error) {
-      showSimpleAlert('Error', 'Failed to open WhatsApp');
-    }
+    await analyticsService.track('agent_contact', { method: 'whatsapp', property_id: property.id, agent_name: agent.name });
+    const message = `Hi, I'm interested in the property: ${property.title} (Rs${property.price.toLocaleString()}). Please contact me with more details.`;
+    await openWhatsApp(agent.phone, message);
   };
 
   const handleEmail = async () => {
-    try {
-      await analyticsService.track('agent_contact', {
-        method: 'email',
-        property_id: property.id,
-        agent_name: agent.name,
-      });
+    await analyticsService.track('agent_contact', { method: 'email', property_id: property.id, agent_name: agent.name });
+    const subject = `Inquiry about ${property.title}`;
+    const body = `Hello ${agent.name},\n\nI am interested in the property: ${property.title} (Rs${property.price.toLocaleString()}).\n\nPlease contact me with more details.\n\nBest regards`;
+    await openEmail(agent.email, subject, body);
+  };
 
-      const subject = `Inquiry about ${property.title}`;
-      const body = `Hello ${agent.name},\n\nI am interested in the property: ${property.title} (Rs${property.price.toLocaleString()}).\n\nPlease contact me with more details.\n\nBest regards,\n${formData.name || 'Potential Buyer'}`;
-      
-      const url = `mailto:${agent.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-      
-      const supported = await Linking.canOpenURL(url);
-      
-      if (supported) {
-        await Linking.openURL(url);
-      } else {
-        showSimpleAlert('Error', 'Email app is not available');
-      }
-    } catch (error) {
-      showSimpleAlert('Error', 'Failed to open email');
+  const handleSendMessage = async () => {
+    const name = formData.name.trim();
+    const email = formData.email.trim();
+
+    if (!name || !formData.message.trim()) {
+      showSimpleAlert('Missing info', 'Please enter your name and a message.');
+      return;
     }
+    if (email && !ValidationRules.email.regex.test(email)) {
+      showSimpleAlert('Invalid email', 'Please enter a valid email address, or leave it blank.');
+      return;
+    }
+
+    await analyticsService.track('agent_contact', { method: 'form', property_id: property.id, agent_name: agent.name });
+
+    const subject = `Inquiry about ${property.title}`;
+    const contactLines = [email && `Email: ${email}`, formData.phone.trim() && `Phone: ${formData.phone.trim()}`]
+      .filter(Boolean)
+      .join('\n');
+    const body = `Hello ${agent.name},\n\n${formData.message.trim()}\n\nFrom: ${name}${contactLines ? `\n${contactLines}` : ''}`;
+
+    await openEmail(agent.email, subject, body);
   };
 
   const handleScheduleViewing = () => {
-    setIsModalOpen(true);
-    analyticsService.track('schedule_viewing_click', {
-      property_id: property.id,
-    });
-  };
-
-  const handleSubmitSchedule = async () => {
-    setLoading(true);
-    
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      await analyticsService.track('viewing_scheduled', {
-        property_id: property.id,
-        agent_name: agent.name,
-      });
-
-      showSimpleAlert('Viewing Scheduled!', 'The agent will contact you to confirm the details.');
-      
-      setIsModalOpen(false);
-    } catch (error) {
-      showSimpleAlert('Error', 'Failed to schedule viewing. Please try again.');
-    } finally {
-      setLoading(false);
-    }
+    analyticsService.track('schedule_viewing_click', { property_id: property.id });
+    Alert.alert('Coming soon', 'Scheduling a viewing directly in the app will be available soon. For now, contact the agent to arrange a time.');
   };
 
   return (
     <View style={styles.container}>
-      {/* Agent Info */}
       <View style={styles.section}>
-        <AppText variant="h4" weight="semibold">Contact Agent</AppText>
-        
-        <View style={styles.agentInfoRow}>
+        <AppText variant="h4" weight="semibold">
+          Contact Agent
+        </AppText>
+
+        <Pressable
+          style={({ pressed }) => [styles.agentInfoRow, pressed && styles.agentInfoRowPressed]}
+          onPress={() => router.push(`/agent/${agent.agentId}` as Href)}
+          accessibilityRole="button"
+          accessibilityLabel={`View ${agent.name}'s profile`}
+        >
           <View style={styles.agentAvatar}>
             <Ionicons name="person" size={24} color={Colors.primary[500]} />
           </View>
-          
+
           <View style={styles.agentTextContainer}>
-            <AppText variant="h5" weight="semibold">{agent.name}</AppText>
-            <AppText variant="body" color="secondary">{agent.company || 'Private Owner'}</AppText>
-            
-            <View style={styles.agentStatsRow}>
-              <View style={styles.agentStatItem}>
-                <Ionicons name="star" size={16} color={Colors.warning[500]} />
-                <AppText variant="small" weight="medium">{agent.rating || 'N/A'}</AppText>
-              </View>
-              <AppText variant="small" color="secondary">
-                {agent.propertiesListed || 0} properties
-              </AppText>
-            </View>
+            <AppText variant="h5" weight="semibold">
+              {agent.name}
+            </AppText>
+            <AppText variant="body" color="secondary">
+              {agent.agencyName || 'Private Owner'}
+            </AppText>
           </View>
-        </View>
+
+          <Ionicons name="chevron-forward" size={20} color={Colors.gray[400]} />
+        </Pressable>
       </View>
 
-      {/* Quick Actions */}
       <View style={styles.section}>
-        <AppText variant="body" weight="medium" style={styles.quickContactTitle}>Quick Contact</AppText>
-        
+        <AppText variant="body" weight="medium" style={styles.quickContactTitle}>
+          Quick Contact
+        </AppText>
+
         <View style={styles.quickContactButtons}>
           <AppButton
             variant="outline"
@@ -199,7 +130,7 @@ const ContactAgent: React.FC<ContactAgentProps> = ({ property }) => {
           >
             Call
           </AppButton>
-          
+
           <AppButton
             variant="outline"
             style={[styles.quickContactButton, { borderColor: Colors.social?.whatsapp || '#25D366' }]}
@@ -209,7 +140,16 @@ const ContactAgent: React.FC<ContactAgentProps> = ({ property }) => {
           >
             WhatsApp
           </AppButton>
-          
+
+          <AppButton
+            variant="outline"
+            style={styles.quickContactButton}
+            onPress={handleSms}
+            leftIcon={<Ionicons name="chatbox-ellipses" size={16} color={Colors.primary[500]} />}
+          >
+            SMS
+          </AppButton>
+
           <AppButton
             variant="outline"
             style={styles.quickContactButton}
@@ -221,154 +161,85 @@ const ContactAgent: React.FC<ContactAgentProps> = ({ property }) => {
         </View>
       </View>
 
-      {/* Schedule Viewing */}
       <View style={styles.section}>
         <AppButton
           variant="primary"
           onPress={handleScheduleViewing}
-          leftIcon={<Ionicons name="calendar" size={16} color="white" />}
+          leftIcon={<Ionicons name="calendar" size={16} color={Colors.text.inverse} />}
         >
           Schedule Viewing
         </AppButton>
-        
-        <AppText variant="small" color="secondary" align="center" style={styles.scheduleText}>
+
+        <AppText variant="bodySmall" color="secondary" align="center" style={styles.scheduleText}>
           Schedule a property viewing at your convenience
         </AppText>
       </View>
 
-      {/* Contact Form */}
       <View style={styles.section}>
-        <AppText variant="body" weight="medium">Send Message</AppText>
-        
+        <AppText variant="body" weight="medium">
+          Send Message
+        </AppText>
+
         <View style={styles.formVStack}>
           <TextInput
             placeholder="Your Name"
+            placeholderTextColor={Colors.gray[500]}
             value={formData.name}
-            onChangeText={(value) => handleInputChange('name', value)}
+            onChangeText={value => handleInputChange('name', value)}
             style={styles.input}
           />
-          
+
           <TextInput
-            placeholder="Your Email"
+            placeholder="Your Email (optional)"
+            placeholderTextColor={Colors.gray[500]}
             value={formData.email}
-            onChangeText={(value) => handleInputChange('email', value)}
+            onChangeText={value => handleInputChange('email', value)}
             style={styles.input}
+            autoCapitalize="none"
             keyboardType="email-address"
           />
-          
+
           <TextInput
-            placeholder="Your Phone"
+            placeholder="Your Phone (optional)"
+            placeholderTextColor={Colors.gray[500]}
             value={formData.phone}
-            onChangeText={(value) => handleInputChange('phone', value)}
+            onChangeText={value => handleInputChange('phone', value)}
             style={styles.input}
             keyboardType="phone-pad"
           />
-          
+
           <TextInput
             placeholder="Your Message"
+            placeholderTextColor={Colors.gray[500]}
             value={formData.message}
-            onChangeText={(value) => handleInputChange('message', value)}
+            onChangeText={value => handleInputChange('message', value)}
             style={[styles.input, styles.textArea]}
-            multiline={true}
+            multiline
             numberOfLines={4}
           />
-          
+
           <AppButton
             variant="primary"
-            onPress={handleEmail}
-            leftIcon={<Ionicons name="send" size={16} color="white" />}
+            onPress={handleSendMessage}
+            leftIcon={<Ionicons name="send" size={16} color={Colors.text.inverse} />}
           >
             Send Message
           </AppButton>
         </View>
       </View>
-
-      {/* Schedule Viewing Modal */}
-      <Modal visible={isModalOpen} transparent={true} animationType="fade" onRequestClose={() => setIsModalOpen(false)}>
-        <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-                <View style={styles.modalVStack}>
-                    <View style={styles.modalHeader}>
-                        <Ionicons name="calendar" size={48} color={Colors.primary[500]} />
-                        <AppText variant="h4" weight="bold" align="center">Schedule Viewing</AppText>
-                        <AppText variant="body" color="secondary" align="center">
-                            Choose your preferred date and time for property viewing
-                        </AppText>
-                    </View>
-
-                    <View style={styles.modalFormVStack}>
-                        <View style={styles.modalInputGroup}>
-                            <AppText variant="body" weight="medium">Preferred Date</AppText>
-                            <AppButton 
-                                variant="outline"
-                                style={styles.modalSelectButton}
-                                textStyle={styles.modalSelectButtonText}
-                                rightIcon={<Ionicons name="calendar" size={16} color={Colors.primary[500]} />}
-                                onPress={() => {}} // Placeholder
-                            >
-                                Select Date
-                            </AppButton>
-                        </View>
-
-                        <View style={styles.modalInputGroup}>
-                            <AppText variant="body" weight="medium">Preferred Time</AppText>
-                            <AppButton
-                                variant="outline"
-                                style={styles.modalSelectButton}
-                                textStyle={styles.modalSelectButtonText}
-                                rightIcon={<Ionicons name="time" size={16} color={Colors.primary[500]} />}
-                                onPress={() => {}} // Placeholder
-                            >
-                                Select Time
-                            </AppButton>
-                        </View>
-
-                        <TextInput
-                            placeholder="Additional Notes (Optional)"
-                            style={styles.input}
-                        />
-                    </View>
-
-                    <View style={styles.modalButtonRow}>
-                        <AppButton
-                            variant="outline"
-                            style={styles.modalButton}
-                            onPress={() => setIsModalOpen(false)}
-                        >
-                            Cancel
-                        </AppButton>
-                        <AppButton
-                            variant="primary"
-                            style={styles.modalButton}
-                            onPress={handleSubmitSchedule}
-                            isLoading={loading}
-                        >
-                            Schedule
-                        </AppButton>
-                    </View>
-                </View>
-            </View>
-        </View>
-      </Modal>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
-    backgroundColor: 'white',
+    padding: Spacing.lg,
+    backgroundColor: Colors.background.card,
     borderRadius: BorderRadius.xl,
   },
-  section: {
-    marginBottom: 24,
-    gap: 16,
-  },
-  agentInfoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-  },
+  section: { marginBottom: Spacing.lg, gap: Spacing.md },
+  agentInfoRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
+  agentInfoRowPressed: { opacity: 0.7 },
   agentAvatar: {
     width: 64,
     height: 64,
@@ -377,103 +248,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  agentTextContainer: {
-    flex: 1,
-    gap: 4,
-  },
-  agentStatsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginTop: 4,
-  },
-  agentStatItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  quickContactTitle: {
-      marginBottom: 0,
-  },
-  quickContactButtons: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  quickContactButton: {
-    flex: 1,
-    borderColor: Colors.primary[500],
-    borderWidth: 1,
-  },
-  scheduleText: {
-    textAlign: 'center',
-  },
-  formVStack: {
-    gap: 12,
-    marginTop: 12,
-  },
+  agentTextContainer: { flex: 1, gap: 4 },
+  quickContactTitle: { marginBottom: 0 },
+  quickContactButtons: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
+  quickContactButton: { minWidth: '47%', flexGrow: 1, borderColor: Colors.primary[500], borderWidth: 1 },
+  scheduleText: { textAlign: 'center' },
+  formVStack: { gap: Spacing.sm, marginTop: Spacing.sm },
   input: {
     borderWidth: 1,
     borderColor: Colors.gray[300],
     borderRadius: BorderRadius.lg,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm + 4,
     fontSize: 16,
     color: Colors.text.primary,
     backgroundColor: Colors.background.card,
   },
-  textArea: {
-    minHeight: 100,
-    textAlignVertical: 'top',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 24,
-    width: '100%',
-  },
-  modalVStack: {
-      gap: 24,
-      alignItems: 'center',
-  },
-  modalHeader: {
-    gap: 8,
-    alignItems: 'center',
-  },
-  modalFormVStack: {
-      gap: 16,
-      width: '100%',
-  },
-  modalInputGroup: {
-    gap: 8,
-  },
-  modalSelectButton: {
-    backgroundColor: Colors.background.card,
-    borderColor: Colors.gray[300],
-    borderWidth: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: BorderRadius.lg,
-  },
-  modalSelectButtonText: {
-    color: Colors.text.primary,
-    fontWeight: 'normal',
-  },
-  modalButtonRow: {
-    flexDirection: 'row',
-    gap: 12,
-    width: '100%',
-  },
-  modalButton: {
-    flex: 1,
-  },
+  textArea: { minHeight: 100, textAlignVertical: 'top' },
 });
 
 export default ContactAgent;
