@@ -1,156 +1,155 @@
-import { authApi } from '@/services/apiService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
-import { Alert } from 'react-native';
+import React, { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
-// ------------------------------------------------------------------
-// INTERFACES
-// ------------------------------------------------------------------
-interface User {
-  id: string | number;
-  username: string;
-  email: string;
-  name: string;
-  phone?: string;
-  role: 'buyer' | 'seller' | 'agent' | 'admin';
-  avatar?: string;
-  token?: string;
+import { apiService, ApiError, AuthUser, USER_KEY } from '@/services/apiService';
+
+/**
+ * Roles are finalized in Task 3 (backend-enforced). Kept as a widened string
+ * union so existing sessions with unknown roles don't break the app.
+ */
+export type UserRole = 'buyer' | 'agent' | 'admin' | (string & {});
+
+export interface User extends AuthUser {
+  role: UserRole;
 }
 
-interface AuthContextProps {
+interface AuthContextValue {
   user: User | null;
-  isLoading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
-  signUp: (userData: any) => Promise<void>;
+  /** True only while restoring a persisted session at cold start. */
+  isRestoring: boolean;
+  /** True during an in-flight sign-in / sign-up / update. */
+  isSubmitting: boolean;
+  isAuthenticated: boolean;
+  signIn: (email: string, password: string) => Promise<User>;
+  signUp: (input: SignUpInput) => Promise<void>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<User>) => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextProps | undefined>(undefined);
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
-
-interface AuthProviderProps {
-  children: ReactNode;
+export interface SignUpInput {
+  name: string;
+  email: string;
+  password: string;
+  phone?: string;
+  role?: UserRole;
 }
 
-// ------------------------------------------------------------------
-// PROVIDER
-// ------------------------------------------------------------------
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-  // 1. CHECK LOGIN STATUS ON APP START
+export const useAuth = (): AuthContextValue => {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used within an AuthProvider');
+  return ctx;
+};
+
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [isRestoring, setIsRestoring] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Restore a persisted session on cold start.
   useEffect(() => {
-    const loadUserFromStorage = async () => {
+    let cancelled = false;
+
+    (async () => {
       try {
-        const userJson = await AsyncStorage.getItem('user_session');
-        const token = await AsyncStorage.getItem('auth_token');
-        
-        if (userJson && token) {
-          setUser(JSON.parse(userJson));
+        const [storedUser, token] = await Promise.all([
+          AsyncStorage.getItem(USER_KEY),
+          apiService.getToken(),
+        ]);
+
+        // Both are required: a user blob without a token can't authenticate.
+        if (!cancelled && storedUser && token) {
+          setUser(JSON.parse(storedUser) as User);
+        } else if (!cancelled && (storedUser || token)) {
+          // Half-written session -> clear it rather than leave a broken state.
+          await apiService.clearSession();
         }
-      } catch (error) {
-        console.error('Failed to restore user session:', error);
+      } catch {
+        await apiService.clearSession().catch(() => undefined);
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsRestoring(false);
       }
+    })();
+
+    return () => {
+      cancelled = true;
     };
-    loadUserFromStorage();
   }, []);
 
-  // 2. SIGN IN
-  const signIn = async (email: string, password: string) => {
-    setIsLoading(true);
+  const persistUser = useCallback(async (next: User) => {
+    setUser(next);
+    await AsyncStorage.setItem(USER_KEY, JSON.stringify(next));
+  }, []);
+
+  /**
+   * Throws ApiError on failure so the calling screen can render an inline
+   * message. (Previously this raised a native Alert from inside the context,
+   * which made good form UX impossible.)
+   */
+  const signIn = useCallback(
+    async (email: string, password: string): Promise<User> => {
+      setIsSubmitting(true);
+      try {
+        const { user: authUser } = await apiService.login(email, password);
+        const next: User = { ...authUser, role: authUser.role ?? 'buyer' };
+        await persistUser(next);
+        return next;
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [persistUser]
+  );
+
+  const signUp = useCallback(async (input: SignUpInput): Promise<void> => {
+    setIsSubmitting(true);
     try {
-      const response = await authApi.login(email, password);
-      
-      const { token, user_email, user_nicename, user_display_name } = response.data;
-
-      const userPayload: User = {
-        id: response.data.id || 0,
-        username: user_nicename,
-        email: user_email,
-        name: user_display_name,
-        role: 'buyer', 
-        token: token,
-      };
-
-      setUser(userPayload);
-      await AsyncStorage.setItem('user_session', JSON.stringify(userPayload));
-      
-    } catch (error: any) {
-      console.error('Sign-in error:', error);
-      Alert.alert('Login Failed', error.message || 'Invalid credentials');
-      throw error;
+      await apiService.register(input);
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
-  };
+  }, []);
 
-  // 3. SIGN UP
-  const signUp = async (userData: any) => {
-    setIsLoading(true);
-    try {
-      await authApi.register(userData);
-      Alert.alert('Success', 'Account created! Please log in.');
-    } catch (error: any) {
-      console.error('Sign-up error:', error);
-      Alert.alert('Registration Failed', error.message);
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // 4. SIGN OUT
-  const signOut = async () => {
-    setIsLoading(true);
+  const signOut = useCallback(async (): Promise<void> => {
+    setIsSubmitting(true);
     try {
       setUser(null);
-      await AsyncStorage.multiRemove(['user_session', 'auth_token']);
-    } catch (error) {
-      console.error('Sign-out error:', error);
+      await apiService.logout();
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
-  };
+  }, []);
 
-  // 5. UPDATE PROFILE
-  const updateProfile = async (updates: Partial<User>) => {
-    if (!user) return;
-    setIsLoading(true);
+  const updateProfile = useCallback(
+    async (updates: Partial<User>): Promise<void> => {
+      if (!user) throw new ApiError('You must be signed in to update your profile.', 401, 'UNAUTHORIZED');
 
-    try {
-      // Optimistic update
-      const updatedUserPayload: User = { ...user, ...updates };
-      setUser(updatedUserPayload);
-      await AsyncStorage.setItem('user_session', JSON.stringify(updatedUserPayload));
-      Alert.alert("Success", "Profile updated successfully!");
-      
-    } catch (error: any) {
-      console.error('Profile update error:', error);
-      Alert.alert('Error', error.message || "Could not update profile");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      setIsSubmitting(true);
+      try {
+        const { name, phone } = updates;
+        const saved = await apiService.updateProfile({ name, phone });
+        await persistUser({ ...user, ...saved, role: saved.role ?? user.role });
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [user, persistUser]
+  );
 
-  const value: AuthContextProps = {
-    user,
-    isLoading,
-    signIn,
-    signUp,
-    signOut,
-    updateProfile,
-  };
+  const value = useMemo<AuthContextValue>(
+    () => ({
+      user,
+      isRestoring,
+      isSubmitting,
+      isAuthenticated: !!user,
+      signIn,
+      signUp,
+      signOut,
+      updateProfile,
+    }),
+    [user, isRestoring, isSubmitting, signIn, signUp, signOut, updateProfile]
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
