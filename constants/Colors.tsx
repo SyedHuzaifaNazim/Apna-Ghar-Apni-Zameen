@@ -1,48 +1,48 @@
-// Real Estate Color Palette (Green + White Theme)
+// Real Estate Color Palette — deep forest green (brand) + warm gold (accent)
 export const Colors = {
-  // Primary Colors (Brand Green)
+  // Primary Colors (Brand Green) — deepened for a more premium, editorial feel
   primary: {
-    50:  '#e8f5e9',
-    100: '#c8e6c9',
-    200: '#a5d6a7',
-    300: '#81c784',
-    400: '#66bb6a',
-    500: '#43a047', // Main Brand Green (real estate tone)
-    600: '#388e3c',
-    700: '#2e7d32',
-    800: '#1b5e20',
-    900: '#0d3d14',
+    50: '#E9F3EA',
+    100: '#C7E2CA',
+    200: '#A1CFA7',
+    300: '#7ABB82',
+    400: '#5AA863',
+    500: '#2F7A34', // Main Brand Green
+    600: '#276A2C',
+    700: '#1F5924',
+    800: '#17471C',
+    900: '#0F3413',
   },
 
-  // Secondary Colors (Soft Natural Real Estate Accents)
+  // Secondary/Accent Colors (Warm Gold) — used for CTAs, "Featured" badges, price highlights
   secondary: {
-    50:  '#f1f8e9',
-    100: '#dcedc8',
-    200: '#c5e1a5',
-    300: '#aed581',
-    400: '#9ccc65',
-    500: '#8bc34a',
-    600: '#7cb342',
-    700: '#689f38',
-    800: '#558b2f',
-    900: '#33691e',
+    50: '#FDF7E7',
+    100: '#FAECC0',
+    200: '#F5DD93',
+    300: '#EFCC63',
+    400: '#E5BB3D',
+    500: '#D4A017', // Main accent gold
+    600: '#B8890F',
+    700: '#96700C',
+    800: '#755709',
+    900: '#523D06',
   },
 
-  // Success
+  // Success (classic, brighter green — distinct from the deeper brand primary)
   success: {
     50: '#e8f5e9',
     100: '#c8e6c9',
     200: '#a5d6a7',
     300: '#81c784',
     400: '#66bb6a',
-    500: '#4caf50',
-    600: '#43a047',
-    700: '#388e3c',
-    800: '#2e7d32',
-    900: '#1b5e20',
+    500: '#43a047',
+    600: '#388e3c',
+    700: '#2e7d32',
+    800: '#1b5e20',
+    900: '#0d3d14',
   },
 
-  // Warning (Real estate yellow tones)
+  // Warning
   warning: {
     50: '#fffde7',
     100: '#fff9c4',
@@ -72,7 +72,7 @@ export const Colors = {
 
   // Neutral Colors
   gray: {
-    50:  '#fafafa',
+    50: '#fafafa',
     100: '#f5f5f5',
     200: '#eeeeee',
     300: '#e0e0e0',
@@ -84,22 +84,24 @@ export const Colors = {
     900: '#212121',
   },
 
-  // Backgrounds for real estate UI
+  // Backgrounds — warm off-white instead of stark white
   background: {
-    primary: '#ffffff',   // white
-    secondary: '#f8faf8', // very light green tint
-    tertiary: '#eef3ee',  // soft neutral
-    inverse: '#1a1a1a',
-    card: '#ffffff',
+    primary: '#FAF9F6',
+    secondary: '#F5F2EA',
+    tertiary: '#EDEAE1',
+    inverse: '#1A1A1A',
+    card: '#FFFFFF',
   },
 
   // Text Colors
   text: {
-    primary: '#222222',
-    secondary: '#388e3c',
+    primary: '#211D18',
+    // Was Colors.primary[500] (green) — every "secondary" (muted/caption) text
+    // in the app was rendering brand-green instead of a neutral gray.
+    secondary: '#6B6558',
     disabled: '#9e9e9e',
     inverse: '#ffffff',
-    link: '#2e7d32',
+    link: '#1F5924',
   },
 
   // Border Colors
@@ -107,7 +109,7 @@ export const Colors = {
     light: '#e0e0e0',
     medium: '#bdbdbd',
     dark: '#757575',
-    focus: '#43a047',
+    focus: '#2F7A34',
   },
 
   // Shadow Colors
@@ -115,30 +117,32 @@ export const Colors = {
     light: 'rgba(0, 0, 0, 0.05)',
     medium: 'rgba(0, 0, 0, 0.1)',
     dark: 'rgba(0, 0, 0, 0.2)',
-    accent: 'rgba(76, 175, 80, 0.2)',
+    accent: 'rgba(47, 122, 52, 0.2)',
   },
 
   // Statuses used in real estate apps
   status: {
-    forSale: '#43a047',      // green
-    forRent: '#8bc34a',      // lighter green
-    featured: '#689f38',     // premium green
-    sold: '#f44336',         // red
-    reserved: '#fdd835',     // gold
-    available: '#4caf50',
+    forSale: '#2F7A34', // brand green
+    forRent: '#5AA863', // lighter green
+    featured: '#D4A017', // gold — was a near-identical green, indistinguishable from "for sale"
+    sold: '#f44336',
+    reserved: '#D4A017',
+    available: '#43a047',
   },
-info: {
-  50: '#e8f5e9',
-  100: '#c8e6c9',
-  200: '#a5d6a7',
-  300: '#81c784',
-  400: '#66bb6a',
-  500: '#4caf50',
-  600: '#43a047',
-  700: '#388e3c',
-  800: '#2e7d32',
-  900: '#1b5e20',
-},
+
+  info: {
+    50: '#e3f2fd',
+    100: '#bbdefb',
+    200: '#90caf9',
+    300: '#64b5f6',
+    400: '#42a5f5',
+    500: '#2196f3',
+    600: '#1e88e5',
+    700: '#1976d2',
+    800: '#1565c0',
+    900: '#0d47a1',
+  },
+
   // Social Colors
   social: {
     facebook: '#1877f2',
@@ -148,54 +152,17 @@ info: {
     twitter: '#1da1f2',
     linkedin: '#0a66c2',
   },
-rose: {
-  50: '#fff3f4',
-  100: '#ffebee',
-  200: '#ffcdd2',
-  300: '#ef9a9a',
-  400: '#e57373',
-  500: '#ef5350',
-  600: '#e53935',
-  700: '#d32f2f',
-  800: '#c62828',
-  900: '#b71c1c',
-},
-violet: {
-  50: '#f3e5f5',
-  100: '#e1bee7',
-  200: '#ce93d8',
-  300: '#ba68c8',
-  400: '#ab47bc',
-  500: '#9c27b0',
-  600: '#8e24aa',
-  700: '#7b1fa2',
-  800: '#6a1b9a',
-  900: '#4a148c',
-},
-amber: {
-  50: '#fff8e1',
-  100: '#fff5d6',
-  200: '#fff2bd',
-  300: '#ffef99',
-  400: '#ffe975',
-  500: '#ffe550',
-  600: '#ffd12d',
-  700: '#ffbd25',
-  800: '#ff9f17',
-  900: '#ff9f17',
-},
 
-  // Property Type Colors
+  // Property Type Colors — differentiated shades of the new primary scale
   propertyType: {
-    residential: '#4caf50',
-    commercial: '#689f38',
-    industrial: '#2e7d32',
-    plot: '#8bc34a',
-    villa: '#43a047',
-    apartment: '#66bb6a',
+    residential: '#2F7A34',
+    commercial: '#1F5924',
+    industrial: '#17471C',
+    plot: '#5AA863',
+    villa: '#276A2C',
+    apartment: '#7ABB82',
   },
 } as const;
-
 
 // Type exports
 export type ColorPalette = typeof Colors;
@@ -244,10 +211,10 @@ export const getContrastColor = (backgroundColor: string): string => {
   const r = parseInt(hex.substring(0, 2), 16);
   const g = parseInt(hex.substring(2, 4), 16);
   const b = parseInt(hex.substring(4, 6), 16);
-  
+
   // Calculate relative luminance
   const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  
+
   return luminance > 0.5 ? Colors.text.primary : Colors.text.inverse;
 };
 
