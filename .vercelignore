@@ -1,0 +1,17 @@
+# This repo's Vercel project ("farsh-e-zameen-backend") has its Root
+# Directory set to "backend" — only backend/ is actually deployed. Everything
+# else here (the Expo app, its node_modules, native build output) has no
+# business being uploaded to a Vercel deploy, so exclude it explicitly.
+node_modules/
+android/
+ios/
+.expo/
+.expo-shared/
+dist/
+web-build/
+*.apk
+*.aab
+*.jks
+.git/
+.idea/
+.vscode/
