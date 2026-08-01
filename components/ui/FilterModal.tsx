@@ -1,12 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
-import React, { useEffect, useMemo, useState } from 'react';
-import { Modal, SafeAreaView, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { Modal, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import AppButton from '@/components/base/AppButton';
 import AppText from '@/components/base/AppText';
 import { Colors } from '@/constants/Colors';
-import { BorderRadius } from '@/constants/Layout';
+import { BorderRadius, Spacing } from '@/constants/Layout';
 import { FilterOptions } from '@/hooks/useFilterProperties';
 
 // --- Constants ---
@@ -66,24 +67,26 @@ const FilterModal: React.FC<FilterModalProps> = ({ isVisible, onClose, onApplyFi
   const [selectedCities, setSelectedCities] = useState(currentFilters.cities || []);
   const [selectedAreas, setSelectedAreas] = useState(currentFilters.areas || []);
 
-  // Sync local state when the modal opens or parent filters change
-  useEffect(() => {
-    if (isVisible) {
-      const initialMin = Math.max(currentFilters.minPrice ?? 0, ABSOLUTE_MIN);
-      const initialMax = Math.min(currentFilters.maxPrice ?? 0, ABSOLUTE_MAX);
-      
-      setMinPrice(initialMin);
-      setMaxPrice(initialMax);
-      setSelectedBedrooms(currentFilters.bedrooms ?? 0);
-      setSelectedType(currentFilters.propertyCategory || '');
-      setSelectedAmenities(currentFilters.amenities || []);
-      
-      // Sync Location States
-      setSelectedCities(currentFilters.cities || []);
-      setSelectedAreas(currentFilters.areas || []);
-    }
-  }, [currentFilters, isVisible]);
-  
+  // Sync local draft state from the parent's committed filters whenever the
+  // modal opens or the filters change while open. Done during render (guarded
+  // by a ref of the last-synced values) rather than in an effect, so the
+  // modal never flashes stale values before syncing.
+  const [lastSynced, setLastSynced] = useState({ filters: currentFilters, visible: isVisible });
+  if (isVisible && (currentFilters !== lastSynced.filters || isVisible !== lastSynced.visible)) {
+    setLastSynced({ filters: currentFilters, visible: isVisible });
+
+    const initialMin = Math.max(currentFilters.minPrice ?? 0, ABSOLUTE_MIN);
+    const initialMax = Math.min(currentFilters.maxPrice ?? 0, ABSOLUTE_MAX);
+
+    setMinPrice(initialMin);
+    setMaxPrice(initialMax);
+    setSelectedBedrooms(currentFilters.bedrooms ?? 0);
+    setSelectedType(currentFilters.propertyCategory || '');
+    setSelectedAmenities(currentFilters.amenities || []);
+    setSelectedCities(currentFilters.cities || []);
+    setSelectedAreas(currentFilters.areas || []);
+  }
+
   // --- Price Handlers ---
   const handleMinSlidingComplete = (value: number) => {
       const roundedValue = Math.round(value / PRICE_STEP) * PRICE_STEP;
@@ -193,9 +196,9 @@ const FilterModal: React.FC<FilterModalProps> = ({ isVisible, onClose, onApplyFi
   };
 
   const renderPillButton = (
-    label: string, 
-    value: string | number, 
-    isActive: boolean, 
+    label: string,
+    value: string | number,
+    isActive: boolean,
     onPress: (value: any) => void,
     isSmall: boolean = false
   ) => (
@@ -367,7 +370,7 @@ const FilterModal: React.FC<FilterModalProps> = ({ isVisible, onClose, onApplyFi
                                 <Ionicons 
                                     name={isActive ? 'checkmark-circle' : 'square-outline'} 
                                     size={16} 
-                                    color={isActive ? 'white' : Colors.primary[500]}
+                                    color={isActive ? Colors.text.inverse : Colors.primary[500]}
                                 />
                                 <AppText 
                               variant="small"
@@ -415,7 +418,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border.light,
-    backgroundColor: 'white',
+    backgroundColor: Colors.background.card,
   },
   modalTitle: {
     fontSize: 24,
@@ -428,9 +431,9 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   section: {
-    marginBottom: 24,
-    padding: 16,
-    backgroundColor: 'white',
+    marginBottom: Spacing.lg,
+    padding: Spacing.md,
+    backgroundColor: Colors.background.card,
     borderRadius: BorderRadius.lg,
     borderWidth: 1,
     borderColor: Colors.border.light,
@@ -483,7 +486,7 @@ const styles = StyleSheet.create({
     color: Colors.text.primary,
   },
   pillTextActive: {
-    color: 'white',
+    color: Colors.text.inverse,
   },
   amenityPill: {
     flexDirection: 'row',
@@ -527,10 +530,10 @@ const styles = StyleSheet.create({
   // Footer Styles
   footer: {
     flexDirection: 'row',
-    padding: 16,
+    padding: Spacing.md,
     borderTopWidth: 1,
     borderTopColor: Colors.border.light,
-    backgroundColor: 'white',
+    backgroundColor: Colors.background.card,
     justifyContent: 'space-between',
   },
   resetButton: {
