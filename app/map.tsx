@@ -1,54 +1,70 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import * as Location from 'expo-location';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { SafeAreaView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-// --- THE FIX IS HERE ---
-// OLD (Deleted): import MapView, { Marker, PROVIDER_GOOGLE, Region } from 'react-native-maps';
-// NEW (Added):
-import MapView, { Marker, PROVIDER_GOOGLE, Region } from '@/components/ui/MapView';
-// -----------------------
-
-import { Property } from '@/api/apiMock'; // Updated to use your new Types file
-import MapMarker from '@/components/ui/MapMarker';
+import FilterModal from '@/components/ui/FilterModal';
+import { getMarkerColor } from '@/components/ui/MapMarker';
+import MapView from '@/components/ui/MapView';
+import type { MapPropertyMarker, MapViewHandle, Region } from '@/components/ui/mapTypes';
 import PropertyCard from '@/components/ui/PropertyCard';
 import { Colors } from '@/constants/Colors';
+import { BorderRadius, Shadows, Spacing } from '@/constants/Layout';
 import { useFetchProperties } from '@/hooks/useFetchProperties';
+import { useFilterProperties } from '@/hooks/useFilterProperties';
+import { formatPrice } from '@/lib/format';
+import type { Property } from '@/types/property';
+
+const DEFAULT_REGION: Region = {
+  latitude: 24.8607,
+  longitude: 67.0011,
+  latitudeDelta: 0.2,
+  longitudeDelta: 0.2,
+};
 
 const MapScreen = () => {
-  const { properties } = useFetchProperties();
+  // Map pins want the whole pool at once, not one infinite-scroll page at a time.
+  const { properties } = useFetchProperties({ paginate: false });
   const router = useRouter();
-  const mapRef = useRef<any>(null); // Use 'any' to handle the Web wrapper ref difference
+  const mapRef = useRef<MapViewHandle>(null);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
+  const [locationGranted, setLocationGranted] = useState(false);
 
-  // Filter properties based on search
-  const filteredProperties = useMemo(() => {
-    if (!searchQuery) return properties;
-    
+  // Declaring the permission in app.config.js only lists it for install-time
+  // review — it still has to be requested at runtime before the "my location"
+  // blue dot / button will do anything.
+  useEffect(() => {
+    Location.requestForegroundPermissionsAsync()
+      .then(({ status }) => setLocationGranted(status === 'granted'))
+      .catch(() => setLocationGranted(false));
+  }, []);
+
+  const { filteredProperties: filterResults, activeFilters, filterCount, updateFilters } =
+    useFilterProperties(properties);
+
+  const searched = useMemo(() => {
+    if (!searchQuery) return filterResults;
     const query = searchQuery.toLowerCase();
-    return properties.filter(property => 
-      property.title.toLowerCase().includes(query) ||
-      property.address.city.toLowerCase().includes(query) ||
-      property.address.line1.toLowerCase().includes(query) ||
-      property.address.area.toLowerCase().includes(query)
+    return filterResults.filter(
+      property =>
+        property.title.toLowerCase().includes(query) ||
+        property.address.city.toLowerCase().includes(query) ||
+        property.address.line1.toLowerCase().includes(query) ||
+        property.address.area.toLowerCase().includes(query)
     );
-  }, [properties, searchQuery]);
+  }, [filterResults, searchQuery]);
 
-  // Calculate initial region (Default View)
   const initialRegion: Region = useMemo(() => {
-    const defaultKarachi = {
-      latitude: 24.8607,
-      longitude: 67.0011,
-      latitudeDelta: 0.2,
-      longitudeDelta: 0.2,
-    };
-
-    if (properties.length === 0) return defaultKarachi;
+    if (properties.length === 0) return DEFAULT_REGION;
 
     const latitudes = properties.map(p => p.address.latitude);
     const longitudes = properties.map(p => p.address.longitude);
-    
+
     const minLat = Math.min(...latitudes);
     const maxLat = Math.max(...latitudes);
     const minLng = Math.min(...longitudes);
@@ -62,38 +78,44 @@ const MapScreen = () => {
     };
   }, [properties]);
 
-  // EFFECT: Auto-zoom to search results
   useEffect(() => {
-    if (filteredProperties.length > 0 && mapRef.current && mapRef.current.fitToCoordinates) {
-      const coordinates = filteredProperties.map(p => ({
+    if (searched.length > 0 && mapRef.current?.fitToCoordinates) {
+      const coordinates = searched.map(p => ({
         latitude: p.address.latitude,
         longitude: p.address.longitude,
       }));
 
-      // Animate map to fit all filtered markers
       mapRef.current.fitToCoordinates(coordinates, {
         edgePadding: { top: 100, right: 50, bottom: 200, left: 50 },
         animated: true,
       });
     }
-  }, [filteredProperties]);
+  }, [searched]);
 
-  const handleMarkerPress = (property: Property) => {
-    setSelectedProperty(property);
+  const markers = useMemo<MapPropertyMarker[]>(
+    () =>
+      searched.map(property => ({
+        id: property.id,
+        latitude: property.address.latitude,
+        longitude: property.address.longitude,
+        label: formatPrice(property.price),
+        color: getMarkerColor(property.listingType),
+        isFeatured: property.isFeatured,
+      })),
+    [searched]
+  );
+
+  const handleMarkerPress = (id: number) => {
+    const property = searched.find(p => p.id === id);
+    if (property) setSelectedProperty(property);
   };
 
   return (
-    <SafeAreaView style={[styles.flex1, { backgroundColor: 'white' }]}>
-      {/* Search Bar */}
+    <SafeAreaView style={styles.flex1} edges={[]}>
       <View style={styles.searchBar}>
-        <View style={styles.searchBarHStack}>
+        <View style={styles.searchBarRow}>
           <View style={styles.inputContainer}>
-            <Ionicons 
-              name="search" 
-              size={20} 
-              color={Colors.gray[500]} 
-              style={styles.inputIcon}
-            />
+            <Ionicons name="search" size={20} color={Colors.gray[500]} style={styles.inputIcon} />
             <TextInput
               placeholder="Search city, area, or property..."
               value={searchQuery}
@@ -104,47 +126,31 @@ const MapScreen = () => {
           </View>
           <TouchableOpacity
             style={styles.filterButton}
-            onPress={() => { router.push('/modal'); }}
+            onPress={() => setShowFilters(true)}
             activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Open filters"
           >
-            <Ionicons name="options-outline" size={24} color="white" />
+            <Ionicons name="options-outline" size={22} color={Colors.text.inverse} />
+            {filterCount > 0 && <View style={styles.filterDot} />}
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Map */}
       <View style={styles.flex1}>
         <MapView
           ref={mapRef}
           style={styles.flex1}
-          provider={PROVIDER_GOOGLE}
           initialRegion={initialRegion}
-          showsUserLocation={true}
-          showsMyLocationButton={true}
-          onPress={() => setSelectedProperty(null)} // Click map to close card
-        >
-          {filteredProperties.map(property => (
-            <Marker
-              key={property.id}
-              coordinate={{
-                latitude: property.address.latitude,
-                longitude: property.address.longitude,
-              }}
-              onPress={(e: any) => {
-                e.stopPropagation(); // Stop map click event
-                handleMarkerPress(property);
-              }}
-            >
-              <MapMarker 
-                property={property} 
-                isSelected={selectedProperty?.id === property.id}
-              />
-            </Marker>
-          ))}
-        </MapView>
+          showsUserLocation={locationGranted}
+          showsMyLocationButton={locationGranted}
+          onPress={() => setSelectedProperty(null)}
+          markers={markers}
+          selectedMarkerId={selectedProperty?.id ?? null}
+          onMarkerPress={handleMarkerPress}
+        />
       </View>
 
-      {/* Property Info Modal */}
       {selectedProperty && (
         <View style={styles.cardContainer}>
           <View style={styles.closeButtonContainer}>
@@ -152,102 +158,78 @@ const MapScreen = () => {
               onPress={() => setSelectedProperty(null)}
               style={styles.closeButton}
               activeOpacity={0.9}
+              accessibilityRole="button"
+              accessibilityLabel="Close property preview"
             >
               <Ionicons name="close" size={20} color={Colors.gray[600]} />
             </TouchableOpacity>
           </View>
-          
-          <PropertyCard 
-            property={selectedProperty} 
+
+          <PropertyCard
+            property={selectedProperty}
             variant="default"
+            onPress={p => router.push({ pathname: '/listing/[id]', params: { id: String(p.id) } })}
           />
         </View>
       )}
+
+      <FilterModal
+        isVisible={showFilters}
+        onClose={() => setShowFilters(false)}
+        currentFilters={activeFilters}
+        onApplyFilters={filters => {
+          updateFilters(filters);
+          setShowFilters(false);
+        }}
+      />
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  flex1: {
-    flex: 1,
-  },
-  searchBar: {
-    position: 'absolute',
-    top: 50,
-    left: 0,
-    right: 0,
-    paddingHorizontal: 16,
-    paddingBottom: 10,
-    zIndex: 10,
-  },
-  searchBarHStack: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
+  flex1: { flex: 1, backgroundColor: Colors.background.card },
+  searchBar: { position: 'absolute', top: Spacing.md, left: 0, right: 0, paddingHorizontal: Spacing.md, zIndex: 10 },
+  searchBarRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   inputContainer: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'white',
-    borderRadius: 12,
+    backgroundColor: Colors.background.card,
+    borderRadius: BorderRadius.lg,
     height: 50,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 4,
+    ...Shadows.md,
   },
-  inputIcon: {
-    marginLeft: 12,
-  },
-  input: {
-    flex: 1,
-    height: '100%',
-    fontSize: 16,
-    paddingHorizontal: 8,
-    color: Colors.text.primary,
-  },
+  inputIcon: { marginLeft: Spacing.md },
+  input: { flex: 1, height: '100%', fontSize: 16, paddingHorizontal: Spacing.sm, color: Colors.text.primary },
   filterButton: {
     backgroundColor: Colors.primary[500],
-    borderRadius: 12,
+    borderRadius: BorderRadius.lg,
     width: 50,
     height: 50,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 4,
+    ...Shadows.md,
   },
-  // Popup Container
-  cardContainer: {
-    position: 'absolute', 
-    bottom: 30, 
-    left: 0, 
-    right: 0, 
-    zIndex: 100,
+  filterDot: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: Colors.error[500],
   },
-  closeButtonContainer: {
-    alignItems: 'flex-end',
-    paddingHorizontal: 20,
-    marginBottom: -15, // Overlap effect
-    zIndex: 101,
-  },
+  cardContainer: { position: 'absolute', bottom: Spacing.xl, left: 0, right: 0, zIndex: 100 },
+  closeButtonContainer: { alignItems: 'flex-end', paddingHorizontal: Spacing.lg, marginBottom: -15, zIndex: 101 },
   closeButton: {
-    backgroundColor: 'white',
+    backgroundColor: Colors.background.card,
     borderRadius: 20,
     width: 32,
     height: 32,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 5,
-  }
+    ...Shadows.sm,
+  },
 });
 
 export default MapScreen;
