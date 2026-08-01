@@ -1,7 +1,6 @@
-import { Property } from '@/api/apiMock'; // <--- UPDATED IMPORT
 import { useCallback, useMemo, useState } from 'react';
 import { analyticsService } from '../services/analyticsService';
-import { useDebounce } from './useDebounce';
+import type { Property } from '../types/property';
 
 export interface FilterOptions {
   listingType?: string;
@@ -126,10 +125,10 @@ export const useFilterProperties = (
         }
       }
 
-      // Amenities filter
+      // Amenities filter — property must have every selected amenity.
       if (activeFilters.amenities && activeFilters.amenities.length > 0) {
-        // Simplified check - assumes property has all amenities if array exists
-        return true; 
+        const hasAllAmenities = activeFilters.amenities.every(amenity => property.amenities.includes(amenity));
+        if (!hasAllAmenities) return false;
       }
 
       return true;
@@ -220,41 +219,6 @@ export const useFilterProperties = (
     resetFilters,
     clearFilter,
     hasActiveFilters,
-  };
-};
-
-// Specialized hook for search with debouncing
-export const useSearchProperties = (properties: Property[], delay = 300) => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const debouncedQuery = useDebounce(searchQuery, delay);
-
-  const { filteredProperties, ...filterHelpers } = useFilterProperties(properties, {
-    keywords: debouncedQuery,
-  });
-
-  const updateSearchQuery = useCallback((query: string) => {
-    setSearchQuery(query);
-
-    if (query.trim()) {
-      analyticsService.track('search_performed', {
-        query_length: query.length,
-        has_results: filteredProperties.length > 0,
-      });
-    }
-  }, [filteredProperties.length]);
-
-  const clearSearch = useCallback(() => {
-    setSearchQuery('');
-    analyticsService.track('search_cleared');
-  }, []);
-
-  return {
-    ...filterHelpers,
-    filteredProperties,
-    searchQuery,
-    debouncedQuery,
-    updateSearchQuery,
-    clearSearch,
   };
 };
 
