@@ -121,6 +121,10 @@ api\wp_posts.json
 .env.production.local
 .env.local
 
+# Vercel CLI project link + pulled env vars (contains live secrets if ever
+# linked from this directory — see backend/DEPLOY.md for the correct flow)
+.vercel
+
 # parcel-bundler cache (https://parceljs.org/)
 .cache
 .parcel-cache
@@ -184,3 +188,4 @@ desktop.ini
 *.swp
 *.swo
 *~
+.env*
