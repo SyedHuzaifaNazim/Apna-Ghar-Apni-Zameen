@@ -51,7 +51,7 @@ class ErrorBoundary extends Component<Props, State> {
               </AppText>
               
               <AppText variant="body" color="secondary" align="center">
-                Something went wrong. Don't worry, we're working on it!
+                Something went wrong. Don&apos;t worry, we&apos;re working on it!
               </AppText>
 
               {this.state.error && (
