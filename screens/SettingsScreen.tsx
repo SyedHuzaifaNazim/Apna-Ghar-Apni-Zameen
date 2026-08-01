@@ -1,186 +1,197 @@
 import { Ionicons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 import * as Clipboard from 'expo-clipboard';
-import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import {
-  Alert,
-  Modal,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { Href, useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { Alert, Modal, ScrollView, StyleSheet, Switch, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import AppButton from '@/components/base/AppButton';
 import AppText from '@/components/base/AppText';
 import { Colors } from '@/constants/Colors';
+import { BorderRadius, Spacing } from '@/constants/Layout';
+import { useAuth } from '@/context/AuthContext';
+import { storageService, STORAGE_KEYS } from '@/services/storageService';
+
+interface PersistedSettings {
+  pushNotifications: boolean;
+  emailNotifications: boolean;
+  smsAlerts: boolean;
+  locationServices: boolean;
+}
+
+const DEFAULT_SETTINGS: PersistedSettings = {
+  pushNotifications: true,
+  emailNotifications: true,
+  smsAlerts: false,
+  locationServices: true,
+};
+
+const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
 
 const SettingsScreen: React.FC = () => {
   const router = useRouter();
-  
-  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false); 
-  
-  const [settings, setSettings] = useState({
-    pushNotifications: true,
-    emailNotifications: true,
-    smsAlerts: false,
-    locationServices: true,
-    darkMode: false,
-    biometricAuth: false,
-    autoPlayVideos: true,
-    highQualityImages: false
-  });
+  const { signOut } = useAuth();
 
-  const showSimpleAlert = (title: string, message: string) => {
-    Alert.alert(title, message);
-  };
-  
-  const handleSettingToggle = (key: keyof typeof settings) => {
-    setSettings(prev => ({ ...prev, [key]: !prev[key] }));
-    
-    showSimpleAlert(
-      "Setting updated",
-      `${key} ${!settings[key] ? 'enabled' : 'disabled'}`
-    );
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [settings, setSettings] = useState<PersistedSettings>(DEFAULT_SETTINGS);
+
+  useEffect(() => {
+    storageService
+      .getItem<PersistedSettings>(STORAGE_KEYS.APP_SETTINGS)
+      .then(saved => {
+        if (saved) setSettings(prev => ({ ...prev, ...saved }));
+      })
+      .catch(() => undefined);
+  }, []);
+
+  const handleSettingToggle = (key: keyof PersistedSettings) => {
+    setSettings(prev => {
+      const next = { ...prev, [key]: !prev[key] };
+      storageService.setItem(STORAGE_KEYS.APP_SETTINGS, next).catch(() => undefined);
+      return next;
+    });
   };
 
   const handleClearCache = () => {
-    showSimpleAlert("Cache cleared", "App cache has been cleared successfully");
-  };
-
-  const handleExportData = () => {
-    showSimpleAlert("Data exported", "Your data has been exported successfully");
+    Alert.alert('Clear cache?', 'This removes cached property and image data. Your account and saved favorites are unaffected.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Clear Cache',
+        style: 'destructive',
+        onPress: async () => {
+          await storageService.clearCache();
+          Alert.alert('Cache cleared', 'App cache has been cleared.');
+        },
+      },
+    ]);
   };
 
   const handleCopyAppInfo = async () => {
-    await Clipboard.setStringAsync('Apna Ghar Apni Zameen v1.0.0');
-    showSimpleAlert("Copied", "App information copied to clipboard");
+    await Clipboard.setStringAsync(`Farsh e Zameen v${APP_VERSION}`);
+    Alert.alert('Copied', 'App information copied to clipboard.');
   };
 
-  const handleLogout = () => {
-    setIsLogoutModalOpen(true);
-  };
+  const handleLogout = () => setIsLogoutModalOpen(true);
 
-  const confirmLogout = () => {
-    showSimpleAlert("Logged out", "You have been logged out successfully");
+  const confirmLogout = async () => {
     setIsLogoutModalOpen(false);
-    // Add router.replace('/login') here for actual redirection
+    await signOut();
+    router.replace('/(tabs)/' as Href);
   };
-  
-  const settingSections = [
+
+  const settingSections: {
+    title: string;
+    icon: keyof typeof Ionicons.glyphMap;
+    items: { label: string; description: string; value: boolean; key: keyof PersistedSettings }[];
+  }[] = [
     {
-      title: "Notifications",
-      icon: "notifications",
+      title: 'Notifications',
+      icon: 'notifications',
       items: [
         {
-          label: "Push Notifications",
-          description: "Receive push notifications for alerts and updates",
+          label: 'Push Notifications',
+          description: 'Receive push notifications for alerts and updates',
           value: settings.pushNotifications,
-          key: "pushNotifications" as const
+          key: 'pushNotifications',
         },
         {
-          label: "Email Notifications",
-          description: "Get property updates via email",
+          label: 'Email Notifications',
+          description: 'Get property updates via email',
           value: settings.emailNotifications,
-          key: "emailNotifications" as const
+          key: 'emailNotifications',
         },
         {
-          label: "SMS Alerts",
-          description: "Important alerts via SMS",
+          label: 'SMS Alerts',
+          description: 'Important alerts via SMS',
           value: settings.smsAlerts,
-          key: "smsAlerts" as const
-        }
-      ]
+          key: 'smsAlerts',
+        },
+      ],
     },
     {
-      title: "Privacy & Security",
-      icon: "shield-checkmark",
+      title: 'Privacy & Security',
+      icon: 'shield-checkmark',
       items: [
         {
-          label: "Location Services",
-          description: "Use your location for nearby properties",
+          label: 'Location Services',
+          description: 'Use your location for nearby properties',
           value: settings.locationServices,
-          key: "locationServices" as const
+          key: 'locationServices',
         },
-        {
-          label: "Biometric Authentication",
-          description: "Use fingerprint or face ID to login",
-          value: settings.biometricAuth,
-          key: "biometricAuth" as const
-        }
-      ]
-    }
+      ],
+    },
   ];
 
-  const actionItems = [
+  const actionItems: {
+    icon: keyof typeof Ionicons.glyphMap;
+    title: string;
+    description: string;
+    action: () => void;
+    color: string;
+  }[] = [
     {
-      icon: "trash",
-      title: "Clear Cache",
-      description: "Clear temporary app data",
+      icon: 'trash',
+      title: 'Clear Cache',
+      description: 'Clear temporary app data',
       action: handleClearCache,
-      color: Colors.text.secondary
+      color: Colors.text.secondary,
     },
     {
-      icon: "download",
-      title: "Export Data",
-      description: "Download your saved data",
-      action: handleExportData,
-      color: Colors.primary[500]
+      icon: 'document',
+      title: 'Terms of Service',
+      description: 'View our terms and conditions',
+      action: () =>
+        Alert.alert('Terms of Service', 'A dedicated Terms of Service page is coming soon.'),
+      color: Colors.text.primary,
     },
     {
-      icon: "document",
-      title: "Terms of Service",
-      description: "View our terms and conditions",
-      action: () => showSimpleAlert("Terms", "Opening terms of service"),
-      color: Colors.text.primary
+      icon: 'lock-closed',
+      title: 'Privacy Policy',
+      description: 'How we handle your data',
+      action: () =>
+        Alert.alert('Privacy Policy', 'A dedicated Privacy Policy page is coming soon.'),
+      color: Colors.text.primary,
     },
-    {
-      icon: "lock-closed",
-      title: "Privacy Policy",
-      description: "How we handle your data",
-      action: () => showSimpleAlert("Privacy", "Opening privacy policy"),
-      color: Colors.text.primary
-    }
   ];
 
   const handleBack = () => {
-      if (router.canGoBack()) {
-          router.back();
-      }
+    if (router.canGoBack()) router.back();
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      {/* Header */}
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.header}>
         {router.canGoBack() && (
-            <TouchableOpacity 
-                onPress={handleBack}
-                style={styles.headerButton}
-            >
-                <Ionicons name="arrow-back" size={24} color={Colors.primary[500]} />
-            </TouchableOpacity>
+          <TouchableOpacity onPress={handleBack} style={styles.headerButton}>
+            <Ionicons name="arrow-back" size={22} color={Colors.primary[500]} />
+          </TouchableOpacity>
         )}
-        <AppText variant="h2" weight="bold" style={styles.headerTitle}>Settings</AppText>
+        <AppText variant="h3" weight="bold" style={styles.headerTitle}>
+          Settings
+        </AppText>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        {/* Settings Sections */}
         {settingSections.map(section => (
           <View key={section.title} style={styles.sectionContainer}>
             <View style={styles.sectionHeader}>
-              <Ionicons name={section.icon as any} size={20} color={Colors.primary[500]} />
-              <AppText variant="h3" weight="bold" style={styles.sectionTitle}>{section.title}</AppText>
+              <Ionicons name={section.icon} size={18} color={Colors.primary[500]} />
+              <AppText variant="h4" weight="bold" style={styles.sectionTitle}>
+                {section.title}
+              </AppText>
             </View>
-            
+
             <View style={styles.sectionItemsContainer}>
               {section.items.map(item => (
                 <View key={item.key} style={styles.settingItem}>
                   <View style={styles.settingTextContainer}>
-                    <AppText variant="body" weight="medium">{item.label}</AppText>
-                    <AppText variant="small" color="secondary">{item.description}</AppText>
+                    <AppText variant="body" weight="medium">
+                      {item.label}
+                    </AppText>
+                    <AppText variant="bodySmall" color="secondary">
+                      {item.description}
+                    </AppText>
                   </View>
                   <Switch
                     value={item.value}
@@ -194,23 +205,24 @@ const SettingsScreen: React.FC = () => {
           </View>
         ))}
 
-        {/* Action Items */}
         <View style={styles.sectionContainer}>
-          <AppText variant="h3" weight="bold" style={styles.sectionTitle}>Data & Privacy</AppText>
-          
+          <AppText variant="h4" weight="bold" style={styles.sectionTitle}>
+            Data & Privacy
+          </AppText>
+
           <View style={styles.sectionItemsContainer}>
             {actionItems.map((item, index) => (
               <View key={item.title}>
-                <TouchableOpacity 
-                  onPress={item.action}
-                  style={styles.actionItemButton}
-                  activeOpacity={0.8}
-                >
+                <TouchableOpacity onPress={item.action} style={styles.actionItemButton} activeOpacity={0.8}>
                   <View style={styles.actionItemContent}>
-                    <Ionicons name={item.icon as any} size={20} color={item.color as string} style={{ marginRight: 12 }} />
+                    <Ionicons name={item.icon} size={18} color={item.color} style={styles.actionIcon} />
                     <View style={styles.settingTextContainer}>
-                      <AppText variant="body" weight="medium">{item.title}</AppText>
-                      <AppText variant="small" color="secondary">{item.description}</AppText>
+                      <AppText variant="body" weight="medium">
+                        {item.title}
+                      </AppText>
+                      <AppText variant="bodySmall" color="secondary">
+                        {item.description}
+                      </AppText>
                     </View>
                     <Ionicons name="chevron-forward" size={16} color={Colors.text.disabled} />
                   </View>
@@ -221,120 +233,72 @@ const SettingsScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* App Information (Appearance section simplified) */}
-         <View style={styles.sectionContainer}>
-            <View style={styles.sectionHeader}>
-              <Ionicons name="color-palette" size={20} color={Colors.primary[500]} />
-              <AppText variant="h3" weight="bold" style={styles.sectionTitle}>Appearance</AppText>
-            </View>
-            
-            <View style={styles.sectionItemsContainer}>
-               {/* Dark Mode Toggle */}
-                <View style={styles.settingItem}>
-                  <View style={styles.settingTextContainer}>
-                    <AppText variant="body" weight="medium">Dark Mode</AppText>
-                    <AppText variant="small" color="secondary">Switch to dark theme</AppText>
-                  </View>
-                  <Switch
-                    value={settings.darkMode}
-                    onValueChange={() => handleSettingToggle('darkMode')}
-                    trackColor={{ false: Colors.gray[300], true: Colors.primary[500] }}
-                    thumbColor={settings.darkMode ? Colors.primary[50] : Colors.gray[500]}
-                  />
-                </View>
-            </View>
-         </View>
-         
         <View style={styles.sectionContainer}>
-          <AppText variant="h3" weight="bold" style={styles.sectionTitle}>App Information</AppText>
-          
+          <AppText variant="h4" weight="bold" style={styles.sectionTitle}>
+            App Information
+          </AppText>
+
           <View style={styles.infoSection}>
             <View style={styles.infoRow}>
-              <AppText variant="body" color="secondary">Version</AppText>
-              <AppText variant="body" weight="medium">1.0.0</AppText>
-            </View>
-            
-            <View style={styles.infoRow}>
-              <AppText variant="body" color="secondary">Build Number</AppText>
-              <AppText variant="body" weight="medium">2024.10.1</AppText>
-            </View>
-            
-            <View style={styles.infoRow}>
-              <AppText variant="body" color="secondary">Last Updated</AppText>
-              <AppText variant="body" weight="medium">October 2024</AppText>
+              <AppText variant="body" color="secondary">
+                Version
+              </AppText>
+              <AppText variant="body" weight="medium">
+                {APP_VERSION}
+              </AppText>
             </View>
           </View>
 
           <View style={styles.buttonRow}>
-            <AppButton 
-              variant="outline" 
+            <AppButton
+              variant="outline"
               style={styles.infoButton}
               onPress={handleCopyAppInfo}
               leftIcon={<Ionicons name="copy" size={16} color={Colors.primary[500]} />}
             >
               Copy Info
             </AppButton>
-            <AppButton 
-              variant="outline" 
-              style={styles.infoButton}
-              onPress={() => showSimpleAlert("Rate", "Opening app store")}
-              leftIcon={<Ionicons name="star" size={16} color={Colors.primary[500]} />}
-            >
-              Rate App
-            </AppButton>
           </View>
         </View>
 
-        {/* Account Actions */}
         <View style={styles.accountActions}>
-            <AppButton 
-              variant="outline" 
-              style={styles.actionButton}
-              onPress={() => showSimpleAlert("Delete", "Account deletion process")}
-              leftIcon={<Ionicons name="trash" size={16} color={Colors.error[500]} />}
-            >
-              Delete Account
-            </AppButton>
-            
-            <AppButton 
-              variant="outline" 
-              style={styles.actionButton}
-              onPress={handleLogout}
-              leftIcon={<Ionicons name="log-out" size={16} color={Colors.error[500]} />}
-            >
-              Log Out
-            </AppButton>
+          <AppButton
+            variant="outline"
+            style={styles.logoutOutlineButton}
+            onPress={handleLogout}
+            leftIcon={<Ionicons name="log-out" size={16} color={Colors.error[500]} />}
+          >
+            Log Out
+          </AppButton>
         </View>
-        <View style={{ height: 40 }}/>
+        <View style={styles.bottomSpacer} />
       </ScrollView>
 
-      {/* Logout Confirmation Modal (Replaced Actionsheet) */}
-      <Modal visible={isLogoutModalOpen} transparent={true} animationType="fade" onRequestClose={() => setIsLogoutModalOpen(false)}>
+      <Modal
+        visible={isLogoutModalOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsLogoutModalOpen(false)}
+      >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalVStack}>
-              <Ionicons name="log-out" size={48} color={Colors.error[500]} />
-              
+              <Ionicons name="log-out" size={44} color={Colors.error[500]} />
+
               <View style={styles.modalTextContainer}>
-                <AppText variant="h3" weight="bold" align="center">Log Out?</AppText>
-                <AppText variant="body" color="secondary" align="center" style={styles.modalText}>
-                  Are you sure you want to log out? You'll need to sign in again to access your account.
+                <AppText variant="h4" weight="bold" align="center">
+                  Log Out?
+                </AppText>
+                <AppText variant="bodySmall" color="secondary" align="center" style={styles.modalText}>
+                  You&apos;ll need to sign in again to access your account.
                 </AppText>
               </View>
 
               <View style={styles.modalButtonRow}>
-                <AppButton 
-                  variant="outline" 
-                  style={styles.modalButton}
-                  onPress={() => setIsLogoutModalOpen(false)}
-                >
+                <AppButton variant="outline" style={styles.modalButton} onPress={() => setIsLogoutModalOpen(false)}>
                   Cancel
                 </AppButton>
-                <AppButton 
-                  variant="ghost" 
-                  style={styles.modalButtonRed}
-                  onPress={confirmLogout}
-                >
+                <AppButton variant="primary" style={styles.modalButtonRed} onPress={confirmLogout}>
                   Log Out
                 </AppButton>
               </View>
@@ -347,137 +311,59 @@ const SettingsScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: 'white',
-  },
+  safeArea: { flex: 1, backgroundColor: Colors.background.primary },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm + 4,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.gray[200],
-    backgroundColor: 'white',
+    borderBottomColor: Colors.border.light,
+    backgroundColor: Colors.background.card,
   },
-  headerButton: {
-    padding: 8,
-    marginRight: 8,
-  },
-  headerTitle: {
-      marginLeft: 10,
-  },
-  scrollContent: {
-    padding: 16,
-  },
+  headerButton: { padding: Spacing.xs, marginRight: Spacing.xs },
+  headerTitle: { marginLeft: Spacing.xs },
+  scrollContent: { padding: Spacing.md },
   sectionContainer: {
     backgroundColor: Colors.gray[50],
-    padding: 16,
-    borderRadius: 16,
-    marginBottom: 24,
+    padding: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    marginBottom: Spacing.lg,
   },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    marginLeft: 8,
-  },
-  sectionItemsContainer: {
-    gap: 16,
-  },
-  settingItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  settingTextContainer: {
-    flex: 1,
-    marginRight: 16,
-    gap: 4,
-  },
-  // Action Items
-  actionItemButton: {
-    borderRadius: 12,
-  },
-  actionItemContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: Colors.gray[200],
-    marginLeft: 32, // Indent the divider
-  },
-  // Info Section
-  infoSection: {
-      gap: 12,
-      marginTop: 8,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 16,
-  },
-  infoButton: {
-    flex: 1,
-  },
-  accountActions: {
-    gap: 12,
-    paddingHorizontal: 16,
-  },
-  actionButton: {
-    backgroundColor: 'transparent',
-    borderColor: Colors.error[500],
-    borderWidth: 1,
-  },
-  // Modal Styles (Replaced Actionsheet)
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
-    justifyContent: 'flex-end', // Simulates Actionsheet behavior
-  },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.md, gap: Spacing.xs },
+  sectionTitle: {},
+  sectionItemsContainer: { gap: Spacing.md },
+  settingItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  settingTextContainer: { flex: 1, marginRight: Spacing.md, gap: 4 },
+
+  actionItemButton: { borderRadius: BorderRadius.md },
+  actionItemContent: { flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.sm },
+  actionIcon: { marginRight: Spacing.sm },
+  divider: { height: 1, backgroundColor: Colors.gray[200], marginLeft: Spacing.xl },
+
+  infoSection: { gap: Spacing.sm, marginTop: Spacing.xs },
+  infoRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  buttonRow: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.md },
+  infoButton: { flex: 1 },
+
+  accountActions: { paddingHorizontal: Spacing.md },
+  logoutOutlineButton: { backgroundColor: 'transparent', borderColor: Colors.error[500], borderWidth: 1 },
+  bottomSpacer: { height: Spacing.xxl },
+
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.4)', justifyContent: 'flex-end' },
   modalContent: {
-    backgroundColor: 'white',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 24,
+    backgroundColor: Colors.background.card,
+    borderTopLeftRadius: BorderRadius.xl,
+    borderTopRightRadius: BorderRadius.xl,
+    padding: Spacing.lg,
     width: '100%',
   },
-  modalVStack: {
-      alignItems: 'center',
-      gap: 20,
-  },
-  modalTextContainer: {
-    alignItems: 'center',
-    gap: 8,
-  },
-  modalText: {
-    textAlign: 'center',
-  },
-  modalButtonRow: {
-    flexDirection: 'row',
-    gap: 12,
-    width: '100%',
-  },
-  modalButton: {
-    flex: 1,
-    backgroundColor: 'transparent',
-    borderColor: Colors.primary[500],
-    borderWidth: 1,
-  },
-  modalButtonRed: {
-    flex: 1,
-    backgroundColor: Colors.error[500],
-    borderColor: Colors.error[500],
-    borderWidth: 1,
-  }
+  modalVStack: { alignItems: 'center', gap: Spacing.lg },
+  modalTextContainer: { alignItems: 'center', gap: Spacing.xs },
+  modalText: { textAlign: 'center' },
+  modalButtonRow: { flexDirection: 'row', gap: Spacing.sm, width: '100%' },
+  modalButton: { flex: 1, backgroundColor: 'transparent', borderColor: Colors.primary[500], borderWidth: 1 },
+  modalButtonRed: { flex: 1, backgroundColor: Colors.error[500], borderColor: Colors.error[500], borderWidth: 1 },
 });
 
 export default SettingsScreen;
