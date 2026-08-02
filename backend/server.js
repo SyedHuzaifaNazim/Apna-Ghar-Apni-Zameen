@@ -25,7 +25,10 @@ app.use(
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Platform', 'X-App-Version', 'X-Device-ID'],
   })
 );
-app.use(express.json());
+// Listing photos are sent as base64 data URIs (no image-hosting service is
+// configured — see lib/imagePicker.ts), which easily exceeds Express's
+// default 100kb JSON body limit for a handful of compressed photos.
+app.use(express.json({ limit: '20mb' }));
 
 await connectDB();
 
